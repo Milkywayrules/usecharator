@@ -39,6 +39,18 @@ export {
   providerKeyResponseSchema,
 } from "./keys";
 export {
+  type CharacterReportReason,
+  characterReportReasonSchema,
+  MODERATION_HIDE_THRESHOLD,
+  type ModerationStatus,
+  moderationStatusSchema,
+  type ReportCharacterRequest,
+  type ReportCharacterResponse,
+  reportCharacterRequestSchema,
+  reportCharacterResponseSchema,
+  shouldHideCharacter,
+} from "./moderation";
+export {
   type AspectRatio,
   aspectRatioSchema,
   type CharacterVisibility,
@@ -50,6 +62,28 @@ export {
   providerModelOptions,
   providerSchema,
 } from "./providers";
+export {
+  type CharacterGenerationHistoryItem,
+  type CharacterGenerationsResponse,
+  characterGenerationHistoryItemSchema,
+  characterGenerationsResponseSchema,
+  evaluateRerollEligibility,
+  isTerminalJobStatus,
+  type RerollEligibilityInput,
+  type RerollEligibilityResult,
+  type RerollGenerationRequest,
+  type RerollGenerationResponse,
+  rerollGenerationRequestSchema,
+  rerollGenerationResponseSchema,
+} from "./reroll";
+export {
+  type TelegramLinkCodeResponse,
+  type TelegramLinkStatus,
+  telegramLinkCodeResponseSchema,
+  telegramLinkStatusSchema,
+  type UpdateTelegramLinkRequest,
+  updateTelegramLinkRequestSchema,
+} from "./telegram";
 export {
   type ApiTokenListItem,
   apiTokenListItemSchema,

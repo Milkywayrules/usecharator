@@ -3,11 +3,18 @@
 import type { CharacterResponse } from "@charator/shared";
 import { getTheme, parseCharacterSpec, type ThemeId } from "@charator/spec";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CopyIcon, PencilIcon, SparklesIcon, Trash2Icon } from "lucide-react";
+import {
+  CopyIcon,
+  HistoryIcon,
+  PencilIcon,
+  SparklesIcon,
+  Trash2Icon,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -46,6 +53,7 @@ function CharacterCard({
   onDuplicate,
   onEdit,
   onGenerate,
+  onHistory,
   onToggleVisibility,
   signedIn,
 }: {
@@ -55,6 +63,7 @@ function CharacterCard({
     themeId: ThemeId | null;
     updatedAt: string;
     visibility?: "public" | "private";
+    moderationStatus?: "visible" | "hidden";
     role?: string;
     gender?: string;
   };
@@ -62,6 +71,7 @@ function CharacterCard({
   onDuplicate: () => void;
   onEdit: () => void;
   onGenerate: () => void;
+  onHistory?: () => void;
   onToggleVisibility?: (next: "public" | "private") => void;
   signedIn: boolean;
 }) {
@@ -72,9 +82,19 @@ function CharacterCard({
   return (
     <Card className="py-0">
       <CardHeader className="gap-2 pb-3">
-        <CardTitle className="text-lg">
-          {character.name || "Untitled"}
-        </CardTitle>
+        <div className="flex flex-wrap items-center gap-2">
+          <CardTitle className="text-lg">
+            {character.name || "Untitled"}
+          </CardTitle>
+          {character.moderationStatus === "hidden" ? (
+            <Badge
+              className="border-destructive/40 text-destructive"
+              variant="outline"
+            >
+              Hidden
+            </Badge>
+          ) : null}
+        </div>
         <CardDescription>
           {themeLabel} · updated{" "}
           {new Date(character.updatedAt).toLocaleDateString()}
@@ -138,6 +158,17 @@ function CharacterCard({
             <SparklesIcon />
             Generate
           </Button>
+          {onHistory ? (
+            <Button
+              onClick={onHistory}
+              size="default"
+              type="button"
+              variant="outline"
+            >
+              <HistoryIcon />
+              History
+            </Button>
+          ) : null}
           <Button
             onClick={onDelete}
             size="default"
@@ -222,6 +253,7 @@ export default function LibraryPage() {
     return {
       gender: spec.identity.gender,
       id: row.id,
+      moderationStatus: row.moderationStatus,
       name: row.name,
       role: spec.archetype.role,
       themeId: normalizeThemeId(row.themeId) ?? null,
@@ -375,6 +407,11 @@ export default function LibraryPage() {
                 }
                 router.push("/create");
               }}
+              onHistory={
+                signedIn
+                  ? () => router.push(`/library/${character.id}/history`)
+                  : undefined
+              }
               onToggleVisibility={
                 signedIn
                   ? (visibility) =>

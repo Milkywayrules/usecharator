@@ -1,12 +1,18 @@
 import type { Elysia } from "elysia";
-import { handleGalleryDetail, handleGalleryList } from "./gallery";
 import {
+  handleGalleryDetail,
+  handleGalleryList,
+  handleGalleryReport,
+} from "./gallery";
+import {
+  handleCharacterGenerations,
   handleCharactersDelete,
   handleCharactersList,
   handleCharactersPatch,
   handleCharactersPost,
   handleCharactersRemix,
   handleGenerationGet,
+  handleGenerationReroll,
   handleGenerationsPost,
   handleKeysDelete,
   handleKeysList,
@@ -45,6 +51,12 @@ export const SHARED_PROGRAMMATIC_ROUTES: RouteMount[] = [
     path: "/generations/:id",
   },
   {
+    handler: (request, params) =>
+      handleGenerationReroll(request, params.id ?? ""),
+    method: "post",
+    path: "/generations/:id/reroll",
+  },
+  {
     handler: (request) => handleCharactersList(request),
     method: "get",
     path: "/characters",
@@ -73,6 +85,12 @@ export const SHARED_PROGRAMMATIC_ROUTES: RouteMount[] = [
     path: "/characters/:id/remix",
   },
   {
+    handler: (request, params) =>
+      handleCharacterGenerations(request, params.id ?? ""),
+    method: "get",
+    path: "/characters/:id/generations",
+  },
+  {
     handler: (request) => handleGalleryList(request),
     method: "get",
     path: "/gallery",
@@ -81,6 +99,11 @@ export const SHARED_PROGRAMMATIC_ROUTES: RouteMount[] = [
     handler: (request, params) => handleGalleryDetail(request, params.id ?? ""),
     method: "get",
     path: "/gallery/:id",
+  },
+  {
+    handler: (request, params) => handleGalleryReport(request, params.id ?? ""),
+    method: "post",
+    path: "/gallery/:id/report",
   },
   {
     handler: (request) => handleKeysList(request),

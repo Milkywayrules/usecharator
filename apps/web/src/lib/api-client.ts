@@ -2,11 +2,13 @@ import type { App } from "@charator/api/src/index";
 import {
   type ApiTokenListItem,
   apiTokenListItemSchema,
+  type CharacterGenerationsResponse,
   type CharacterResponse,
   type CreateApiTokenResponse,
   type CreateGenerationRequest,
   type CreateGenerationResponse,
   type CreateProviderKeyRequest,
+  characterGenerationsResponseSchema,
   characterResponseSchema,
   createApiTokenResponseSchema,
   createGenerationResponseSchema,
@@ -18,6 +20,12 @@ import {
   generationJobResponseSchema,
   type ProviderKeyResponse,
   providerKeyResponseSchema,
+  type ReportCharacterRequest,
+  type ReportCharacterResponse,
+  type RerollGenerationRequest,
+  type RerollGenerationResponse,
+  reportCharacterResponseSchema,
+  rerollGenerationResponseSchema,
 } from "@charator/shared";
 import type { ThemeId } from "@charator/spec";
 import { treaty } from "@elysiajs/eden";
@@ -219,4 +227,41 @@ export async function revokeApiToken(id: string): Promise<void> {
   if (result.data instanceof Response && !result.data.ok) {
     throw new Error(`Revoke failed (${result.data.status})`);
   }
+}
+
+export async function reportGalleryCharacter(
+  id: string,
+  body: ReportCharacterRequest
+): Promise<ReportCharacterResponse> {
+  return readTreatyData(
+    await api.gallery({ id }).report.post(body),
+    reportCharacterResponseSchema
+  );
+}
+
+export async function rerollGeneration(
+  id: string,
+  body: RerollGenerationRequest = {}
+): Promise<RerollGenerationResponse> {
+  return readTreatyData(
+    await api.generations({ id }).reroll.post(body),
+    rerollGenerationResponseSchema
+  );
+}
+
+export async function listCharacterGenerations(
+  id: string,
+  params?: { limit?: number; offset?: number }
+): Promise<CharacterGenerationsResponse> {
+  const query: Record<string, string> = {};
+  if (params?.offset !== undefined) {
+    query.offset = String(params.offset);
+  }
+  if (params?.limit !== undefined) {
+    query.limit = String(params.limit);
+  }
+  return readTreatyData(
+    await api.characters({ id }).generations.get({ query }),
+    characterGenerationsResponseSchema
+  );
 }

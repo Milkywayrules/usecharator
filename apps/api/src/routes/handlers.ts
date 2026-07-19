@@ -4,9 +4,10 @@ import {
   createGenerationRequestSchema,
   createProviderKeyRequestSchema,
   deriveRemixName,
+  rerollGenerationRequestSchema,
   updateCharacterRequestSchema,
 } from "@charator/shared";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db, requireAuthUser, resolveAuthUser } from "../auth";
 import { config } from "../config";
 import {
@@ -29,6 +30,7 @@ import {
   SlidingWindowRateLimiter,
 } from "../lib/rate-limit";
 import { getProviderAdapter } from "../providers/registry";
+import { createRerollJob } from "./reroll";
 
 const anonymousLimiter = new SlidingWindowRateLimiter(
   config.RATE_LIMIT_ANONYMOUS_PER_HOUR,
@@ -159,6 +161,113 @@ export async function handleGenerationGet(
   });
 }
 
+export async function handleGenerationReroll(
+  request: Request,
+  jobId: string
+): Promise<Response> {
+  const authUser = await resolveAuthUser(request);
+  const parsed = rerollGenerationRequestSchema.safeParse(
+    await readJson(request).catch(() => ({}))
+  );
+  if (!parsed.success) {
+    throw new HttpError(400, {
+      code: "validation_error",
+      message: parsed.error.issues[0]?.message ?? "invalid request",
+    });
+  }
+
+  const [source] = await db
+    .select()
+    .from(generationJobs)
+    .where(eq(generationJobs.id, jobId))
+    .limit(1);
+
+  if (!source) {
+    throw new HttpError(404, { code: "not_found", message: "job not found" });
+  }
+
+  const limiter = authUser ? authenticatedLimiter : anonymousLimiter;
+  const result = await createRerollJob(
+    db,
+    source,
+    parsed.data,
+    authUser,
+    limiter,
+    request
+  );
+
+  return json(result, 202);
+}
+
+const DEFAULT_HISTORY_PAGE_SIZE = 20;
+const MAX_HISTORY_PAGE_SIZE = 50;
+
+export async function handleCharacterGenerations(
+  request: Request,
+  characterId: string
+): Promise<Response> {
+  const user = await requireAuthUser(request);
+
+  const [character] = await db
+    .select({ id: characters.id })
+    .from(characters)
+    .where(
+      and(eq(characters.id, characterId), eq(characters.ownerUserId, user.id))
+    )
+    .limit(1);
+
+  if (!character) {
+    throw new HttpError(404, {
+      code: "not_found",
+      message: "character not found",
+    });
+  }
+
+  const url = new URL(request.url);
+  const offsetRaw = Number(url.searchParams.get("offset") ?? "0");
+  const limitRaw = Number(
+    url.searchParams.get("limit") ?? String(DEFAULT_HISTORY_PAGE_SIZE)
+  );
+  const offset = Number.isFinite(offsetRaw) && offsetRaw > 0 ? offsetRaw : 0;
+  const limit = Math.min(
+    MAX_HISTORY_PAGE_SIZE,
+    Math.max(
+      1,
+      Number.isFinite(limitRaw) ? limitRaw : DEFAULT_HISTORY_PAGE_SIZE
+    )
+  );
+
+  const rows = await db
+    .select()
+    .from(generationJobs)
+    .where(eq(generationJobs.characterId, characterId))
+    .orderBy(desc(generationJobs.createdAt))
+    .limit(limit + 1)
+    .offset(offset);
+
+  const hasMore = rows.length > limit;
+  const page = hasMore ? rows.slice(0, limit) : rows;
+
+  return json({
+    hasMore,
+    items: page.map((job) => {
+      const imageUrls =
+        job.status === "succeeded" ? signedUrlsForJob(job.imageKeys) : [];
+      return {
+        createdAt: job.createdAt.toISOString(),
+        finishedAt: job.finishedAt?.toISOString() ?? null,
+        id: job.id,
+        imageUrl: imageUrls[0] ?? null,
+        model: job.model,
+        prompt: job.prompt,
+        provider: job.provider,
+        status: job.status,
+      };
+    }),
+    nextOffset: offset + page.length,
+  });
+}
+
 export async function handleCharactersList(
   request: Request
 ): Promise<Response> {
@@ -172,6 +281,7 @@ export async function handleCharactersList(
     rows.map((row) => ({
       createdAt: row.createdAt.toISOString(),
       id: row.id,
+      moderationStatus: row.moderationStatus,
       name: row.name,
       spec: row.spec,
       themeId: row.themeId,
