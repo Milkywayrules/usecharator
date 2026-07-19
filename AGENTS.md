@@ -10,6 +10,8 @@ study competitor, study on internet, study on competitions, study and research f
 
 implementer only by subagents. chat's agent (main agent) must be an-orchestrator-only, never write anything.
 
+the user (King) will append anything you need to follow (update your memory index cache) in [here](HARNESS-ADDITIONAL-INSTRUCTIONS.md).
+
 ## Need human / user approval?
 
 spawn subagents of fable 5 medium, gpt 5.6 sol, and composer 2.5 fast for decision maker. They are 3 are the hand-right of me (the user).
