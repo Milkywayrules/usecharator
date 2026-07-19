@@ -37,6 +37,15 @@ export {
   generationJobResponseSchema,
 } from "./generation";
 export {
+  GENERATION_PRESETS,
+  type GenerationPreset,
+  type GenerationPresetGoal,
+  generationPresetGoalSchema,
+  generationPresetSchema,
+  presetsForProvider,
+  presetsForTheme,
+} from "./generation-presets";
+export {
   type CreateProviderKeyRequest,
   createProviderKeyRequestSchema,
   type ProviderKeyResponse,
@@ -55,6 +64,25 @@ export {
   reportCharacterResponseSchema,
   shouldHideCharacter,
 } from "./moderation";
+export {
+  type AspectRatioCapability,
+  aspectRatioCapabilitySchema,
+  buildProviderCapabilitiesResponse,
+  type ExecutionMode,
+  executionModeSchema,
+  getModelCapabilityDescriptor,
+  getProviderCapabilityDescriptor,
+  type ModelCapabilityDescriptor,
+  modelCapabilityDescriptorSchema,
+  openRouterUsesImageApi,
+  PROVIDER_CAPABILITY_DESCRIPTORS,
+  type ProviderCapabilitiesResponse,
+  type ProviderCapabilityDescriptor,
+  providerCapabilitiesResponseSchema,
+  providerCapabilityDescriptorSchema,
+  type ReferenceImageCapability,
+  referenceImageCapabilitySchema,
+} from "./provider-capabilities";
 export {
   type AspectRatio,
   aspectRatioSchema,

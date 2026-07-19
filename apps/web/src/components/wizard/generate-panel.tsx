@@ -2,7 +2,9 @@
 
 import {
   type CreateGenerationRequest,
+  GENERATION_PRESETS,
   type Provider,
+  presetsForTheme,
   providerModelDefaults,
   providerModelOptions,
   providerSchema,
@@ -17,8 +19,9 @@ import {
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,8 +50,14 @@ export function GeneratePanel({ spec, themeId }: GeneratePanelProps) {
   const [model, setModel] = useState(providerModelDefaults.openrouter);
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [providerKeyId, setProviderKeyId] = useState<string>("");
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
 
   const providers = providerSchema.options;
+
+  const suggestedPresets = useMemo(() => {
+    const themed = themeId ? presetsForTheme(themeId) : GENERATION_PRESETS;
+    return themed.slice(0, 4);
+  }, [themeId]);
 
   const keysQuery = useQuery({
     enabled: signedIn,
@@ -67,7 +76,18 @@ export function GeneratePanel({ spec, themeId }: GeneratePanelProps) {
 
   useEffect(() => {
     setModel(providerModelDefaults[provider]);
+    setSelectedPresetId(null);
   }, [provider]);
+
+  const applyPreset = (presetId: string) => {
+    const preset = GENERATION_PRESETS.find((entry) => entry.id === presetId);
+    if (!preset) {
+      return;
+    }
+    setProvider(preset.provider);
+    setModel(preset.model);
+    setSelectedPresetId(preset.id);
+  };
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -130,6 +150,46 @@ export function GeneratePanel({ spec, themeId }: GeneratePanelProps) {
         </p>
       </div>
 
+      {suggestedPresets.length > 0 ? (
+        <div className="space-y-2">
+          <Label>Suggested picks</Label>
+          <div className="flex flex-wrap gap-2">
+            {suggestedPresets.map((preset) => (
+              <Button
+                aria-pressed={selectedPresetId === preset.id}
+                className="h-8 px-3 text-xs"
+                key={preset.id}
+                onClick={() => applyPreset(preset.id)}
+                type="button"
+                variant={selectedPresetId === preset.id ? "default" : "outline"}
+              >
+                {preset.label}
+              </Button>
+            ))}
+          </div>
+          {selectedPresetId ? (
+            <p className="text-muted-foreground text-xs">
+              {
+                GENERATION_PRESETS.find(
+                  (entry) => entry.id === selectedPresetId
+                )?.notes
+              }
+            </p>
+          ) : null}
+          {selectedPresetId ? (
+            <div className="flex flex-wrap gap-1">
+              {GENERATION_PRESETS.find(
+                (entry) => entry.id === selectedPresetId
+              )?.badges.map((badge) => (
+                <Badge key={badge} variant="secondary">
+                  {badge}
+                </Badge>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label>Provider</Label>
@@ -159,6 +219,7 @@ export function GeneratePanel({ spec, themeId }: GeneratePanelProps) {
             onValueChange={(value) => {
               if (value) {
                 setModel(value);
+                setSelectedPresetId(null);
               }
             }}
             value={model}
