@@ -2,22 +2,17 @@ import { Elysia } from "elysia";
 import { auth } from "./auth";
 import { config } from "./config";
 import { errorResponse, HttpError } from "./lib/errors";
-import { handleGalleryDetail, handleGalleryList } from "./routes/gallery";
+import { v1OpenApi } from "./openapi";
 import {
-  handleCharactersDelete,
-  handleCharactersList,
-  handleCharactersPatch,
-  handleCharactersPost,
-  handleCharactersRemix,
   handleFalWebhook,
-  handleGenerationGet,
-  handleGenerationsPost,
-  handleKeysDelete,
-  handleKeysList,
-  handleKeysPost,
   handleReplicateWebhook,
   startJobMaintenanceLoop,
 } from "./routes/handlers";
+import {
+  LEGACY_ROUTE_PREFIX,
+  mountProgrammaticRoutes,
+  V1_ROUTE_PREFIX,
+} from "./routes/register";
 
 async function dispatch(handler: () => Promise<Response>): Promise<Response> {
   try {
@@ -36,35 +31,21 @@ async function dispatch(handler: () => Promise<Response>): Promise<Response> {
 const app = new Elysia({ prefix: "/api" })
   .get("/health", () => ({ status: "ok" }))
   .all("/auth/*", ({ request }) => auth.handler(request))
-  .post("/generations", ({ request }) =>
-    dispatch(() => handleGenerationsPost(request))
+  .use((router) =>
+    mountProgrammaticRoutes(
+      router as unknown as Elysia,
+      LEGACY_ROUTE_PREFIX,
+      dispatch
+    )
   )
-  .get("/generations/:id", ({ request, params }) =>
-    dispatch(() => handleGenerationGet(request, params.id))
-  )
-  .get("/characters", ({ request }) =>
-    dispatch(() => handleCharactersList(request))
-  )
-  .post("/characters", ({ request }) =>
-    dispatch(() => handleCharactersPost(request))
-  )
-  .patch("/characters/:id", ({ request, params }) =>
-    dispatch(() => handleCharactersPatch(request, params.id))
-  )
-  .delete("/characters/:id", ({ request, params }) =>
-    dispatch(() => handleCharactersDelete(request, params.id))
-  )
-  .post("/characters/:id/remix", ({ request, params }) =>
-    dispatch(() => handleCharactersRemix(request, params.id))
-  )
-  .get("/gallery", ({ request }) => dispatch(() => handleGalleryList(request)))
-  .get("/gallery/:id", ({ request, params }) =>
-    dispatch(() => handleGalleryDetail(request, params.id))
-  )
-  .get("/keys", ({ request }) => dispatch(() => handleKeysList(request)))
-  .post("/keys", ({ request }) => dispatch(() => handleKeysPost(request)))
-  .delete("/keys/:id", ({ request, params }) =>
-    dispatch(() => handleKeysDelete(request, params.id))
+  .group(V1_ROUTE_PREFIX, (group) =>
+    group.use(v1OpenApi).use((router) =>
+      mountProgrammaticRoutes(router as unknown as Elysia, "", dispatch, {
+        includeOpenApiDetail: true,
+        includeV1OnlyRoutes: true,
+        openApiPathPrefix: V1_ROUTE_PREFIX,
+      })
+    )
   )
   .post("/webhooks/fal", ({ request }) =>
     dispatch(() => handleFalWebhook(request))
