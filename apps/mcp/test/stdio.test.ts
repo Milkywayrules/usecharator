@@ -34,50 +34,58 @@ function sendMessages(
   });
 }
 
+// spawning a full bun subprocess can exceed the default 5s timeout on
+// loaded CI runners — give this test generous headroom
+const STDIO_TEST_TIMEOUT_MS = 30_000;
+
 describe("stdio MCP exchange", () => {
-  test("initialize and tools/list", async () => {
-    const init = JSON.stringify({
-      id: 1,
-      jsonrpc: "2.0",
-      method: "initialize",
-      params: {
-        capabilities: {},
-        clientInfo: { name: "test", version: "1.0.0" },
-        protocolVersion: "2024-11-05",
-      },
-    });
-    const initialized = JSON.stringify({
-      jsonrpc: "2.0",
-      method: "notifications/initialized",
-    });
-    const listTools = JSON.stringify({
-      id: 2,
-      jsonrpc: "2.0",
-      method: "tools/list",
-      params: {},
-    });
+  test(
+    "initialize and tools/list",
+    async () => {
+      const init = JSON.stringify({
+        id: 1,
+        jsonrpc: "2.0",
+        method: "initialize",
+        params: {
+          capabilities: {},
+          clientInfo: { name: "test", version: "1.0.0" },
+          protocolVersion: "2024-11-05",
+        },
+      });
+      const initialized = JSON.stringify({
+        jsonrpc: "2.0",
+        method: "notifications/initialized",
+      });
+      const listTools = JSON.stringify({
+        id: 2,
+        jsonrpc: "2.0",
+        method: "tools/list",
+        params: {},
+      });
 
-    const { stdout } = await sendMessages([init, initialized, listTools]);
-    const lines = stdout
-      .trim()
-      .split("\n")
-      .filter(Boolean)
-      .map(
-        (line) =>
-          JSON.parse(line) as {
-            id?: number;
-            result?: { tools?: { name: string }[] };
-          }
-      );
+      const { stdout } = await sendMessages([init, initialized, listTools]);
+      const lines = stdout
+        .trim()
+        .split("\n")
+        .filter(Boolean)
+        .map(
+          (line) =>
+            JSON.parse(line) as {
+              id?: number;
+              result?: { tools?: { name: string }[] };
+            }
+        );
 
-    const initResponse = lines.find((line) => line.id === 1);
-    expect(initResponse?.result).toBeDefined();
+      const initResponse = lines.find((line) => line.id === 1);
+      expect(initResponse?.result).toBeDefined();
 
-    const toolsResponse = lines.find((line) => line.id === 2);
-    const toolNames =
-      toolsResponse?.result?.tools?.map((tool) => tool.name) ?? [];
-    expect(toolNames).toContain("list_themes");
-    expect(toolNames).toContain("generate_image");
-    expect(toolNames.length).toBeGreaterThanOrEqual(12);
-  });
+      const toolsResponse = lines.find((line) => line.id === 2);
+      const toolNames =
+        toolsResponse?.result?.tools?.map((tool) => tool.name) ?? [];
+      expect(toolNames).toContain("list_themes");
+      expect(toolNames).toContain("generate_image");
+      expect(toolNames.length).toBeGreaterThanOrEqual(12);
+    },
+    STDIO_TEST_TIMEOUT_MS
+  );
 });
