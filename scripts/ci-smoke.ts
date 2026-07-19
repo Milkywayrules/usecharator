@@ -121,6 +121,33 @@ async function main(): Promise<void> {
   }
   console.log("OK GET /api/gallery lists seeded character");
 
+  const searchMatch = await fetchJson<GalleryListResponse>(
+    `/api/gallery?q=${encodeURIComponent("CI Smoke")}`,
+    "GET /api/gallery?q=CI Smoke"
+  );
+  const foundBySearch = searchMatch.items.some(
+    (item) => item.id === characterId
+  );
+  if (!foundBySearch) {
+    console.error(
+      `FAIL GET /api/gallery?q=CI Smoke: seeded character ${characterId} not returned`
+    );
+    process.exit(1);
+  }
+  console.log("OK GET /api/gallery search returns seeded character");
+
+  const searchMiss = await fetchJson<GalleryListResponse>(
+    "/api/gallery?q=zzzz-no-match-zzzz",
+    "GET /api/gallery?q=zzzz-no-match-zzzz"
+  );
+  if (searchMiss.items.some((item) => item.id === characterId)) {
+    console.error(
+      "FAIL GET /api/gallery?q=zzzz-no-match-zzzz: should not return seeded character"
+    );
+    process.exit(1);
+  }
+  console.log("OK GET /api/gallery search excludes non-matching query");
+
   const detail = await fetchJson<{ id: string; name: string }>(
     `/api/gallery/${characterId}`,
     "GET /api/gallery/:id"

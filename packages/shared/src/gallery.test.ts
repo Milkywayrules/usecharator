@@ -3,6 +3,7 @@ import {
   deriveRemixName,
   galleryDetailResponseSchema,
   galleryListResponseSchema,
+  normalizeGalleryQuery,
 } from "./gallery";
 
 describe("gallery DTOs", () => {
@@ -43,6 +44,23 @@ describe("gallery DTOs", () => {
       updatedAt: "2026-01-02T00:00:00.000Z",
     });
     expect(parsed.success).toBe(true);
+  });
+});
+
+describe("normalizeGalleryQuery", () => {
+  test("trims whitespace", () => {
+    expect(normalizeGalleryQuery("  gojo  ")).toBe("gojo");
+  });
+
+  test("returns null for empty input", () => {
+    expect(normalizeGalleryQuery("")).toBeNull();
+    expect(normalizeGalleryQuery("   ")).toBeNull();
+    expect(normalizeGalleryQuery(null)).toBeNull();
+  });
+
+  test("caps length at 64 characters", () => {
+    const long = "x".repeat(80);
+    expect(normalizeGalleryQuery(long)?.length).toBe(64);
   });
 });
 

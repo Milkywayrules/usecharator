@@ -1,6 +1,31 @@
 import { z } from "zod";
 import { characterVisibilitySchema } from "./providers";
 
+export const MAX_GALLERY_QUERY_LENGTH = 64;
+
+/** Trim and cap gallery name search (`q`) for ILIKE contains matching. */
+export function normalizeGalleryQuery(
+  raw: string | null | undefined
+): string | null {
+  if (!raw) {
+    return null;
+  }
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return null;
+  }
+  return trimmed.slice(0, MAX_GALLERY_QUERY_LENGTH);
+}
+
+export const galleryListQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(48).optional(),
+  offset: z.coerce.number().int().min(0).optional(),
+  q: z.string().optional(),
+  theme: z.string().optional(),
+});
+
+export type GalleryListQuery = z.infer<typeof galleryListQuerySchema>;
+
 export const galleryOwnerSchema = z.object({
   displayName: z.string(),
 });

@@ -1,7 +1,9 @@
+import { normalizeGalleryQuery } from "@charator/shared";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import {
   GalleryGrid,
+  GallerySearchBar,
   GalleryThemeFilter,
 } from "@/components/gallery/gallery-grid";
 import { fetchGalleryList } from "@/lib/server-api";
@@ -16,13 +18,14 @@ export const metadata: Metadata = {
 };
 
 interface GalleryPageProps {
-  searchParams: Promise<{ theme?: string }>;
+  searchParams: Promise<{ q?: string; theme?: string }>;
 }
 
 export default async function GalleryPage({ searchParams }: GalleryPageProps) {
   const params = await searchParams;
   const activeTheme = params.theme?.trim() ? params.theme.trim() : null;
-  const data = await fetchGalleryList({ theme: activeTheme });
+  const activeQuery = normalizeGalleryQuery(params.q);
+  const data = await fetchGalleryList({ q: activeQuery, theme: activeTheme });
 
   return (
     <div className="mx-auto max-w-7xl space-y-8 px-4 py-10 sm:px-6">
@@ -39,9 +42,17 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
         </p>
       </div>
 
-      <Suspense fallback={<div className="h-9" />}>
-        <GalleryThemeFilter activeTheme={activeTheme} />
-      </Suspense>
+      <div className="space-y-4">
+        <Suspense fallback={<div className="h-9 max-w-md" />}>
+          <GallerySearchBar activeQuery={activeQuery} />
+        </Suspense>
+        <Suspense fallback={<div className="h-9" />}>
+          <GalleryThemeFilter
+            activeQuery={activeQuery}
+            activeTheme={activeTheme}
+          />
+        </Suspense>
+      </div>
 
       {data.degraded ? (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-amber-100/90 text-sm">
@@ -51,6 +62,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
       ) : null}
 
       <GalleryGrid
+        activeQuery={activeQuery}
         activeTheme={activeTheme}
         degraded={data.degraded}
         initialHasMore={data.hasMore}

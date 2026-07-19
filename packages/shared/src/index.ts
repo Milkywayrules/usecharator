@@ -15,14 +15,18 @@ export {
   deriveRemixName,
   type GalleryDetailResponse,
   type GalleryListItem,
+  type GalleryListQuery,
   type GalleryListResponse,
   type GalleryOwner,
   type GalleryRemixLineage,
   galleryDetailResponseSchema,
   galleryListItemSchema,
+  galleryListQuerySchema,
   galleryListResponseSchema,
   galleryOwnerSchema,
   galleryRemixLineageSchema,
+  MAX_GALLERY_QUERY_LENGTH,
+  normalizeGalleryQuery,
 } from "./gallery";
 export {
   type CreateGenerationRequest,

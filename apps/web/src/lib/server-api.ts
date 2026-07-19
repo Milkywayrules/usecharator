@@ -22,6 +22,7 @@ export function resolveServerApiBaseUrl(): string {
 function galleryListUrl(params?: {
   limit?: number;
   offset?: number;
+  q?: string | null;
   theme?: string | null;
 }): string {
   const url = new URL("/api/gallery", resolveServerApiBaseUrl());
@@ -33,6 +34,9 @@ function galleryListUrl(params?: {
   }
   if (params?.theme) {
     url.searchParams.set("theme", params.theme);
+  }
+  if (params?.q) {
+    url.searchParams.set("q", params.q);
   }
   return url.toString();
 }
@@ -48,6 +52,7 @@ export type GalleryDetailFetchResult =
 export async function fetchGalleryList(params?: {
   limit?: number;
   offset?: number;
+  q?: string | null;
   theme?: string | null;
 }): Promise<GalleryListFetchResult> {
   try {

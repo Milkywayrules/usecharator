@@ -36,6 +36,13 @@
       "when": 1784481760840,
       "tag": "0005_moderation",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784481760841,
+      "tag": "0006_gallery_name_trgm",
+      "breakpoints": true
     }
   ]
 }

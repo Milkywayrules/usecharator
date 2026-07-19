@@ -149,6 +149,7 @@ export async function deleteCharacter(id: string): Promise<void> {
 export async function listGallery(params?: {
   limit?: number;
   offset?: number;
+  q?: string | null;
   theme?: string | null;
 }): Promise<GalleryListResponse> {
   const query: Record<string, string> = {};
@@ -160,6 +161,9 @@ export async function listGallery(params?: {
   }
   if (params?.theme) {
     query.theme = params.theme;
+  }
+  if (params?.q) {
+    query.q = params.q;
   }
   return readTreatyData(
     await api.gallery.get({ query }),

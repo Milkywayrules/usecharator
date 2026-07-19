@@ -5,10 +5,11 @@ import {
   user,
 } from "@charator/db";
 import {
+  normalizeGalleryQuery,
   reportCharacterRequestSchema,
   shouldHideCharacter,
 } from "@charator/shared";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, sql } from "drizzle-orm";
 import { db, resolveAuthUser } from "../auth";
 import { config } from "../config";
 import { signedUrlsForJob } from "../jobs/processor";
@@ -95,9 +96,14 @@ async function renderUrlsForCharacter(characterId: string): Promise<string[]> {
   return renders;
 }
 
+function escapeIlikePattern(raw: string): string {
+  return raw.replace(/[%_\\]/g, (char) => `\\${char}`);
+}
+
 function parsePagination(request: Request): {
   limit: number;
   offset: number;
+  q: string | null;
   theme: string | null;
 } {
   const url = new URL(request.url);
@@ -111,17 +117,26 @@ function parsePagination(request: Request): {
     Math.max(1, Number.isFinite(limitRaw) ? limitRaw : DEFAULT_PAGE_SIZE)
   );
   const theme = url.searchParams.get("theme");
-  return { limit, offset, theme: theme?.trim() ? theme.trim() : null };
+  const q = normalizeGalleryQuery(url.searchParams.get("q"));
+  return {
+    limit,
+    offset,
+    q,
+    theme: theme?.trim() ? theme.trim() : null,
+  };
 }
 
 export async function handleGalleryList(request: Request): Promise<Response> {
-  const { limit, offset, theme } = parsePagination(request);
+  const { limit, offset, q, theme } = parsePagination(request);
   const filters = [
     eq(characters.visibility, "public"),
     eq(characters.moderationStatus, "visible"),
   ];
   if (theme) {
     filters.push(eq(characters.themeId, theme));
+  }
+  if (q) {
+    filters.push(ilike(characters.name, `%${escapeIlikePattern(q)}%`));
   }
 
   const rows = await db
