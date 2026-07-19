@@ -6,6 +6,7 @@ node_modules
 dist
 .turbo
 out
+*.tsbuildinfo
 
 # env
 .env
