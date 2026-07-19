@@ -6,9 +6,15 @@ import {
   providerSchema,
 } from "@charator/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CopyIcon, MoonIcon, SunIcon, Trash2Icon } from "lucide-react";
+import {
+  CopyIcon,
+  ExternalLinkIcon,
+  MoonIcon,
+  SunIcon,
+  Trash2Icon,
+} from "lucide-react";
 import { useTheme } from "next-themes";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { SignInButton } from "@/components/auth/sign-in-button";
 import { Button } from "@/components/ui/button";
@@ -35,13 +41,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import {
   createApiToken,
   createProviderKey,
+  createTelegramLinkCode,
   deleteProviderKey,
+  deleteTelegramLink,
+  getTelegramLinkStatus,
   listApiTokens,
   listProviderKeys,
   revokeApiToken,
+  updateTelegramLink,
 } from "@/lib/api-client";
 import { authClient } from "@/lib/auth-client";
 import {
@@ -70,6 +81,11 @@ export default function SettingsPage() {
     id: string;
     name: string;
   } | null>(null);
+  const [pendingLinkCode, setPendingLinkCode] = useState<{
+    code: string;
+    deepLink: string;
+  } | null>(null);
+  const [pollTelegramLink, setPollTelegramLink] = useState(false);
 
   const keysQuery = useQuery({
     enabled: signedIn,
@@ -81,6 +97,47 @@ export default function SettingsPage() {
     enabled: signedIn,
     queryFn: listApiTokens,
     queryKey: ["api-tokens"],
+  });
+
+  const telegramLinkQuery = useQuery({
+    enabled: signedIn,
+    queryFn: getTelegramLinkStatus,
+    queryKey: ["telegram-link"],
+    refetchInterval: pollTelegramLink ? 3000 : false,
+  });
+
+  useEffect(() => {
+    if (telegramLinkQuery.data?.linked) {
+      setPollTelegramLink(false);
+      setPendingLinkCode(null);
+    }
+  }, [telegramLinkQuery.data?.linked]);
+
+  const linkCodeMutation = useMutation({
+    mutationFn: createTelegramLinkCode,
+    onError: () => toast.error("Could not create Telegram link code"),
+    onSuccess: (result) => {
+      setPendingLinkCode(result);
+      setPollTelegramLink(true);
+      queryClient.invalidateQueries({ queryKey: ["telegram-link"] });
+    },
+  });
+
+  const updateTelegramMutation = useMutation({
+    mutationFn: updateTelegramLink,
+    onError: () => toast.error("Could not update Telegram settings"),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["telegram-link"] }),
+  });
+
+  const disconnectTelegramMutation = useMutation({
+    mutationFn: deleteTelegramLink,
+    onError: () => toast.error("Could not disconnect Telegram"),
+    onSuccess: () => {
+      setPendingLinkCode(null);
+      setPollTelegramLink(false);
+      queryClient.invalidateQueries({ queryKey: ["telegram-link"] });
+    },
   });
 
   const addKeyMutation = useMutation({
@@ -308,6 +365,112 @@ export default function SettingsPage() {
               </div>
             </DialogContent>
           </Dialog>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Notifications</CardTitle>
+              <CardDescription>
+                Link Telegram to get a DM when generation jobs finish. The bot
+                only sends notifications — manage everything here in Chara Tor.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {telegramLinkQuery.data?.linked ? (
+                <div className="space-y-4">
+                  <div className="rounded-lg border px-3 py-2 text-sm">
+                    <p className="font-medium">
+                      {telegramLinkQuery.data.telegramUsername
+                        ? `@${telegramLinkQuery.data.telegramUsername}`
+                        : "Telegram linked"}
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      You will receive DMs when jobs succeed or fail.
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border px-3 py-2">
+                    <div>
+                      <p className="font-medium text-sm">
+                        Telegram notifications
+                      </p>
+                      <p className="text-muted-foreground text-xs">
+                        Turn off to stay linked but stop DMs.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={telegramLinkQuery.data.notifyTelegram}
+                      disabled={updateTelegramMutation.isPending}
+                      onCheckedChange={(checked) =>
+                        updateTelegramMutation.mutate({
+                          notifyTelegram: checked,
+                        })
+                      }
+                    />
+                  </div>
+                  <Button
+                    disabled={disconnectTelegramMutation.isPending}
+                    onClick={() => disconnectTelegramMutation.mutate()}
+                    type="button"
+                    variant="outline"
+                  >
+                    Disconnect Telegram
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-muted-foreground text-sm">
+                    Connect your Telegram account with a one-time link code.
+                  </p>
+                  <Button
+                    disabled={linkCodeMutation.isPending}
+                    onClick={() => linkCodeMutation.mutate()}
+                    type="button"
+                  >
+                    Connect Telegram
+                  </Button>
+                  {pendingLinkCode ? (
+                    <div className="space-y-3 rounded-lg border bg-secondary/40 p-4">
+                      <p className="text-sm">
+                        Open Telegram and send the code, or tap the deep link:
+                      </p>
+                      <Button asChild type="button" variant="outline">
+                        <a
+                          href={pendingLinkCode.deepLink}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          <ExternalLinkIcon />
+                          Open in Telegram
+                        </a>
+                      </Button>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 rounded-md border bg-background px-3 py-2 font-mono text-sm">
+                          {pendingLinkCode.code}
+                        </code>
+                        <Button
+                          onClick={async () => {
+                            await navigator.clipboard.writeText(
+                              pendingLinkCode.code
+                            );
+                            toast.success("Code copied");
+                          }}
+                          type="button"
+                          variant="outline"
+                        >
+                          <CopyIcon />
+                          Copy
+                        </Button>
+                      </div>
+                      {pollTelegramLink ? (
+                        <p className="text-muted-foreground text-xs">
+                          Waiting for Telegram link…
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>

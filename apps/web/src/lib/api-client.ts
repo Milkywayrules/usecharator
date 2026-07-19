@@ -26,6 +26,10 @@ import {
   type RerollGenerationResponse,
   reportCharacterResponseSchema,
   rerollGenerationResponseSchema,
+  type TelegramLinkCodeResponse,
+  type TelegramLinkStatus,
+  telegramLinkCodeResponseSchema,
+  telegramLinkStatusSchema,
 } from "@charator/shared";
 import type { ThemeId } from "@charator/spec";
 import { treaty } from "@elysiajs/eden";
@@ -251,6 +255,39 @@ export async function rerollGeneration(
     await api.generations({ id }).reroll.post(body),
     rerollGenerationResponseSchema
   );
+}
+
+export async function getTelegramLinkStatus(): Promise<TelegramLinkStatus> {
+  return readTreatyData(
+    await api.telegram.link.get(),
+    telegramLinkStatusSchema
+  );
+}
+
+export async function createTelegramLinkCode(): Promise<TelegramLinkCodeResponse> {
+  return readTreatyData(
+    await api.telegram["link-code"].post(),
+    telegramLinkCodeResponseSchema
+  );
+}
+
+export async function updateTelegramLink(body: {
+  notifyTelegram: boolean;
+}): Promise<TelegramLinkStatus> {
+  return readTreatyData(
+    await api.telegram.link.patch(body),
+    telegramLinkStatusSchema
+  );
+}
+
+export async function deleteTelegramLink(): Promise<void> {
+  const result = await api.telegram.link.delete();
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.data instanceof Response && !result.data.ok) {
+    throw new Error(`Disconnect failed (${result.data.status})`);
+  }
 }
 
 export async function listCharacterGenerations(
