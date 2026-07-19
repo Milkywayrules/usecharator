@@ -4,7 +4,7 @@ import {
   type CreateGenerationRequest,
   providerModelDefaults,
 } from "@charator/shared";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { config, r2Configured } from "../config";
 import { decryptSecret } from "../lib/crypto";
 import {
@@ -13,6 +13,7 @@ import {
   setEphemeralCredentials,
 } from "../lib/ephemeral-credentials";
 import { redactSecrets } from "../lib/errors";
+import { assertPublicHttpsUrl } from "../lib/public-url";
 import {
   fetchImageFromUrl,
   presignedGetUrl,
@@ -58,6 +59,24 @@ export async function resolveJobCredentials(
   const ephemeral = getEphemeralCredentials(job.id);
   if (ephemeral) {
     return { apiKey: ephemeral.apiKey, baseUrl: ephemeral.baseUrl };
+  }
+
+  if (job.providerKeyId) {
+    const [row] = await db
+      .select()
+      .from(providerKeys)
+      .where(eq(providerKeys.id, job.providerKeyId))
+      .limit(1);
+
+    if (row) {
+      return {
+        apiKey: decryptSecret(
+          row.encryptedKey,
+          config.KEY_ENCRYPTION_MASTER_KEY
+        ),
+        baseUrl: row.customBaseUrl ?? undefined,
+      };
+    }
   }
 
   if (!job.userId) {
@@ -110,6 +129,15 @@ export async function failTimedOutJobs(db: Db): Promise<void> {
   }
 }
 
+const ACTIVE_JOB_STATUSES = ["queued", "running"] as const;
+
+function activeJobWhere(jobId: string) {
+  return and(
+    eq(generationJobs.id, jobId),
+    inArray(generationJobs.status, [...ACTIVE_JOB_STATUSES])
+  );
+}
+
 export async function markJobFailed(
   db: Db,
   jobId: string,
@@ -123,7 +151,7 @@ export async function markJobFailed(
       status: "failed",
       updatedAt: new Date(),
     })
-    .where(eq(generationJobs.id, jobId));
+    .where(activeJobWhere(jobId));
   clearEphemeralCredentials(jobId);
 }
 
@@ -161,7 +189,7 @@ export async function persistJobImages(
       status: "succeeded",
       updatedAt: new Date(),
     })
-    .where(eq(generationJobs.id, jobId));
+    .where(activeJobWhere(jobId));
 
   clearEphemeralCredentials(jobId);
   return keys;
@@ -204,11 +232,19 @@ export async function processGenerationJob(
 
   await markJobRunning(db, jobId);
 
+  if (credentials.baseUrl) {
+    await assertPublicHttpsUrl(credentials.baseUrl);
+  }
+
   const adapter = getProviderAdapter(job.provider);
   const webhookPath = WEBHOOK_PATHS[job.provider];
-  const webhookUrl = webhookPath
-    ? `${webhookBaseUrl()}${webhookPath}`
-    : undefined;
+  const webhookEnabled =
+    (job.provider === "fal" && config.FAL_WEBHOOK_SECRET) ||
+    (job.provider === "replicate" && config.REPLICATE_WEBHOOK_SECRET);
+  const webhookUrl =
+    webhookPath && webhookEnabled
+      ? `${webhookBaseUrl()}${webhookPath}`
+      : undefined;
 
   try {
     const result = await adapter.generate({
@@ -292,10 +328,34 @@ export async function pollStaleRunningJobs(db: Db): Promise<void> {
     try {
       await pollRunningJob(db, job, credentials, adapter);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "poll failed";
-      await markJobFailed(db, job.id, message);
-      clearEphemeralCredentials(job.id);
+      console.error(`poll failed for job ${job.id}`, error);
     }
+  }
+}
+
+const QUEUED_RECOVERY_AGE_MS = 30_000;
+
+export async function requeueStaleQueuedJobs(db: Db): Promise<void> {
+  const cutoff = new Date(Date.now() - QUEUED_RECOVERY_AGE_MS);
+  const queued = await db
+    .select()
+    .from(generationJobs)
+    .where(eq(generationJobs.status, "queued"));
+
+  for (const job of queued) {
+    if (job.createdAt >= cutoff) {
+      continue;
+    }
+
+    const credentials = await resolveJobCredentials(db, job);
+    if (!credentials) {
+      await markJobFailed(db, job.id, "key no longer available, please retry");
+      continue;
+    }
+
+    processGenerationJob(db, job.id, credentials).catch((error) =>
+      console.error(error)
+    );
   }
 }
 

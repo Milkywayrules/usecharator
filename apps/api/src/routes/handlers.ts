@@ -16,11 +16,13 @@ import {
   pollStaleRunningJobs,
   processGenerationJob,
   rememberJobCredentials,
+  requeueStaleQueuedJobs,
   resolveApiKey,
   signedUrlsForJob,
 } from "../jobs/processor";
 import { decryptSecret, encryptSecret, maskApiKey } from "../lib/crypto";
 import { HttpError } from "../lib/errors";
+import { validatePublicHttpsUrl } from "../lib/public-url";
 import {
   clientIpFromHeaders,
   SlidingWindowRateLimiter,
@@ -98,6 +100,7 @@ export async function handleGenerationsPost(
       negativePrompt: parsed.data.negativePrompt ?? null,
       prompt: parsed.data.prompt,
       provider: parsed.data.provider,
+      providerKeyId: credentials.providerKeyId ?? null,
       specSnapshot: parsed.data.specSnapshot ?? null,
       status: "queued",
       userId: sessionUser ? sessionUser.id : null,
@@ -174,6 +177,7 @@ export async function handleCharactersList(
       id: row.id,
       name: row.name,
       spec: row.spec,
+      themeId: row.themeId,
       updatedAt: row.updatedAt.toISOString(),
       visibility: row.visibility,
     }))
@@ -200,6 +204,7 @@ export async function handleCharactersPost(
       name: parsed.data.name,
       ownerUserId: user.id,
       spec: parsed.data.spec,
+      themeId: parsed.data.themeId ?? null,
       visibility: parsed.data.visibility,
     })
     .returning();
@@ -210,6 +215,7 @@ export async function handleCharactersPost(
       id: row?.id,
       name: row?.name,
       spec: row?.spec,
+      themeId: row?.themeId ?? null,
       updatedAt: row?.updatedAt.toISOString(),
       visibility: row?.visibility,
     },
@@ -252,6 +258,9 @@ export async function handleCharactersPatch(
     .set({
       ...(parsed.data.name === undefined ? {} : { name: parsed.data.name }),
       ...(parsed.data.spec === undefined ? {} : { spec: parsed.data.spec }),
+      ...(parsed.data.themeId === undefined
+        ? {}
+        : { themeId: parsed.data.themeId }),
       ...(parsed.data.visibility === undefined
         ? {}
         : { visibility: parsed.data.visibility }),
@@ -265,6 +274,7 @@ export async function handleCharactersPatch(
     id: row?.id,
     name: row?.name,
     spec: row?.spec,
+    themeId: row?.themeId ?? null,
     updatedAt: row?.updatedAt.toISOString(),
     visibility: row?.visibility,
   });
@@ -332,6 +342,16 @@ export async function handleKeysPost(request: Request): Promise<Response> {
     });
   }
 
+  if (parsed.data.customBaseUrl) {
+    const urlError = await validatePublicHttpsUrl(parsed.data.customBaseUrl);
+    if (urlError) {
+      throw new HttpError(400, {
+        code: "validation_error",
+        message: urlError,
+      });
+    }
+  }
+
   const encryptedKey = encryptSecret(
     parsed.data.apiKey,
     config.KEY_ENCRYPTION_MASTER_KEY
@@ -392,6 +412,10 @@ export async function handleKeysDelete(
 }
 
 export async function handleFalWebhook(request: Request): Promise<Response> {
+  if (!config.FAL_WEBHOOK_SECRET) {
+    return json({ ok: false }, 401);
+  }
+
   const body = await readJson<unknown>(request);
   const adapter = getProviderAdapter("fal");
   const parsed = adapter.parseWebhook?.(body, request.headers);
@@ -406,6 +430,10 @@ export async function handleFalWebhook(request: Request): Promise<Response> {
     .limit(1);
 
   if (!job) {
+    return json({ ok: true });
+  }
+
+  if (job.status === "succeeded" || job.status === "failed") {
     return json({ ok: true });
   }
 
@@ -430,6 +458,10 @@ export async function handleFalWebhook(request: Request): Promise<Response> {
 export async function handleReplicateWebhook(
   request: Request
 ): Promise<Response> {
+  if (!config.REPLICATE_WEBHOOK_SECRET) {
+    return json({ ok: false }, 401);
+  }
+
   const body = await readJson<unknown>(request);
   const adapter = getProviderAdapter("replicate");
   const parsed = adapter.parseWebhook?.(body, request.headers);
@@ -444,6 +476,10 @@ export async function handleReplicateWebhook(
     .limit(1);
 
   if (!job) {
+    return json({ ok: true });
+  }
+
+  if (job.status === "succeeded" || job.status === "failed") {
     return json({ ok: true });
   }
 
@@ -469,5 +505,6 @@ export function startJobMaintenanceLoop(): void {
   setInterval(() => {
     failTimedOutJobs(db).catch((error) => console.error(error));
     pollStaleRunningJobs(db).catch((error) => console.error(error));
+    requeueStaleQueuedJobs(db).catch((error) => console.error(error));
   }, config.GENERATION_POLL_INTERVAL_MS);
 }

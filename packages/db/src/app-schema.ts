@@ -73,6 +73,7 @@ export const characters = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     spec: jsonb("spec").$type<unknown>().notNull(),
+    themeId: text("theme_id"),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .$onUpdate(() => new Date())
@@ -100,6 +101,9 @@ export const generationJobs = pgTable(
     prompt: text("prompt").notNull(),
     provider: providerEnum("provider").notNull(),
     providerJobId: text("provider_job_id"),
+    providerKeyId: uuid("provider_key_id").references(() => providerKeys.id, {
+      onDelete: "set null",
+    }),
     specSnapshot: jsonb("spec_snapshot").$type<unknown>(),
     startedAt: timestamp("started_at", { withTimezone: true }),
     status: generationJobStatusEnum("status").default("queued").notNull(),
@@ -135,6 +139,10 @@ export const generationJobsRelations = relations(generationJobs, ({ one }) => ({
   character: one(characters, {
     fields: [generationJobs.characterId],
     references: [characters.id],
+  }),
+  providerKey: one(providerKeys, {
+    fields: [generationJobs.providerKeyId],
+    references: [providerKeys.id],
   }),
   user: one(user, {
     fields: [generationJobs.userId],
