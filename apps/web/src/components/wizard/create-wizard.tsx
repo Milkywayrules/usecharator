@@ -16,6 +16,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { PromptPreviewPanel } from "@/components/layout/prompt-preview-panel";
 import { SaveToLibraryButton } from "@/components/library/save-to-library-button";
+import { ImportSpecButton } from "@/components/spec/import-spec-button";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -107,12 +108,22 @@ export function CreateWizard() {
     }
     const fields = getFieldsForSection(currentStep.id as WizardSectionId);
     return (
-      <SectionStep
-        control={form.control}
-        errors={validation.errors}
-        fields={fields}
-        title={currentStep.title}
-      />
+      <div className="space-y-6">
+        {currentStep.id === "meta" ? (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-muted-foreground text-sm">
+              Start fresh or import a saved `.charator.json` file.
+            </p>
+            <ImportSpecButton />
+          </div>
+        ) : null}
+        <SectionStep
+          control={form.control}
+          errors={validation.errors}
+          fields={fields}
+          title={currentStep.title}
+        />
+      </div>
     );
   }
 

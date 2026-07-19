@@ -9,6 +9,7 @@ import {
   type ThemeId,
   validateSpecForGenerate,
 } from "@charator/spec";
+import { ExportSpecButton } from "@/components/spec/export-spec-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -85,6 +86,8 @@ export function ReviewStep({ spec, themeId }: ReviewStepProps) {
           {promptPreview.length >= 480 ? "…" : ""}
         </p>
       </div>
+
+      <ExportSpecButton spec={spec} themeId={themeId} />
     </div>
   );
 }

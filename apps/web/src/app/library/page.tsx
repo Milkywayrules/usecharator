@@ -5,6 +5,7 @@ import { getTheme, parseCharacterSpec, type ThemeId } from "@charator/spec";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CopyIcon,
+  DownloadIcon,
   HistoryIcon,
   PencilIcon,
   SparklesIcon,
@@ -14,6 +15,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { ImportSpecButton } from "@/components/spec/import-spec-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,6 +46,7 @@ import {
   listLocalCharacters,
   saveLocalCharacter,
 } from "@/lib/local-characters";
+import { downloadSpecFile } from "@/lib/spec-file-download";
 import { normalizeThemeId, themeIdForRequest } from "@/lib/theme-id";
 import { useWizardStore } from "@/stores/wizard-store";
 
@@ -52,6 +55,7 @@ function CharacterCard({
   onDelete,
   onDuplicate,
   onEdit,
+  onExport,
   onGenerate,
   onHistory,
   onToggleVisibility,
@@ -70,6 +74,7 @@ function CharacterCard({
   onDelete: () => void;
   onDuplicate: () => void;
   onEdit: () => void;
+  onExport: () => void;
   onGenerate: () => void;
   onHistory?: () => void;
   onToggleVisibility?: (next: "public" | "private") => void;
@@ -148,6 +153,15 @@ function CharacterCard({
           >
             <CopyIcon />
             Duplicate
+          </Button>
+          <Button
+            onClick={onExport}
+            size="default"
+            type="button"
+            variant="outline"
+          >
+            <DownloadIcon />
+            Export JSON
           </Button>
           <Button
             onClick={onGenerate}
@@ -346,6 +360,25 @@ export default function LibraryPage() {
       queryClient.invalidateQueries({ queryKey: ["characters"] }),
   });
 
+  async function handleExportLocal(id: string) {
+    const row = localChars.find((item) => item.id === id);
+    if (!row) {
+      return;
+    }
+    downloadSpecFile(row.spec, row.themeId);
+  }
+
+  async function handleExportServer(id: string) {
+    const row = serverQuery.data?.find((item) => item.id === id);
+    if (!row) {
+      return;
+    }
+    downloadSpecFile(
+      parseCharacterSpec(row.spec),
+      normalizeThemeId(row.themeId) ?? null
+    );
+  }
+
   const cards = signedIn
     ? (serverQuery.data ?? []).map(cardFromServer)
     : localChars.map(cardFromLocal);
@@ -363,9 +396,12 @@ export default function LibraryPage() {
               : "Characters stored locally in this browser."}
           </p>
         </div>
-        <Button asChild>
-          <Link href="/create">New character</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <ImportSpecButton onImported={() => router.push("/create")} />
+          <Button asChild>
+            <Link href="/create">New character</Link>
+          </Button>
+        </div>
       </div>
 
       {cards.length === 0 ? (
@@ -398,6 +434,11 @@ export default function LibraryPage() {
                 signedIn
                   ? handleEditServer(character.id)
                   : handleEditLocal(character.id)
+              }
+              onExport={() =>
+                signedIn
+                  ? handleExportServer(character.id)
+                  : handleExportLocal(character.id)
               }
               onGenerate={() => {
                 if (signedIn) {

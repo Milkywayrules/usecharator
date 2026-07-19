@@ -24,6 +24,17 @@ export {
   parseCharacterSpec,
 } from "./schema";
 export {
+  CHARATOR_SPEC_FILE_VERSION,
+  exportSpecFile,
+  type ParseSpecFileFailure,
+  type ParseSpecFileResult,
+  type ParseSpecFileSuccess,
+  parseSpecFile,
+  type SpecFileEnvelope,
+  type SpecFileExport,
+  specFileEnvelopeSchema,
+} from "./spec-file";
+export {
   getTheme,
   listThemes,
   type RenderPromptOptions,
