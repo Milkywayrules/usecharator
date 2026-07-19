@@ -37,5 +37,6 @@ describe("route mounts", () => {
         `${route.method.toUpperCase()} ${V1_ROUTE_PREFIX}${route.path}`
       );
     }
+    expect(v1Paths).toContain("GET /v1/providers/capabilities");
   });
 });

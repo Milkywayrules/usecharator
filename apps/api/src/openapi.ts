@@ -36,6 +36,10 @@ export const v1OpenApi = openapi({
         description: "Theme catalog and spec metadata for programmatic clients",
         name: "spec",
       },
+      {
+        description: "Provider capability descriptors and generation presets",
+        name: "providers",
+      },
     ],
   },
   path: "/docs",

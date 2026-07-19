@@ -18,6 +18,7 @@ import {
   handleKeysList,
   handleKeysPost,
 } from "./handlers";
+import { handleProviderCapabilities } from "./providers";
 import { handleSpecCatalog, handleSpecRender, handleThemesList } from "./spec";
 import {
   handleTokensDelete,
@@ -138,6 +139,11 @@ export const SHARED_PROGRAMMATIC_ROUTES: RouteMount[] = [
 ];
 
 export const V1_ONLY_ROUTES: RouteMount[] = [
+  {
+    handler: () => Promise.resolve(handleProviderCapabilities()),
+    method: "get",
+    path: "/providers/capabilities",
+  },
   {
     handler: (request) => Promise.resolve(handleThemesList(request)),
     method: "get",
@@ -271,6 +277,9 @@ function routeTag(path: string): string {
   }
   if (path.startsWith("/spec/")) {
     return "spec";
+  }
+  if (path.startsWith("/providers")) {
+    return "providers";
   }
   return "api";
 }
