@@ -51,6 +51,24 @@ bun dev
 | `bun run lint` | Biome + Ultracite check |
 | `bun run typecheck` | TypeScript `--noEmit` across workspaces |
 | `bun run ci:smoke` | API + Postgres smoke checks (requires running API and `DATABASE_URL`) |
+| `bun run e2e` | Playwright end-to-end tests (Chromium; see Testing below) |
+
+## Testing
+
+**Unit tests** — run across workspaces via Turbo:
+
+```bash
+bunx turbo test
+```
+
+**End-to-end tests** — Playwright suite in `e2e/` (anonymous flows, degraded API without Postgres). Install Chromium once, then run:
+
+```bash
+bunx playwright install chromium
+bun run e2e
+```
+
+The `e2e` script boots the API (dummy CI env) and Next.js dev server automatically unless servers are already running locally. HTML report on failure: `playwright-report/`.
 
 ## CI
 
