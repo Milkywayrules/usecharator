@@ -11,7 +11,10 @@
       "!**/dist",
       "!**/node_modules",
       "!**/.turbo",
-      "!knowledge-base-of-king-the-user"
+      "!knowledge-base-of-king-the-user",
+      "!e2e",
+      "!test-results",
+      "!playwright-report"
     ]
   }
 }
