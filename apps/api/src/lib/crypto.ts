@@ -1,4 +1,9 @@
-import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHmac,
+  randomBytes,
+} from "node:crypto";
 
 const IV_LENGTH = 12;
 const AUTH_TAG_LENGTH = 16;
@@ -33,6 +38,11 @@ export function decryptSecret(
     decipher.update(ciphertext),
     decipher.final(),
   ]).toString("utf8");
+}
+
+export function hashReporterIp(ip: string, masterKeyBase64: string): string {
+  const key = Buffer.from(masterKeyBase64, "base64");
+  return createHmac("sha256", key).update(ip, "utf8").digest("hex");
 }
 
 export function maskApiKey(apiKey: string): string {

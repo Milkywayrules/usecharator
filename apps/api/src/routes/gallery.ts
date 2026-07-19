@@ -13,6 +13,7 @@ import { and, desc, eq, ilike, inArray, sql } from "drizzle-orm";
 import { db, resolveAuthUser } from "../auth";
 import { config } from "../config";
 import { signedUrlsForJob } from "../jobs/processor";
+import { hashReporterIp } from "../lib/crypto";
 import { HttpError } from "../lib/errors";
 import {
   clientIpFromHeaders,
@@ -271,7 +272,7 @@ export async function handleGalleryReport(
   characterId: string
 ): Promise<Response> {
   const ip = clientIpFromHeaders(request.headers);
-  const limit = reportLimiter.consume(`report:ip:${ip}`);
+  const limit = reportLimiter.consume(`report:${ip}:${characterId}`);
   if (!limit.allowed) {
     throw new HttpError(429, {
       code: "rate_limited",
@@ -307,6 +308,9 @@ export async function handleGalleryReport(
   }
 
   const authUser = await resolveAuthUser(request);
+  const reporterIpHash = authUser
+    ? null
+    : hashReporterIp(ip, config.KEY_ENCRYPTION_MASTER_KEY);
 
   const inserted = await db
     .insert(characterReports)
@@ -314,6 +318,7 @@ export async function handleGalleryReport(
       characterId,
       detail: parsed.data.detail ?? null,
       reason: parsed.data.reason,
+      reporterIpHash,
       reporterUserId: authUser?.id ?? null,
     })
     .returning({ id: characterReports.id })

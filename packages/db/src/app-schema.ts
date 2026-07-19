@@ -167,12 +167,18 @@ export const characterReports = pgTable(
     detail: text("detail"),
     id: uuid("id").defaultRandom().primaryKey(),
     reason: characterReportReasonEnum("reason").notNull(),
+    reporterIpHash: text("reporter_ip_hash"),
     reporterUserId: text("reporter_user_id").references(() => user.id, {
       onDelete: "set null",
     }),
   },
   (table) => [
     index("character_reports_character_id_idx").on(table.characterId),
+    uniqueIndex("character_reports_character_anonymous_reporter_idx")
+      .on(table.characterId, table.reporterIpHash)
+      .where(
+        sql`${table.reporterUserId} is null and ${table.reporterIpHash} is not null`
+      ),
     uniqueIndex("character_reports_character_reporter_idx")
       .on(table.characterId, table.reporterUserId)
       .where(sql`${table.reporterUserId} is not null`),
