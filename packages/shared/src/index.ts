@@ -7,6 +7,15 @@ export {
   updateCharacterRequestSchema,
 } from "./characters";
 export {
+  type EntitlementsResponse,
+  type EntitlementsUsage,
+  entitlementsResponseSchema,
+  entitlementsUsageSchema,
+  limitsForTier,
+  type TierLimitError,
+  tierLimitErrorSchema,
+} from "./entitlements";
+export {
   type ApiError,
   apiError,
   apiErrorSchema,
@@ -154,6 +163,25 @@ export {
   updateTelegramLinkRequestSchema,
 } from "./telegram";
 export {
+  currentUtcPeriod,
+  isAtOrOverLimit,
+  isUnlimited,
+  LIMIT_KEYS,
+  type LimitKey,
+  parseTierId,
+  suggestUpgradeTier,
+  TIER_DISPLAY_NAMES,
+  TIER_IDS,
+  TIER_LIMITS,
+  TIER_PRICES_USD_MONTHLY,
+  type TierId,
+  type TierLimits,
+  type TierLimitValue,
+  tierIdSchema,
+  tierLimit,
+  utcPeriodForDate,
+} from "./tiers";
+export {
   type ApiTokenListItem,
   apiTokenListItemSchema,
   type CreateApiTokenRequest,
@@ -165,3 +193,16 @@ export {
   specRenderRequestSchema,
   specRenderResponseSchema,
 } from "./tokens";
+export {
+  activateWorkspaceResponseSchema,
+  type CreateWorkspaceRequest,
+  createWorkspaceRequestSchema,
+  type UpdateWorkspaceRequest,
+  updateWorkspaceRequestSchema,
+  type WorkspaceListItem,
+  type WorkspaceListResponse,
+  type WorkspaceResponse,
+  workspaceListItemSchema,
+  workspaceListResponseSchema,
+  workspaceResponseSchema,
+} from "./workspaces";
