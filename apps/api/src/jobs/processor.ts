@@ -191,15 +191,22 @@ export async function markJobFailed(
   }
 }
 
-export async function markJobRunning(db: Db, jobId: string): Promise<void> {
-  await db
+export async function markJobRunning(
+  db: Db,
+  jobId: string
+): Promise<typeof generationJobs.$inferSelect | null> {
+  const [claimed] = await db
     .update(generationJobs)
     .set({
       startedAt: new Date(),
       status: "running",
       updatedAt: new Date(),
     })
-    .where(eq(generationJobs.id, jobId));
+    .where(
+      and(eq(generationJobs.id, jobId), eq(generationJobs.status, "queued"))
+    )
+    .returning();
+  return claimed ?? null;
 }
 
 export async function persistJobImages(
@@ -261,17 +268,10 @@ export async function processGenerationJob(
   jobId: string,
   credentials: { apiKey: string; baseUrl?: string }
 ): Promise<void> {
-  const [job] = await db
-    .select()
-    .from(generationJobs)
-    .where(eq(generationJobs.id, jobId))
-    .limit(1);
-
-  if (job?.status !== "queued") {
+  const job = await markJobRunning(db, jobId);
+  if (!job) {
     return;
   }
-
-  await markJobRunning(db, jobId);
 
   if (credentials.baseUrl) {
     await assertPublicHttpsUrl(credentials.baseUrl);
@@ -419,14 +419,20 @@ export async function requeueStaleQueuedJobs(db: Db): Promise<void> {
       continue;
     }
 
-    if (job.sheetBatchId && job.userId) {
-      sheetUsers.add(job.userId);
+    const credentials = await resolveJobCredentials(db, job);
+    if (!credentials) {
+      await markJobFailed(
+        db,
+        job.id,
+        job.sheetBatchId
+          ? "provider key no longer available"
+          : "key no longer available, please retry"
+      );
       continue;
     }
 
-    const credentials = await resolveJobCredentials(db, job);
-    if (!credentials) {
-      await markJobFailed(db, job.id, "key no longer available, please retry");
+    if (job.sheetBatchId && job.userId) {
+      sheetUsers.add(job.userId);
       continue;
     }
 

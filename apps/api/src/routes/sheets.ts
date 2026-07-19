@@ -2,6 +2,8 @@ import { characters, generationJobs, sheetBatches } from "@charator/db";
 import {
   type CreateGenerationRequest,
   createSheetRequestSchema,
+  formatReferenceCapableAlternatives,
+  modelSupportsReferenceImages,
   type SheetBatchResponse,
   type SheetPresetId,
 } from "@charator/shared";
@@ -30,6 +32,22 @@ import { HttpError } from "../lib/errors";
 
 function json(data: unknown, status = 200): Response {
   return Response.json(data, { status });
+}
+
+export function assertSheetUseAnchorSupported(
+  useAnchor: boolean | undefined,
+  provider: CreateGenerationRequest["provider"],
+  modelId: string
+): void {
+  if (!useAnchor) {
+    return;
+  }
+  if (!modelSupportsReferenceImages(provider, modelId)) {
+    throw new HttpError(400, {
+      code: "validation_error",
+      message: `useAnchor requires a reference-capable model — choose a ref-capable model: ${formatReferenceCapableAlternatives()}`,
+    });
+  }
 }
 
 async function readJson<T>(request: Request): Promise<T> {
@@ -111,6 +129,11 @@ export async function handleCharacterSheetPost(
   }
 
   const model = defaultModelFor(parsed.data.provider, parsed.data.model);
+  assertSheetUseAnchorSupported(
+    parsed.data.useAnchor,
+    parsed.data.provider,
+    model
+  );
   const themeId = normalizeThemeId(character.themeId);
   const baseSpec = parseCharacterSpec(character.spec);
   const variants = buildSheetVariants(
@@ -120,7 +143,7 @@ export async function handleCharacterSheetPost(
   );
   const estimatedCalls = sheetVariantCount(parsed.data.preset as SheetPresetId);
 
-  const [batch] = await db
+  const inserted = await db
     .insert(sheetBatches)
     .values({
       characterId,
@@ -131,12 +154,14 @@ export async function handleCharacterSheetPost(
       totalCount: estimatedCalls,
       userId: user.id,
     })
-    .returning();
+    .returning()
+    .catch(() => null);
 
+  const batch = inserted?.[0];
   if (!batch) {
-    throw new HttpError(500, {
-      code: "internal_error",
-      message: "failed to create sheet batch",
+    throw new HttpError(409, {
+      code: "conflict",
+      message: "a sheet batch for this character and preset is already running",
     });
   }
 

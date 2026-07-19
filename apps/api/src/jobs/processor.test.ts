@@ -6,6 +6,7 @@ function createMockDb(state: {
   job: typeof generationJobs.$inferSelect | null;
   updates: Record<string, unknown>[];
   guardActiveStatus?: boolean;
+  guardQueuedClaim?: boolean;
 }) {
   return {
     select: () => ({
@@ -18,10 +19,14 @@ function createMockDb(state: {
     update: () => ({
       set: (values: Record<string, unknown>) => ({
         where: () => {
-          const skipped =
+          const skippedByTerminalGuard =
             state.guardActiveStatus &&
             state.job &&
             !["queued", "running"].includes(state.job.status);
+          const skippedByQueuedClaim =
+            state.guardQueuedClaim && state.job?.status !== "queued";
+
+          const skipped = skippedByTerminalGuard || skippedByQueuedClaim;
 
           if (!skipped) {
             state.updates.push(values);
@@ -76,7 +81,7 @@ describe("job state machine", () => {
     expect(job.finishedAt).toBeInstanceOf(Date);
   });
 
-  test("markJobRunning sets startedAt", async () => {
+  test("markJobRunning atomically claims queued jobs", async () => {
     const job = {
       ...baseJobFields,
       id: "33333333-3333-3333-3333-333333333333",
@@ -90,9 +95,29 @@ describe("job state machine", () => {
     };
 
     const db = createMockDb({ job, updates: [] });
-    await markJobRunning(db, job.id);
+    const claimed = await markJobRunning(db, job.id);
+    expect(claimed?.id).toBe(job.id);
     expect(job.status).toBe("running");
     expect(job.startedAt).toBeInstanceOf(Date);
+  });
+
+  test("markJobRunning returns null when job is not queued", async () => {
+    const job = {
+      ...baseJobFields,
+      id: "66666666-6666-6666-6666-666666666666",
+      model: "gpt-image-1",
+      prompt: "test",
+      provider: "openai" as const,
+      providerJobId: null,
+      startedAt: new Date(),
+      status: "running" as const,
+      updatedAt: new Date(),
+    };
+
+    const db = createMockDb({ guardQueuedClaim: true, job, updates: [] });
+    const claimed = await markJobRunning(db, job.id);
+    expect(claimed).toBeNull();
+    expect(job.status).toBe("running");
   });
 
   test("persistJobImages requires R2 configuration", async () => {

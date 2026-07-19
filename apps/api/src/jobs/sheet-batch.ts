@@ -8,6 +8,7 @@ import {
 } from "@charator/shared";
 import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
 import {
+  markJobFailed,
   processGenerationJob,
   rememberJobCredentials,
   resolveJobCredentials,
@@ -113,6 +114,7 @@ export async function dispatchQueuedSheetJobsForUser(
     queued.map(async (job) => {
       const credentials = await resolveJobCredentials(db, job);
       if (!credentials) {
+        await markJobFailed(db, job.id, "provider key no longer available");
         return;
       }
       processGenerationJob(db, job.id, credentials).catch((error) =>

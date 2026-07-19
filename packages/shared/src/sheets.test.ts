@@ -30,6 +30,12 @@ describe("deriveSheetBatchStatus", () => {
     ).toBe("partial");
   });
 
+  test("running when failed members still have queued siblings", () => {
+    expect(
+      deriveSheetBatchStatus([{ status: "failed" }, { status: "queued" }])
+    ).toBe("running");
+  });
+
   test("failed for empty member list", () => {
     expect(deriveSheetBatchStatus([])).toBe("failed");
   });
