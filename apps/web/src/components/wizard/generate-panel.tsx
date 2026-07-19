@@ -134,7 +134,11 @@ export function GeneratePanel({ spec, themeId }: GeneratePanelProps) {
         <div className="space-y-2">
           <Label>Provider</Label>
           <Select
-            onValueChange={(value) => setProvider(value as Provider)}
+            onValueChange={(value) => {
+              if (value) {
+                setProvider(value as Provider);
+              }
+            }}
             value={provider}
           >
             <SelectTrigger>
@@ -151,7 +155,14 @@ export function GeneratePanel({ spec, themeId }: GeneratePanelProps) {
         </div>
         <div className="space-y-2">
           <Label>Model</Label>
-          <Select onValueChange={setModel} value={model}>
+          <Select
+            onValueChange={(value) => {
+              if (value) {
+                setModel(value);
+              }
+            }}
+            value={model}
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -169,7 +180,14 @@ export function GeneratePanel({ spec, themeId }: GeneratePanelProps) {
       {signedIn ? (
         <div className="space-y-2">
           <Label>Saved provider key</Label>
-          <Select onValueChange={setProviderKeyId} value={providerKeyId}>
+          <Select
+            onValueChange={(value) => {
+              if (value) {
+                setProviderKeyId(value);
+              }
+            }}
+            value={providerKeyId}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select a saved key" />
             </SelectTrigger>
