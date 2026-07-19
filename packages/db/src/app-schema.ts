@@ -166,3 +166,32 @@ export const generationJobsRelations = relations(generationJobs, ({ one }) => ({
     references: [user.id],
   }),
 }));
+
+export const apiTokens = pgTable(
+  "api_tokens",
+  {
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    id: uuid("id").defaultRandom().primaryKey(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    name: text("name").notNull(),
+    prefix: text("prefix").notNull(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    tokenHash: text("token_hash").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    index("api_tokens_user_id_idx").on(table.userId),
+    uniqueIndex("api_tokens_token_hash_idx").on(table.tokenHash),
+  ]
+);
+
+export const apiTokensRelations = relations(apiTokens, ({ one }) => ({
+  user: one(user, {
+    fields: [apiTokens.userId],
+    references: [user.id],
+  }),
+}));

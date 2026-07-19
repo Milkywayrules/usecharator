@@ -1,4 +1,6 @@
 export {
+  apiTokens,
+  apiTokensRelations,
   characters,
   charactersRelations,
   generationJobStatusEnum,

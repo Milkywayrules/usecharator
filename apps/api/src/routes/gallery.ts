@@ -1,6 +1,6 @@
 import { characters, generationJobs, user } from "@charator/db";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
-import { db, getSessionUser } from "../auth";
+import { db, resolveAuthUser } from "../auth";
 import { signedUrlsForJob } from "../jobs/processor";
 import { HttpError } from "../lib/errors";
 
@@ -143,7 +143,7 @@ export async function handleGalleryDetail(
   request: Request,
   characterId: string
 ): Promise<Response> {
-  const sessionUser = await getSessionUser(request);
+  const authUser = await resolveAuthUser(request);
 
   const [row] = await db
     .select({
@@ -170,7 +170,7 @@ export async function handleGalleryDetail(
     });
   }
 
-  const isOwner = sessionUser?.id === row.ownerUserId;
+  const isOwner = authUser?.id === row.ownerUserId;
   if (row.visibility !== "public" && !isOwner) {
     throw new HttpError(404, {
       code: "not_found",

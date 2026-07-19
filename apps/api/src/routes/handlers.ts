@@ -7,7 +7,7 @@ import {
   updateCharacterRequestSchema,
 } from "@charator/shared";
 import { and, eq } from "drizzle-orm";
-import { db, getSessionUser, requireSessionUser } from "../auth";
+import { db, requireAuthUser, resolveAuthUser } from "../auth";
 import { config } from "../config";
 import {
   completeJobFromUrls,
@@ -50,7 +50,7 @@ async function readJson<T>(request: Request): Promise<T> {
 export async function handleGenerationsPost(
   request: Request
 ): Promise<Response> {
-  const sessionUser = await getSessionUser(request);
+  const authUser = await resolveAuthUser(request);
   const parsed = createGenerationRequestSchema.safeParse(
     await readJson(request)
   );
@@ -62,8 +62,8 @@ export async function handleGenerationsPost(
   }
 
   const ip = clientIpFromHeaders(request.headers);
-  const limiter = sessionUser ? authenticatedLimiter : anonymousLimiter;
-  const limitKey = sessionUser ? `user:${sessionUser.id}` : `ip:${ip}`;
+  const limiter = authUser ? authenticatedLimiter : anonymousLimiter;
+  const limitKey = authUser ? `user:${authUser.id}` : `ip:${ip}`;
   const limit = limiter.consume(limitKey);
   if (!limit.allowed) {
     throw new HttpError(429, {
@@ -72,7 +72,7 @@ export async function handleGenerationsPost(
     });
   }
 
-  if (parsed.data.providerKeyId && !sessionUser) {
+  if (parsed.data.providerKeyId && !authUser) {
     throw new HttpError(401, {
       code: "unauthorized",
       message: "sign in required to use saved provider keys",
@@ -82,7 +82,7 @@ export async function handleGenerationsPost(
   const credentials = await resolveApiKey(
     db,
     parsed.data,
-    sessionUser ? sessionUser.id : null
+    authUser ? authUser.id : null
   ).catch(() => null);
   if (!credentials) {
     throw new HttpError(400, {
@@ -104,7 +104,7 @@ export async function handleGenerationsPost(
       providerKeyId: credentials.providerKeyId ?? null,
       specSnapshot: parsed.data.specSnapshot ?? null,
       status: "queued",
-      userId: sessionUser ? sessionUser.id : null,
+      userId: authUser ? authUser.id : null,
     })
     .returning();
 
@@ -115,11 +115,7 @@ export async function handleGenerationsPost(
     });
   }
 
-  rememberJobCredentials(
-    job.id,
-    credentials,
-    sessionUser ? sessionUser.id : null
-  );
+  rememberJobCredentials(job.id, credentials, authUser ? authUser.id : null);
   processGenerationJob(db, job.id, credentials).catch((error) =>
     console.error(error)
   );
@@ -141,8 +137,8 @@ export async function handleGenerationGet(
     throw new HttpError(404, { code: "not_found", message: "job not found" });
   }
 
-  const sessionUser = await getSessionUser(request);
-  if (job.userId && job.userId !== sessionUser?.id) {
+  const authUser = await resolveAuthUser(request);
+  if (job.userId && job.userId !== authUser?.id) {
     throw new HttpError(403, {
       code: "forbidden",
       message: "job not accessible",
@@ -166,7 +162,7 @@ export async function handleGenerationGet(
 export async function handleCharactersList(
   request: Request
 ): Promise<Response> {
-  const user = await requireSessionUser(request);
+  const user = await requireAuthUser(request);
   const rows = await db
     .select()
     .from(characters)
@@ -188,7 +184,7 @@ export async function handleCharactersList(
 export async function handleCharactersPost(
   request: Request
 ): Promise<Response> {
-  const user = await requireSessionUser(request);
+  const user = await requireAuthUser(request);
   const parsed = createCharacterRequestSchema.safeParse(
     await readJson(request)
   );
@@ -228,7 +224,7 @@ export async function handleCharactersPatch(
   request: Request,
   characterId: string
 ): Promise<Response> {
-  const user = await requireSessionUser(request);
+  const user = await requireAuthUser(request);
   const parsed = updateCharacterRequestSchema.safeParse(
     await readJson(request)
   );
@@ -285,7 +281,7 @@ export async function handleCharactersDelete(
   request: Request,
   characterId: string
 ): Promise<Response> {
-  const user = await requireSessionUser(request);
+  const user = await requireAuthUser(request);
   const deleted = await db
     .delete(characters)
     .where(
@@ -307,7 +303,7 @@ export async function handleCharactersRemix(
   request: Request,
   characterId: string
 ): Promise<Response> {
-  const userSession = await requireSessionUser(request);
+  const userSession = await requireAuthUser(request);
 
   const [source] = await db
     .select()
@@ -365,7 +361,7 @@ export async function handleCharactersRemix(
 }
 
 export async function handleKeysList(request: Request): Promise<Response> {
-  const user = await requireSessionUser(request);
+  const user = await requireAuthUser(request);
   const rows = await db
     .select()
     .from(providerKeys)
@@ -386,7 +382,7 @@ export async function handleKeysList(request: Request): Promise<Response> {
 }
 
 export async function handleKeysPost(request: Request): Promise<Response> {
-  const user = await requireSessionUser(request);
+  const user = await requireAuthUser(request);
   const parsed = createProviderKeyRequestSchema.safeParse(
     await readJson(request)
   );
@@ -457,7 +453,7 @@ export async function handleKeysDelete(
   request: Request,
   keyId: string
 ): Promise<Response> {
-  const user = await requireSessionUser(request);
+  const user = await requireAuthUser(request);
   const deleted = await db
     .delete(providerKeys)
     .where(and(eq(providerKeys.id, keyId), eq(providerKeys.userId, user.id)))
