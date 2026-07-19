@@ -11,7 +11,9 @@ import {
   type ProviderKeyResponse,
   providerKeyResponseSchema,
 } from "@charator/shared";
+import type { ThemeId } from "@charator/spec";
 import { treaty } from "@elysiajs/eden";
+import { themeIdForRequest } from "./theme-id";
 
 function resolveBaseUrl(): string {
   if (typeof window !== "undefined") {
@@ -82,10 +84,16 @@ export async function listCharacters(): Promise<CharacterResponse[]> {
 export async function createCharacter(body: {
   name: string;
   spec: unknown;
+  themeId?: ThemeId | null;
   visibility: "public" | "private";
 }): Promise<CharacterResponse> {
   return readTreatyData(
-    await client.api.characters.post(body),
+    await client.api.characters.post({
+      name: body.name,
+      spec: body.spec,
+      visibility: body.visibility,
+      ...themeIdForRequest(body.themeId),
+    }),
     characterResponseSchema
   );
 }
@@ -95,11 +103,17 @@ export async function patchCharacter(
   body: {
     name?: string;
     spec?: unknown;
+    themeId?: ThemeId | null;
     visibility?: "public" | "private";
   }
 ): Promise<CharacterResponse> {
   return readTreatyData(
-    await client.api.characters({ id }).patch(body),
+    await client.api.characters({ id }).patch({
+      ...(body.name === undefined ? {} : { name: body.name }),
+      ...(body.spec === undefined ? {} : { spec: body.spec }),
+      ...(body.visibility === undefined ? {} : { visibility: body.visibility }),
+      ...themeIdForRequest(body.themeId),
+    }),
     characterResponseSchema
   );
 }

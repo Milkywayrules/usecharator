@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { createCharacter } from "@/lib/api-client";
 import { authClient } from "@/lib/auth-client";
 import { saveLocalCharacter } from "@/lib/local-characters";
+import { themeIdForRequest } from "@/lib/theme-id";
 
 interface SaveToLibraryButtonProps {
   spec: CharacterSpec;
@@ -30,6 +31,7 @@ export function SaveToLibraryButton({
           name,
           spec,
           visibility: "private",
+          ...themeIdForRequest(themeId),
         });
         return;
       }

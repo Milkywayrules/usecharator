@@ -4,6 +4,7 @@ import { characterVisibilitySchema } from "./providers";
 export const createCharacterRequestSchema = z.object({
   name: z.string().min(1).max(120),
   spec: z.unknown(),
+  themeId: z.string().nullable().optional(),
   visibility: characterVisibilitySchema.default("public"),
 });
 
@@ -15,12 +16,14 @@ export const updateCharacterRequestSchema = z
   .object({
     name: z.string().min(1).max(120).optional(),
     spec: z.unknown().optional(),
+    themeId: z.string().nullable().optional(),
     visibility: characterVisibilitySchema.optional(),
   })
   .refine(
     (value) =>
       value.name !== undefined ||
       value.spec !== undefined ||
+      value.themeId !== undefined ||
       value.visibility !== undefined,
     { message: "at least one field required" }
   );
@@ -34,6 +37,7 @@ export const characterResponseSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
   spec: z.unknown(),
+  themeId: z.string().nullable(),
   updatedAt: z.string().datetime(),
   visibility: characterVisibilitySchema,
 });

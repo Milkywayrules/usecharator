@@ -37,6 +37,7 @@ import {
   listLocalCharacters,
   saveLocalCharacter,
 } from "@/lib/local-characters";
+import { normalizeThemeId, themeIdForRequest } from "@/lib/theme-id";
 import { useWizardStore } from "@/stores/wizard-store";
 
 function CharacterCard({
@@ -177,6 +178,7 @@ export default function LibraryPage() {
           name: row.name,
           spec: row.spec,
           visibility: "private",
+          ...themeIdForRequest(row.themeId),
         });
         await deleteLocalCharacter(row.id);
       }
@@ -201,16 +203,14 @@ export default function LibraryPage() {
     };
   }
 
-  function cardFromServer(
-    row: CharacterResponse & { themeId?: ThemeId | null }
-  ) {
+  function cardFromServer(row: CharacterResponse) {
     const spec = parseCharacterSpec(row.spec);
     return {
       gender: spec.identity.gender,
       id: row.id,
       name: row.name,
       role: spec.archetype.role,
-      themeId: row.themeId ?? null,
+      themeId: normalizeThemeId(row.themeId) ?? null,
       updatedAt: row.updatedAt,
       visibility: row.visibility,
     };
@@ -231,7 +231,7 @@ export default function LibraryPage() {
       return;
     }
     const spec = parseCharacterSpec(row.spec);
-    loadDraft(spec, null);
+    loadDraft(spec, normalizeThemeId(row.themeId) ?? null);
     router.push("/create");
   }
 
@@ -282,6 +282,7 @@ export default function LibraryPage() {
         name: `${row.name} (copy)`,
         spec: row.spec,
         visibility: "private",
+        ...themeIdForRequest(normalizeThemeId(row.themeId)),
       });
     },
     onError: () => toast.error("Could not duplicate"),
