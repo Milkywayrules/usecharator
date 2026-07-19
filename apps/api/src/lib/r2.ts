@@ -45,3 +45,48 @@ export async function fetchImageFromUrl(url: string): Promise<Uint8Array> {
   }
   return new Uint8Array(await response.arrayBuffer());
 }
+
+export async function fetchObjectBytes(objectKey: string): Promise<Uint8Array> {
+  const s3 = getR2Client();
+  return await s3.file(objectKey).bytes();
+}
+
+export async function deleteObject(objectKey: string): Promise<void> {
+  const s3 = getR2Client();
+  await s3.file(objectKey).delete();
+}
+
+export async function uploadAnchorImage(
+  characterId: string,
+  data: Uint8Array,
+  mimeType: "image/jpeg" | "image/png" | "image/webp",
+  ext: "jpg" | "png" | "webp"
+): Promise<string> {
+  const key = `anchors/${characterId}.${ext}`;
+  const s3 = getR2Client();
+  await s3.write(key, data, { type: mimeType });
+  return key;
+}
+
+export async function copyGenerationImageToAnchor(
+  sourceKey: string,
+  characterId: string
+): Promise<string> {
+  const destKey = `anchors/${characterId}.png`;
+  const s3 = getR2Client();
+  const bytes = await s3.file(sourceKey).bytes();
+  await s3.write(destKey, bytes, { type: "image/png" });
+  return destKey;
+}
+
+export async function uploadJobReferenceImage(
+  jobId: string,
+  data: Uint8Array,
+  mimeType: "image/jpeg" | "image/png" | "image/webp",
+  ext: "jpg" | "png" | "webp"
+): Promise<string> {
+  const key = `generations/${jobId}/reference.${ext}`;
+  const s3 = getR2Client();
+  await s3.write(key, data, { type: mimeType });
+  return key;
+}
