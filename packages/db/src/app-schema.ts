@@ -3,6 +3,7 @@ import {
   boolean,
   foreignKey,
   index,
+  integer,
   jsonb,
   pgEnum,
   pgTable,
@@ -27,6 +28,13 @@ export const generationJobStatusEnum = pgEnum("generation_job_status", [
   "queued",
   "running",
   "succeeded",
+  "failed",
+]);
+
+export const sheetBatchStatusEnum = pgEnum("sheet_batch_status", [
+  "running",
+  "completed",
+  "partial",
   "failed",
 ]);
 
@@ -113,6 +121,33 @@ export const characters = pgTable(
   ]
 );
 
+export const sheetBatches = pgTable(
+  "sheet_batches",
+  {
+    characterId: uuid("character_id")
+      .notNull()
+      .references(() => characters.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    id: uuid("id").defaultRandom().primaryKey(),
+    model: text("model").notNull(),
+    preset: text("preset").notNull(),
+    provider: providerEnum("provider").notNull(),
+    status: sheetBatchStatusEnum("status").default("running").notNull(),
+    totalCount: integer("total_count").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    index("sheet_batches_user_id_idx").on(table.userId),
+    index("sheet_batches_character_id_idx").on(table.characterId),
+    index("sheet_batches_status_idx").on(table.status),
+  ]
+);
+
 export const generationJobs = pgTable(
   "generation_jobs",
   {
@@ -137,6 +172,10 @@ export const generationJobs = pgTable(
     }),
     referenceImageKeys: text("reference_image_keys").array(),
     referenceStrength: real("reference_strength"),
+    sheetBatchId: uuid("sheet_batch_id").references(() => sheetBatches.id, {
+      onDelete: "set null",
+    }),
+    sheetVariant: text("sheet_variant"),
     specSnapshot: jsonb("spec_snapshot").$type<unknown>(),
     startedAt: timestamp("started_at", { withTimezone: true }),
     status: generationJobStatusEnum("status").default("queued").notNull(),
@@ -150,6 +189,7 @@ export const generationJobs = pgTable(
     index("generation_jobs_user_id_idx").on(table.userId),
     index("generation_jobs_status_idx").on(table.status),
     index("generation_jobs_provider_job_id_idx").on(table.providerJobId),
+    index("generation_jobs_sheet_batch_id_idx").on(table.sheetBatchId),
   ]
 );
 
@@ -203,7 +243,23 @@ export const charactersRelations = relations(characters, ({ one, many }) => ({
   }),
   remixes: many(characters, { relationName: "characterRemixLineage" }),
   reports: many(characterReports),
+  sheetBatches: many(sheetBatches),
 }));
+
+export const sheetBatchesRelations = relations(
+  sheetBatches,
+  ({ one, many }) => ({
+    character: one(characters, {
+      fields: [sheetBatches.characterId],
+      references: [characters.id],
+    }),
+    jobs: many(generationJobs),
+    user: one(user, {
+      fields: [sheetBatches.userId],
+      references: [user.id],
+    }),
+  })
+);
 
 export const characterReportsRelations = relations(
   characterReports,
@@ -227,6 +283,10 @@ export const generationJobsRelations = relations(generationJobs, ({ one }) => ({
   providerKey: one(providerKeys, {
     fields: [generationJobs.providerKeyId],
     references: [providerKeys.id],
+  }),
+  sheetBatch: one(sheetBatches, {
+    fields: [generationJobs.sheetBatchId],
+    references: [sheetBatches.id],
   }),
   user: one(user, {
     fields: [generationJobs.userId],
