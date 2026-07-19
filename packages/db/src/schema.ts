@@ -1,2 +1,21 @@
-// schema tables will be added in Epic 1.3
-export {};
+export {
+	characters,
+	charactersRelations,
+	generationJobStatusEnum,
+	generationJobs,
+	generationJobsRelations,
+	providerEnum,
+	providerKeys,
+	providerKeysRelations,
+	visibilityEnum,
+} from "./app-schema";
+export * from "./auth-schema";
+export {
+	account,
+	accountRelations,
+	session,
+	sessionRelations,
+	user,
+	userRelations,
+	verification,
+} from "./auth-schema";
