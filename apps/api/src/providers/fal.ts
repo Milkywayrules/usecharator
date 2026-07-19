@@ -6,6 +6,7 @@ import {
   type ProviderAdapter,
   ProviderRequestError,
   readProviderError,
+  referenceUrlFromInput,
 } from "./types";
 
 function authHeaders(apiKey: string): Record<string, string> {
@@ -40,16 +41,27 @@ export const falAdapter: ProviderAdapter = {
     const query = input.webhookUrl
       ? `?fal_webhook=${encodeURIComponent(input.webhookUrl)}`
       : "";
+    const body: Record<string, unknown> = {
+      prompt: input.prompt,
+      ...(imageSize ? { image_size: imageSize } : {}),
+      ...(input.negativePrompt
+        ? { negative_prompt: input.negativePrompt }
+        : {}),
+    };
+
+    if (
+      input.model === "fal-ai/ideogram/character" &&
+      input.referenceImages?.length
+    ) {
+      body.reference_image_urls = input.referenceImages.map((ref) =>
+        referenceUrlFromInput(ref)
+      );
+    }
+
     const response = await fetch(
       `https://queue.fal.run/${input.model}${query}`,
       {
-        body: JSON.stringify({
-          prompt: input.prompt,
-          ...(imageSize ? { image_size: imageSize } : {}),
-          ...(input.negativePrompt
-            ? { negative_prompt: input.negativePrompt }
-            : {}),
-        }),
+        body: JSON.stringify(body),
         headers: authHeaders(input.apiKey),
         method: "POST",
       }

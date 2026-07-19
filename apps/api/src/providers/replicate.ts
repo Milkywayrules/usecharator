@@ -6,6 +6,7 @@ import {
   type ProviderAdapter,
   ProviderRequestError,
   readProviderError,
+  referenceUrlFromInput,
 } from "./types";
 
 function replicateAuth(apiKey: string): Record<string, string> {
@@ -37,17 +38,31 @@ export const replicateAdapter: ProviderAdapter = {
   async generate(input: GenerateInput) {
     const { owner, name } = parseModelSlug(input.model);
     const aspectRatio = aspectRatioToReplicateParam(input.aspectRatio);
+    const inputPayload: Record<string, unknown> = {
+      prompt: input.prompt,
+      ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
+      ...(input.negativePrompt
+        ? { negative_prompt: input.negativePrompt }
+        : {}),
+    };
+
+    if (
+      input.model === "black-forest-labs/flux-2-pro" &&
+      input.referenceImages?.length
+    ) {
+      inputPayload.input_images = input.referenceImages.map((ref) =>
+        referenceUrlFromInput(ref)
+      );
+      if (!aspectRatio) {
+        inputPayload.aspect_ratio = "match_input_image";
+      }
+    }
+
     const response = await fetch(
       `https://api.replicate.com/v1/models/${owner}/${name}/predictions`,
       {
         body: JSON.stringify({
-          input: {
-            prompt: input.prompt,
-            ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
-            ...(input.negativePrompt
-              ? { negative_prompt: input.negativePrompt }
-              : {}),
-          },
+          input: inputPayload,
           ...(input.webhookUrl
             ? {
                 webhook: input.webhookUrl,

@@ -6,6 +6,7 @@ import {
   type ProviderAdapter,
   ProviderRequestError,
   readProviderError,
+  referenceUrlFromInput,
 } from "./types";
 
 const OPENROUTER_IMAGE_URL = "https://openrouter.ai/api/v1/images";
@@ -99,12 +100,21 @@ async function generateViaImageApi(
   input: GenerateInput
 ): Promise<{ images: Uint8Array[]; kind: "sync" }> {
   const aspectRatio = aspectRatioToOpenRouterParam(input.aspectRatio);
+  const body: Record<string, unknown> = {
+    model: input.model,
+    prompt: input.prompt,
+    ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
+  };
+
+  if (input.referenceImages?.length) {
+    body.input_references = input.referenceImages.map((ref) => ({
+      image_url: { url: referenceUrlFromInput(ref) },
+      type: "image_url",
+    }));
+  }
+
   const response = await fetch(OPENROUTER_IMAGE_URL, {
-    body: JSON.stringify({
-      model: input.model,
-      prompt: input.prompt,
-      ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
-    }),
+    body: JSON.stringify(body),
     headers: authHeaders(input.apiKey),
     method: "POST",
   });
@@ -156,13 +166,23 @@ export function shouldFallbackOpenRouterToChat(status: number): boolean {
 }
 
 export async function generateOpenRouterImage(input: GenerateInput) {
+  const hasReferences = Boolean(input.referenceImages?.length);
+
   if (!openRouterUsesImageApi(input.model)) {
+    if (hasReferences) {
+      throw new ProviderRequestError(
+        "openrouter reference images require an image-api model"
+      );
+    }
     return generateViaChatCompletions(input);
   }
 
   try {
     return await generateViaImageApi(input);
   } catch (error) {
+    if (hasReferences) {
+      throw error;
+    }
     if (
       error instanceof OpenRouterHttpError &&
       shouldFallbackOpenRouterToChat(error.httpStatus)

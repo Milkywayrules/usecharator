@@ -3,6 +3,8 @@ import { generationJobs, providerKeys } from "@charator/db";
 import {
   type AspectRatio,
   type CreateGenerationRequest,
+  formatReferenceCapableAlternatives,
+  modelSupportsReferenceImages,
   providerModelDefaults,
 } from "@charator/shared";
 import { and, eq, inArray } from "drizzle-orm";
@@ -20,6 +22,7 @@ import {
   presignedGetUrl,
   uploadGenerationImage,
 } from "../lib/r2";
+import { loadReferenceImagesForJob } from "../lib/reference-generation";
 import { getProviderAdapter } from "../providers/registry";
 import type { ProviderAdapter } from "../providers/types";
 
@@ -269,6 +272,32 @@ export async function processGenerationJob(
       : undefined;
 
   try {
+    const referenceImageKeys = job.referenceImageKeys ?? [];
+    if (
+      referenceImageKeys.length > 0 &&
+      !modelSupportsReferenceImages(job.provider, job.model)
+    ) {
+      await markJobFailed(
+        db,
+        jobId,
+        `model ${job.provider}/${job.model} does not support reference images — choose a ref-capable model: ${formatReferenceCapableAlternatives()}`
+      );
+      return;
+    }
+
+    const loadedReferences =
+      referenceImageKeys.length > 0
+        ? await loadReferenceImagesForJob(referenceImageKeys)
+        : [];
+    const referenceImages =
+      loadedReferences.length > 0
+        ? loadedReferences.map((ref) => ({
+            bytes: ref.bytes,
+            mimeType: ref.mimeType,
+            url: ref.url,
+          }))
+        : undefined;
+
     const result = await adapter.generate({
       apiKey: credentials.apiKey,
       aspectRatio: (job.aspectRatio ?? undefined) as AspectRatio | undefined,
@@ -276,6 +305,8 @@ export async function processGenerationJob(
       model: job.model,
       negativePrompt: job.negativePrompt ?? undefined,
       prompt: job.prompt,
+      referenceImages,
+      referenceStrength: job.referenceStrength ?? undefined,
       webhookUrl,
     });
 

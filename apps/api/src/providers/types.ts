@@ -1,5 +1,11 @@
 import type { AspectRatio, Provider } from "@charator/shared";
 
+export interface ReferenceImageInput {
+  bytes?: Uint8Array;
+  mimeType: string;
+  url?: string;
+}
+
 export interface GenerateInput {
   apiKey: string;
   aspectRatio?: AspectRatio;
@@ -7,6 +13,8 @@ export interface GenerateInput {
   model: string;
   negativePrompt?: string;
   prompt: string;
+  referenceImages?: ReferenceImageInput[];
+  referenceStrength?: number;
   webhookUrl?: string;
 }
 
@@ -69,6 +77,30 @@ export async function readProviderError(response: Response): Promise<string> {
 
 export function decodeBase64Image(data: string): Uint8Array {
   return Uint8Array.from(Buffer.from(data, "base64"));
+}
+
+export function encodeBase64Image(data: Uint8Array): string {
+  return Buffer.from(data).toString("base64");
+}
+
+export function referenceUrlFromInput(ref: ReferenceImageInput): string {
+  if (ref.url) {
+    return ref.url;
+  }
+  if (ref.bytes) {
+    return `data:${ref.mimeType};base64,${encodeBase64Image(ref.bytes)}`;
+  }
+  throw new ProviderRequestError("reference image missing bytes or url");
+}
+
+/** OpenAI `input_fidelity` accepts only high/low; map 0–1 strength when present. */
+export function openAiInputFidelity(
+  strength: number | undefined
+): "high" | "low" | undefined {
+  if (strength === undefined) {
+    return;
+  }
+  return strength >= 0.5 ? "high" : "low";
 }
 
 export function downloadImages(urls: string[]): Promise<Uint8Array[]> {
