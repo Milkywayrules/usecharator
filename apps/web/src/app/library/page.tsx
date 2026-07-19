@@ -36,6 +36,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   createCharacter,
   deleteCharacter,
+  deleteCharacterAnchor,
   listCharacters,
   patchCharacter,
 } from "@/lib/api-client";
@@ -58,12 +59,14 @@ function CharacterCard({
   onExport,
   onGenerate,
   onHistory,
+  onRemoveAnchor,
   onToggleVisibility,
   signedIn,
 }: {
   character: {
     id: string;
     name: string;
+    referenceImageUrl?: string | null;
     themeId: ThemeId | null;
     updatedAt: string;
     visibility?: "public" | "private";
@@ -77,6 +80,7 @@ function CharacterCard({
   onExport: () => void;
   onGenerate: () => void;
   onHistory?: () => void;
+  onRemoveAnchor?: () => void;
   onToggleVisibility?: (next: "public" | "private") => void;
   signedIn: boolean;
 }) {
@@ -106,6 +110,28 @@ function CharacterCard({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 pb-5">
+        {character.referenceImageUrl ? (
+          <div className="space-y-2">
+            <figure className="overflow-hidden rounded-md border">
+              {/* biome-ignore lint/performance/noImgElement: presigned anchor url */}
+              <img
+                alt={`${character.name} anchor`}
+                className="max-h-32 w-full object-cover"
+                src={character.referenceImageUrl}
+              />
+            </figure>
+            {signedIn && onRemoveAnchor ? (
+              <Button
+                onClick={onRemoveAnchor}
+                size="default"
+                type="button"
+                variant="outline"
+              >
+                Remove anchor
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
         <div className="flex flex-wrap gap-2 text-muted-foreground text-xs">
           {character.gender ? <span>{character.gender}</span> : null}
           {character.role ? <span>· {character.role}</span> : null}
@@ -257,6 +283,7 @@ export default function LibraryPage() {
       gender: row.spec.identity.gender,
       id: row.id,
       name: row.spec.meta.name || row.name,
+      referenceImageUrl: null as string | null,
       role: row.spec.archetype.role,
       themeId: row.themeId,
       updatedAt: row.updatedAt,
@@ -270,6 +297,7 @@ export default function LibraryPage() {
       id: row.id,
       moderationStatus: row.moderationStatus,
       name: row.name,
+      referenceImageUrl: row.referenceImageUrl,
       role: spec.archetype.role,
       themeId: normalizeThemeId(row.themeId) ?? null,
       updatedAt: row.updatedAt,
@@ -328,6 +356,14 @@ export default function LibraryPage() {
       visibility: "public" | "private";
     }) => {
       await patchCharacter(id, { visibility });
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["characters"] }),
+  });
+
+  const deleteAnchorMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await deleteCharacterAnchor(id);
     },
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["characters"] }),
@@ -452,6 +488,11 @@ export default function LibraryPage() {
               onHistory={
                 signedIn
                   ? () => router.push(`/library/${character.id}/history`)
+                  : undefined
+              }
+              onRemoveAnchor={
+                signedIn && character.referenceImageUrl
+                  ? () => deleteAnchorMutation.mutate(character.id)
                   : undefined
               }
               onToggleVisibility={

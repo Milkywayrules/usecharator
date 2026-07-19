@@ -16,7 +16,11 @@ import { useRouter } from "next/navigation";
 import { use } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { getGenerationJob, rerollGeneration } from "@/lib/api-client";
+import {
+  getGenerationJob,
+  rerollGeneration,
+  setCharacterAnchorFromJob,
+} from "@/lib/api-client";
 import { authClient } from "@/lib/auth-client";
 import { getLocalKey } from "@/lib/local-keys";
 
@@ -97,6 +101,26 @@ export default function GenerateJobPage({
     },
   });
 
+  const anchorMutation = useMutation({
+    mutationFn: async (imageIndex: number) => {
+      const current = jobQuery.data;
+      if (!(current?.characterId && signedIn)) {
+        throw new Error("Save the character to your library first");
+      }
+      return setCharacterAnchorFromJob(
+        current.characterId,
+        current.id,
+        imageIndex
+      );
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+    onSuccess: () => {
+      toast.success("Anchor updated");
+    },
+  });
+
   const rerollMutation = useMutation({
     mutationFn: async () => {
       const job = jobQuery.data;
@@ -153,7 +177,7 @@ export default function GenerateJobPage({
           ) : null}
           {job.imageUrls && job.imageUrls.length > 0 ? (
             <div className="grid gap-4">
-              {job.imageUrls.map((url) => (
+              {job.imageUrls.map((url, index) => (
                 <figure className="overflow-hidden rounded-xl border" key={url}>
                   {/* biome-ignore lint/performance/noImgElement: signed provider URL */}
                   <img
@@ -163,7 +187,17 @@ export default function GenerateJobPage({
                     src={url}
                     width={768}
                   />
-                  <figcaption className="flex justify-end border-t p-3">
+                  <figcaption className="flex flex-wrap justify-end gap-2 border-t p-3">
+                    {signedIn && job.characterId ? (
+                      <Button
+                        disabled={anchorMutation.isPending}
+                        onClick={() => anchorMutation.mutate(index)}
+                        type="button"
+                        variant="outline"
+                      >
+                        Set as anchor
+                      </Button>
+                    ) : null}
                     <Button asChild size="default" variant="outline">
                       <a
                         download

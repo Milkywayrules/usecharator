@@ -18,7 +18,9 @@ import {
   galleryDetailResponseSchema,
   galleryListResponseSchema,
   generationJobResponseSchema,
+  type ProviderCapabilitiesResponse,
   type ProviderKeyResponse,
+  providerCapabilitiesResponseSchema,
   providerKeyResponseSchema,
   type ReportCharacterRequest,
   type ReportCharacterResponse,
@@ -305,4 +307,40 @@ export async function listCharacterGenerations(
     await api.characters({ id }).generations.get({ query }),
     characterGenerationsResponseSchema
   );
+}
+
+export async function getProviderCapabilities(): Promise<ProviderCapabilitiesResponse> {
+  const response = await fetch(
+    `${resolveBaseUrl()}/api/v1/providers/capabilities`
+  );
+  if (!response.ok) {
+    throw new Error(`capabilities request failed (${response.status})`);
+  }
+  return providerCapabilitiesResponseSchema.parse(await response.json());
+}
+
+export async function setCharacterAnchorFromJob(
+  characterId: string,
+  fromJobId: string,
+  imageIndex = 0
+): Promise<CharacterResponse> {
+  return readTreatyData(
+    await api.characters({ id: characterId }).anchor.post({
+      fromJobId,
+      imageIndex,
+    }),
+    characterResponseSchema
+  );
+}
+
+export async function deleteCharacterAnchor(
+  characterId: string
+): Promise<void> {
+  const result = await api.characters({ id: characterId }).anchor.delete();
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.data instanceof Response && !result.data.ok) {
+    throw new Error(`Delete anchor failed (${result.data.status})`);
+  }
 }
