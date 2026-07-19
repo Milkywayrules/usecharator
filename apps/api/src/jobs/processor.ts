@@ -32,11 +32,25 @@ function dispatchTelegramNotify(
   db: Db,
   job: typeof generationJobs.$inferSelect
 ): void {
+  if (job.sheetBatchId) {
+    return;
+  }
   import("../lib/telegram")
     .then(({ notifyJobFinished }) => notifyJobFinished(db, job))
     .catch((error) =>
       console.error(`telegram notify dispatch failed for job ${job.id}`, error)
     );
+}
+
+async function onSheetMemberFinished(
+  db: Db,
+  job: typeof generationJobs.$inferSelect
+): Promise<void> {
+  if (!job.sheetBatchId) {
+    return;
+  }
+  const { onSheetMemberTerminal } = await import("./sheet-batch");
+  await onSheetMemberTerminal(db, job);
 }
 
 export async function resolveApiKey(
@@ -172,6 +186,7 @@ export async function markJobFailed(
     .returning();
   clearEphemeralCredentials(jobId);
   if (updated) {
+    await onSheetMemberFinished(db, updated);
     dispatchTelegramNotify(db, updated);
   }
 }
@@ -215,6 +230,7 @@ export async function persistJobImages(
 
   clearEphemeralCredentials(jobId);
   if (updated) {
+    await onSheetMemberFinished(db, updated);
     dispatchTelegramNotify(db, updated);
   }
   return keys;
@@ -396,8 +412,15 @@ export async function requeueStaleQueuedJobs(db: Db): Promise<void> {
     .from(generationJobs)
     .where(eq(generationJobs.status, "queued"));
 
+  const sheetUsers = new Set<string>();
+
   for (const job of queued) {
     if (job.createdAt >= cutoff) {
+      continue;
+    }
+
+    if (job.sheetBatchId && job.userId) {
+      sheetUsers.add(job.userId);
       continue;
     }
 
@@ -410,6 +433,11 @@ export async function requeueStaleQueuedJobs(db: Db): Promise<void> {
     processGenerationJob(db, job.id, credentials).catch((error) =>
       console.error(error)
     );
+  }
+
+  for (const userId of sheetUsers) {
+    const { dispatchQueuedSheetJobsForUser } = await import("./sheet-batch");
+    await dispatchQueuedSheetJobsForUser(db, userId);
   }
 }
 

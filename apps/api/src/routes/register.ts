@@ -23,6 +23,7 @@ import {
   handleKeysPost,
 } from "./handlers";
 import { handleProviderCapabilities } from "./providers";
+import { handleCharacterSheetPost, handleSheetBatchGet } from "./sheets";
 import { handleSpecCatalog, handleSpecRender, handleThemesList } from "./spec";
 import {
   handleTokensDelete,
@@ -106,6 +107,17 @@ export const SHARED_PROGRAMMATIC_ROUTES: RouteMount[] = [
       handleCharacterAnchorDelete(request, params.id ?? ""),
     method: "delete",
     path: "/characters/:id/anchor",
+  },
+  {
+    handler: (request, params) =>
+      handleCharacterSheetPost(request, params.id ?? ""),
+    method: "post",
+    path: "/characters/:id/sheet",
+  },
+  {
+    handler: (request, params) => handleSheetBatchGet(request, params.id ?? ""),
+    method: "get",
+    path: "/sheets/:id",
   },
   {
     handler: (request) => handleGalleryList(request),
@@ -278,6 +290,9 @@ function routeTag(path: string): string {
   }
   if (path.startsWith("/characters")) {
     return "characters";
+  }
+  if (path.startsWith("/sheets")) {
+    return "sheets";
   }
   if (path.startsWith("/gallery")) {
     return "gallery";

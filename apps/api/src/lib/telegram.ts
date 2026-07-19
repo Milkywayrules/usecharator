@@ -1,5 +1,5 @@
-import type { Db, generationJobs, telegramLinkCodes } from "@charator/db";
-import { characters, telegramLinks } from "@charator/db";
+import type { Db, sheetBatches, telegramLinkCodes } from "@charator/db";
+import { characters, generationJobs, telegramLinks } from "@charator/db";
 import { eq } from "drizzle-orm";
 import { config, r2Configured, telegramConfigured } from "../config";
 import { presignedGetUrl } from "./r2";
@@ -8,6 +8,7 @@ const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 const LINK_CODE_LENGTH = 8;
 const LINK_CODE_TTL_MS = 10 * 60 * 1000;
 const GENERATE_JOB_URL = "https://charator.dioilham.com/generate";
+const SHEET_BATCH_URL = "https://charator.dioilham.com/sheets";
 const START_COMMAND_RE = /^\/start(?:@\w+)?(?:\s+(\S+))?\s*$/i;
 
 let cachedBotUsername: string | null = null;
@@ -260,6 +261,99 @@ export async function notifyJobFinished(
     await sendTelegramPhoto(chatId, photoUrl, jobCaption(job, characterName));
   } catch (error) {
     console.error(`telegram notify failed for job ${job.id}`, error);
+  }
+}
+
+function sheetBatchCaption(
+  batch: typeof sheetBatches.$inferSelect,
+  characterName: string | null,
+  succeededCount: number,
+  totalCount: number
+): string {
+  const parts = [
+    characterName ? `Character: ${characterName}` : null,
+    `Sheet: ${batch.preset} (${succeededCount}/${totalCount})`,
+    `Status: ${batch.status}`,
+    `View: ${SHEET_BATCH_URL}/${batch.id}`,
+  ].filter(Boolean);
+  return parts.join("\n");
+}
+
+export async function notifySheetBatchFinished(
+  db: Db,
+  batch: typeof sheetBatches.$inferSelect
+): Promise<void> {
+  if (!telegramConfigured(config)) {
+    return;
+  }
+
+  if (!batch.userId) {
+    return;
+  }
+
+  const [link] = await db
+    .select()
+    .from(telegramLinks)
+    .where(eq(telegramLinks.userId, batch.userId))
+    .limit(1);
+
+  const gateJob = {
+    status:
+      batch.status === "failed" ? ("failed" as const) : ("succeeded" as const),
+    userId: batch.userId,
+  };
+
+  if (
+    !(
+      link && shouldNotifyTelegram({ featureEnabled: true, job: gateJob, link })
+    )
+  ) {
+    return;
+  }
+
+  const members = await db
+    .select({
+      imageKeys: generationJobs.imageKeys,
+      status: generationJobs.status,
+    })
+    .from(generationJobs)
+    .where(eq(generationJobs.sheetBatchId, batch.id));
+
+  const succeeded = members.filter((member) => member.status === "succeeded");
+  const characterName = await characterNameForJob(db, batch.characterId);
+  const chatId = link.telegramChatId;
+
+  try {
+    if (batch.status === "failed") {
+      await sendTelegramMessage(
+        chatId,
+        `Sheet batch failed\n\n${sheetBatchCaption(batch, characterName, 0, batch.totalCount)}`
+      );
+      return;
+    }
+
+    const previewJob = succeeded.find((member) => member.imageKeys.length > 0);
+    const caption = sheetBatchCaption(
+      batch,
+      characterName,
+      succeeded.length,
+      batch.totalCount
+    );
+
+    if (!(previewJob && r2Configured(config))) {
+      await sendTelegramMessage(chatId, `Sheet batch finished\n\n${caption}`);
+      return;
+    }
+
+    const [firstKey] = previewJob.imageKeys;
+    if (!firstKey) {
+      await sendTelegramMessage(chatId, `Sheet batch finished\n\n${caption}`);
+      return;
+    }
+
+    await sendTelegramPhoto(chatId, presignedGetUrl(firstKey), caption);
+  } catch (error) {
+    console.error(`telegram batch notify failed for ${batch.id}`, error);
   }
 }
 
