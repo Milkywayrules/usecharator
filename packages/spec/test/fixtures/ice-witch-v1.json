@@ -1,212 +1,212 @@
 {
-	"spec_version": 2,
-	"meta": {
-		"id": "ice-witch-v1",
-		"name": "Frostbite",
-		"tags": ["witch", "ice_mage", "urban", "playful"],
-		"notes": "first pass from guided Q&A; cheeky urban frost witch",
-		"inspiration": ""
-	},
-	"identity": {
-		"gender": "female",
-		"gender_notes": "",
-		"age_range": "young_adult",
-		"age_notes": "18–25",
-		"ethnicity_appearance": "",
-		"vibe_keywords": []
-	},
-	"personality": {
-		"primary": "playful_mischievous",
-		"secondary": [],
-		"demeanor_notes": "teasing, energetic, doesn't take combat too seriously",
-		"social_energy": "",
-		"speech_impression": ""
-	},
-	"archetype": {
-		"role": "magical_girl_fantasy_mage",
-		"occupation": "rooftop frost trickster",
-		"combat_style": "caster",
-		"faction": "",
-		"era_setting": ""
-	},
-	"appearance": {
-		"face": {
-			"shape": "soft",
-			"features": "youthful",
-			"makeup": "minimal",
-			"freckles": false,
-			"beauty_mark": false,
-			"scars": "none",
-			"eyebrows": "",
-			"lips": "",
-			"ears": "",
-			"facial_hair": "none"
-		},
-		"hair": {
-			"color": "silver",
-			"color_secondary": "",
-			"style": "messy_wild",
-			"length": "medium",
-			"bangs": "wild",
-			"accessories": [],
-			"texture": "",
-			"volume": "",
-			"parting": "",
-			"shine": ""
-		},
-		"eyes": {
-			"color": "emerald_green",
-			"heterochromia": false,
-			"left_color": "",
-			"right_color": "",
-			"shape": "bright",
-			"pupils": "standard",
-			"highlights": "",
-			"lashes": "",
-			"under_eye": ""
-		},
-		"skin": {
-			"tone": "fair",
-			"undertone": "cool",
-			"texture": ""
-		},
-		"body": {
-			"type": "slim",
-			"height_impression": "average",
-			"posture": "dynamic",
-			"muscle_definition": "",
-			"proportions_notes": ""
-		}
-	},
-	"outfit": {
-		"style": {
-			"primary": "minimal",
-			"secondary": "witch_aesthetic"
-		},
-		"length": "short",
-		"silhouette": "fitted",
-		"palette": {
-			"primary": "dark_charcoal",
-			"secondary": "ice_blue",
-			"accent": "emerald",
-			"metal": "silver"
-		},
-		"pieces": {
-			"top": "cropped dark top with subtle rune trim",
-			"bottom": "short skirt",
-			"outerwear": "short_cloak",
-			"footwear": "ankle_boots",
-			"gloves": "none",
-			"headwear": "",
-			"legwear": ""
-		},
-		"details": ["runes", "bare_shoulders"],
-		"condition": "",
-		"pattern": "",
-		"material": "",
-		"exposure_level": ""
-	},
-	"magic": {
-		"element": "ice_frost",
-		"secondary_element": "",
-		"power_level": "moderate",
-		"effects": ["frost_crystals", "cold_mist", "ice_particles"],
-		"cast_style": "staff_channel",
-		"glow": {
-			"color": "pale_blue",
-			"intensity": "medium"
-		},
-		"particle_density": "",
-		"radius": "",
-		"signature_name": ""
-	},
-	"pose": {
-		"expression": "tongue_out",
-		"mouth": "open",
-		"gaze": "viewer",
-		"body": "floating_mid_jump",
-		"hands": "casting",
-		"energy": "high",
-		"head_tilt": "",
-		"legs": "",
-		"weight_shift": "",
-		"facing": "",
-		"motion_blur": ""
-	},
-	"framing": {
-		"shot": "full_body",
-		"camera_angle": "dutch",
-		"composition": "character_focus",
-		"depth_of_field": "",
-		"crop_notes": ""
-	},
-	"setting": {
-		"location": "city_rooftop",
-		"environment": "urban",
-		"time": "night",
-		"weather": "snow",
-		"atmosphere": ["neon_lights", "frost_contrast"],
-		"background_detail": "detailed",
-		"foreground": ["snowflakes"],
-		"era": "",
-		"season": "",
-		"crowd_level": "",
-		"lighting_source": ""
-	},
-	"props": {
-		"hat": "none",
-		"weapon": "staff",
-		"weapon_detail": "ice_crystal_tip",
-		"offhand": "none",
-		"floating_objects": [],
-		"accessories": ["choker"],
-		"weapon_size": "",
-		"carry_style": "",
-		"pets_familiars": []
-	},
-	"art": {
-		"style": "modern_anime",
-		"era": "contemporary",
-		"line": "clean",
-		"shading": "cel",
-		"lighting": "neon_mixed",
-		"color": "vibrant",
-		"finish": "key_visual",
-		"saturation": "",
-		"contrast": "",
-		"film_grain": null,
-		"texture_overlay": ""
-	},
-	"generation": {
-		"aspect_ratio": "9:16",
-		"output_dir": "output",
-		"output_file": "ice-witch-v1.png",
-		"mood_keywords": ["cheeky", "dynamic", "urban_fantasy"],
-		"avoid": ["witch_hat", "realistic", "extra_limbs"],
-		"reference_notes": "baseline image; no hat, short outfit, staff required",
-		"prompt_extra": ""
-	},
-	"control": {
-		"mode": "balanced",
-		"section_modes": {
-			"identity": "inherit",
-			"personality": "inherit",
-			"archetype": "inherit",
-			"appearance": "inherit",
-			"outfit": "inherit",
-			"magic": "inherit",
-			"pose": "inherit",
-			"framing": "inherit",
-			"setting": "inherit",
-			"props": "inherit",
-			"art": "inherit"
-		},
-		"locked": [],
-		"freeform": {
-			"overall": "",
-			"appearance": "",
-			"outfit": "",
-			"setting": ""
-		}
-	}
+  "spec_version": 2,
+  "meta": {
+    "id": "ice-witch-v1",
+    "name": "Frostbite",
+    "tags": ["witch", "ice_mage", "urban", "playful"],
+    "notes": "first pass from guided Q&A; cheeky urban frost witch",
+    "inspiration": ""
+  },
+  "identity": {
+    "gender": "female",
+    "gender_notes": "",
+    "age_range": "young_adult",
+    "age_notes": "18–25",
+    "ethnicity_appearance": "",
+    "vibe_keywords": []
+  },
+  "personality": {
+    "primary": "playful_mischievous",
+    "secondary": [],
+    "demeanor_notes": "teasing, energetic, doesn't take combat too seriously",
+    "social_energy": "",
+    "speech_impression": ""
+  },
+  "archetype": {
+    "role": "magical_girl_fantasy_mage",
+    "occupation": "rooftop frost trickster",
+    "combat_style": "caster",
+    "faction": "",
+    "era_setting": ""
+  },
+  "appearance": {
+    "face": {
+      "shape": "soft",
+      "features": "youthful",
+      "makeup": "minimal",
+      "freckles": false,
+      "beauty_mark": false,
+      "scars": "none",
+      "eyebrows": "",
+      "lips": "",
+      "ears": "",
+      "facial_hair": "none"
+    },
+    "hair": {
+      "color": "silver",
+      "color_secondary": "",
+      "style": "messy_wild",
+      "length": "medium",
+      "bangs": "wild",
+      "accessories": [],
+      "texture": "",
+      "volume": "",
+      "parting": "",
+      "shine": ""
+    },
+    "eyes": {
+      "color": "emerald_green",
+      "heterochromia": false,
+      "left_color": "",
+      "right_color": "",
+      "shape": "bright",
+      "pupils": "standard",
+      "highlights": "",
+      "lashes": "",
+      "under_eye": ""
+    },
+    "skin": {
+      "tone": "fair",
+      "undertone": "cool",
+      "texture": ""
+    },
+    "body": {
+      "type": "slim",
+      "height_impression": "average",
+      "posture": "dynamic",
+      "muscle_definition": "",
+      "proportions_notes": ""
+    }
+  },
+  "outfit": {
+    "style": {
+      "primary": "minimal",
+      "secondary": "witch_aesthetic"
+    },
+    "length": "short",
+    "silhouette": "fitted",
+    "palette": {
+      "primary": "dark_charcoal",
+      "secondary": "ice_blue",
+      "accent": "emerald",
+      "metal": "silver"
+    },
+    "pieces": {
+      "top": "cropped dark top with subtle rune trim",
+      "bottom": "short skirt",
+      "outerwear": "short_cloak",
+      "footwear": "ankle_boots",
+      "gloves": "none",
+      "headwear": "",
+      "legwear": ""
+    },
+    "details": ["runes", "bare_shoulders"],
+    "condition": "",
+    "pattern": "",
+    "material": "",
+    "exposure_level": ""
+  },
+  "magic": {
+    "element": "ice_frost",
+    "secondary_element": "",
+    "power_level": "moderate",
+    "effects": ["frost_crystals", "cold_mist", "ice_particles"],
+    "cast_style": "staff_channel",
+    "glow": {
+      "color": "pale_blue",
+      "intensity": "medium"
+    },
+    "particle_density": "",
+    "radius": "",
+    "signature_name": ""
+  },
+  "pose": {
+    "expression": "tongue_out",
+    "mouth": "open",
+    "gaze": "viewer",
+    "body": "floating_mid_jump",
+    "hands": "casting",
+    "energy": "high",
+    "head_tilt": "",
+    "legs": "",
+    "weight_shift": "",
+    "facing": "",
+    "motion_blur": ""
+  },
+  "framing": {
+    "shot": "full_body",
+    "camera_angle": "dutch",
+    "composition": "character_focus",
+    "depth_of_field": "",
+    "crop_notes": ""
+  },
+  "setting": {
+    "location": "city_rooftop",
+    "environment": "urban",
+    "time": "night",
+    "weather": "snow",
+    "atmosphere": ["neon_lights", "frost_contrast"],
+    "background_detail": "detailed",
+    "foreground": ["snowflakes"],
+    "era": "",
+    "season": "",
+    "crowd_level": "",
+    "lighting_source": ""
+  },
+  "props": {
+    "hat": "none",
+    "weapon": "staff",
+    "weapon_detail": "ice_crystal_tip",
+    "offhand": "none",
+    "floating_objects": [],
+    "accessories": ["choker"],
+    "weapon_size": "",
+    "carry_style": "",
+    "pets_familiars": []
+  },
+  "art": {
+    "style": "modern_anime",
+    "era": "contemporary",
+    "line": "clean",
+    "shading": "cel",
+    "lighting": "neon_mixed",
+    "color": "vibrant",
+    "finish": "key_visual",
+    "saturation": "",
+    "contrast": "",
+    "film_grain": null,
+    "texture_overlay": ""
+  },
+  "generation": {
+    "aspect_ratio": "9:16",
+    "output_dir": "output",
+    "output_file": "ice-witch-v1.png",
+    "mood_keywords": ["cheeky", "dynamic", "urban_fantasy"],
+    "avoid": ["witch_hat", "realistic", "extra_limbs"],
+    "reference_notes": "baseline image; no hat, short outfit, staff required",
+    "prompt_extra": ""
+  },
+  "control": {
+    "mode": "balanced",
+    "section_modes": {
+      "identity": "inherit",
+      "personality": "inherit",
+      "archetype": "inherit",
+      "appearance": "inherit",
+      "outfit": "inherit",
+      "magic": "inherit",
+      "pose": "inherit",
+      "framing": "inherit",
+      "setting": "inherit",
+      "props": "inherit",
+      "art": "inherit"
+    },
+    "locked": [],
+    "freeform": {
+      "overall": "",
+      "appearance": "",
+      "outfit": "",
+      "setting": ""
+    }
+  }
 }

@@ -1,35 +1,36 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
-	"extends": ["../../biome.jsonc"],
-	"files": {
-		"includes": [
-			"src/**",
-			"auth.ts",
-			"drizzle/**",
-			"biome.jsonc",
-			"drizzle.config.ts"
-		]
-	},
-	"overrides": [
-		{
-			"includes": ["src/index.ts", "src/schema.ts", "src/auth-schema.ts"],
-			"linter": {
-				"rules": {
-					"performance": {
-						"noBarrelFile": "off"
-					}
-				}
-			}
-		},
-		{
-			"includes": ["src/index.ts"],
-			"linter": {
-				"rules": {
-					"performance": {
-						"noNamespaceImport": "off"
-					}
-				}
-			}
-		}
-	]
+  "$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
+  "root": false,
+  "extends": "//",
+  "files": {
+    "includes": [
+      "src/**",
+      "auth.ts",
+      "drizzle/**",
+      "biome.jsonc",
+      "drizzle.config.ts"
+    ]
+  },
+  "overrides": [
+    {
+      "includes": ["src/index.ts", "src/schema.ts", "src/auth-schema.ts"],
+      "linter": {
+        "rules": {
+          "performance": {
+            "noBarrelFile": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/index.ts"],
+      "linter": {
+        "rules": {
+          "performance": {
+            "noNamespaceImport": "off"
+          }
+        }
+      }
+    }
+  ]
 }

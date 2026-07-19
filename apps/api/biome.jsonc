@@ -1,59 +1,60 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
-	"extends": ["../../biome.jsonc"],
-	"files": {
-		"includes": ["src/**", "biome.jsonc"]
-	},
-	"overrides": [
-		{
-			"includes": ["src/auth.ts"],
-			"linter": {
-				"rules": {
-					"performance": {
-						"noNamespaceImport": "off"
-					}
-				}
-			}
-		},
-		{
-			"includes": ["src/**/*.test.ts"],
-			"linter": {
-				"rules": {
-					"suspicious": {
-						"noBitwiseOperators": "off"
-					},
-					"style": {
-						"useAtIndex": "off"
-					}
-				}
-			}
-		},
-		{
-			"includes": ["src/providers/**/*.ts"],
-			"linter": {
-				"rules": {
-					"complexity": {
-						"noExcessiveCognitiveComplexity": "off"
-					},
-					"performance": {
-						"noAwaitInLoops": "off",
-						"useTopLevelRegex": "off"
-					},
-					"style": {
-						"useDestructuring": "off"
-					}
-				}
-			}
-		},
-		{
-			"includes": ["src/jobs/processor.ts"],
-			"linter": {
-				"rules": {
-					"performance": {
-						"noAwaitInLoops": "off"
-					}
-				}
-			}
-		}
-	]
+  "$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
+  "root": false,
+  "extends": "//",
+  "files": {
+    "includes": ["src/**", "biome.jsonc"]
+  },
+  "overrides": [
+    {
+      "includes": ["src/auth.ts"],
+      "linter": {
+        "rules": {
+          "performance": {
+            "noNamespaceImport": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/**/*.test.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noBitwiseOperators": "off"
+          },
+          "style": {
+            "useAtIndex": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/providers/**/*.ts"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noExcessiveCognitiveComplexity": "off"
+          },
+          "performance": {
+            "noAwaitInLoops": "off",
+            "useTopLevelRegex": "off"
+          },
+          "style": {
+            "useDestructuring": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/jobs/processor.ts"],
+      "linter": {
+        "rules": {
+          "performance": {
+            "noAwaitInLoops": "off"
+          }
+        }
+      }
+    }
+  ]
 }
