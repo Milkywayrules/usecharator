@@ -1,0 +1,19 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
+	"extends": ["../../biome.jsonc"],
+	"files": {
+		"includes": ["src/**", "biome.jsonc"]
+	},
+	"overrides": [
+		{
+			"includes": ["src/index.ts"],
+			"linter": {
+				"rules": {
+					"performance": {
+						"noBarrelFile": "off"
+					}
+				}
+			}
+		}
+	]
+}
