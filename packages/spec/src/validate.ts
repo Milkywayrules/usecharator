@@ -54,7 +54,6 @@ function validateEnumValue(
 	}
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: direct port of acs_lib._validate_walk
 function validateWalk(
 	data: unknown,
 	dotPath: string,

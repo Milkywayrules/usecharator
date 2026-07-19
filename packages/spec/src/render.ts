@@ -60,7 +60,6 @@ function walkSection(
 }
 
 /** Render a character spec to a single-line image prompt (Python parity). */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: direct port of acs_lib.render_prompt for byte parity
 export function renderPromptBase(spec: CharacterSpec): string {
 	const mode =
 		getPath(spec as Record<string, unknown>, "control.mode") ?? "balanced";
