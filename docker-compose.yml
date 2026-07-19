@@ -1,0 +1,92 @@
+# Chara Tor — single Coolify docker-compose resource
+# Domain: charator.dioilham.com (Cloudflare DNS)
+# Routing (Traefik labels below):
+#   /     -> web (Next.js)
+#   /api  -> api (Elysia)
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      NEXT_PUBLIC_UMAMI_SRC: ${NEXT_PUBLIC_UMAMI_SRC:-}
+      NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${NEXT_PUBLIC_UMAMI_WEBSITE_ID:-}
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "bun -e \"fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "coolify.managed=true"
+      - "traefik.enable=true"
+      - "traefik.http.routers.charator-web.rule=Host(`charator.dioilham.com`) && PathPrefix(`/`)"
+      - "traefik.http.routers.charator-web.entrypoints=websecure"
+      - "traefik.http.routers.charator-web.tls=true"
+      - "traefik.http.routers.charator-web.priority=1"
+      - "traefik.http.services.charator-web.loadbalancer.server.port=3000"
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: ${DATABASE_URL:-postgresql://charator:charator@postgres:5432/charator}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "bun -e \"fetch('http://127.0.0.1:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    labels:
+      - "coolify.managed=true"
+      - "traefik.enable=true"
+      - "traefik.http.routers.charator-api.rule=Host(`charator.dioilham.com`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.charator-api.entrypoints=websecure"
+      - "traefik.http.routers.charator-api.tls=true"
+      - "traefik.http.routers.charator-api.priority=10"
+      - "traefik.http.services.charator-api.loadbalancer.server.port=3001"
+
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-charator}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-charator}
+      POSTGRES_DB: ${POSTGRES_DB:-charator}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-charator} -d ${POSTGRES_DB:-charator}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
