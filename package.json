@@ -12,10 +12,12 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "typecheck": "turbo typecheck",
-    "test": "turbo test"
+    "test": "turbo test",
+    "ci:smoke": "bun scripts/ci-smoke.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.4",
+    "@charator/db": "workspace:*",
     "turbo": "^2.10.5",
     "typescript": "^5.9.3",
     "ultracite": "^7.9.4"

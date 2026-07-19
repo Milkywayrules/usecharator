@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fast:
+    name: fast
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Cache Bun
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+
+      - name: Cache Turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ hashFiles('bun.lock', 'turbo.json', '**/package.json', '**/tsconfig.json') }}
+          restore-keys: |
+            turbo-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
+            turbo-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build, lint, typecheck, test
+        run: bunx turbo build lint typecheck test
+
+  integration:
+    name: integration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: charator
+          POSTGRES_PASSWORD: charator
+          POSTGRES_DB: charator
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U charator -d charator"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # CI-only dummy secrets — never use in production.
+      BETTER_AUTH_SECRET: ci-only-dummy-better-auth-secret-012345678901
+      BETTER_AUTH_URL: http://127.0.0.1:3001
+      DATABASE_URL: postgresql://charator:charator@localhost:5432/charator
+      GITHUB_CLIENT_ID: ci-dummy-github-client-id
+      GITHUB_CLIENT_SECRET: ci-dummy-github-client-secret
+      KEY_ENCRYPTION_MASTER_KEY: AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM=
+      NODE_ENV: test
+      PORT: 3001
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Cache Bun
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Apply migrations
+        working-directory: packages/db
+        run: bun run db:migrate
+
+      - name: Start API
+        working-directory: apps/api
+        run: bun src/index.ts &
+
+      - name: Wait for API health
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:3001/api/health >/dev/null; then
+              echo "api ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "api failed to become healthy"
+          exit 1
+
+      - name: Run smoke checks
+        env:
+          API_URL: http://127.0.0.1:3001
+          CI: "true"
+        run: bun scripts/ci-smoke.ts
