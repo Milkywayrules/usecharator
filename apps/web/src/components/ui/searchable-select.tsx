@@ -55,10 +55,7 @@ export function SearchableSelect({
           <ChevronsUpDownIcon className="size-4 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="start"
-        className="w-[var(--radix-dropdown-menu-trigger-width)] p-2"
-      >
+      <DropdownMenuContent align="start" className="w-(--anchor-width) p-2">
         <Input
           className="mb-2 h-8"
           onChange={(event) => setQuery(event.target.value)}

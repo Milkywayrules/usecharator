@@ -33,11 +33,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${syne.variable} ${dmSans.variable} min-h-dvh font-sans antialiased`}
+        className={`${syne.variable} ${dmSans.variable} relative min-h-dvh font-sans antialiased`}
       >
-        <Providers>
-          <AppShell>{children}</AppShell>
-        </Providers>
+        <div className="root isolate">
+          <Providers>
+            <AppShell>{children}</AppShell>
+          </Providers>
+        </div>
         <UmamiAnalytics />
       </body>
     </html>
