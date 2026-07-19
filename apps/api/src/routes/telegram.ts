@@ -4,7 +4,7 @@ import {
   telegramLinkStatusSchema,
   updateTelegramLinkRequestSchema,
 } from "@charator/shared";
-import { eq } from "drizzle-orm";
+import { and, eq, gt, isNull } from "drizzle-orm";
 import { db, requireSessionUser } from "../auth";
 import { config, telegramConfigured } from "../config";
 import { HttpError } from "../lib/errors";
@@ -12,7 +12,6 @@ import {
   buildDeepLink,
   generateLinkCode,
   getBotUsername,
-  isLinkCodeValid,
   linkCodeExpiresAt,
   parseStartCommand,
   sendTelegramMessage,
@@ -175,13 +174,19 @@ export async function handleTelegramWebhook(
   const startCode = parseStartCommand(text);
 
   if (startCode) {
-    const [codeRow] = await db
-      .select()
-      .from(telegramLinkCodes)
-      .where(eq(telegramLinkCodes.code, startCode))
-      .limit(1);
+    const [consumed] = await db
+      .update(telegramLinkCodes)
+      .set({ usedAt: new Date() })
+      .where(
+        and(
+          eq(telegramLinkCodes.code, startCode),
+          isNull(telegramLinkCodes.usedAt),
+          gt(telegramLinkCodes.expiresAt, new Date())
+        )
+      )
+      .returning({ userId: telegramLinkCodes.userId });
 
-    if (!(codeRow && isLinkCodeValid(codeRow))) {
+    if (!consumed) {
       await sendTelegramMessage(
         chatId,
         "That link code is invalid or expired. Generate a new one from Chara Tor settings."
@@ -190,17 +195,12 @@ export async function handleTelegramWebhook(
     }
 
     await db
-      .update(telegramLinkCodes)
-      .set({ usedAt: new Date() })
-      .where(eq(telegramLinkCodes.code, startCode));
-
-    await db
       .insert(telegramLinks)
       .values({
         notifyTelegram: true,
         telegramChatId: chatId,
         telegramUsername: update.from?.username ?? null,
-        userId: codeRow.userId,
+        userId: consumed.userId,
       })
       .onConflictDoUpdate({
         set: {
