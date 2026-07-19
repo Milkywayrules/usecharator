@@ -1,3 +1,4 @@
+import { aspectRatioToReplicateParam } from "./aspect-ratio";
 import {
   downloadImages,
   type GenerateInput,
@@ -35,12 +36,14 @@ function extractReplicateOutput(output: unknown): string[] {
 export const replicateAdapter: ProviderAdapter = {
   async generate(input: GenerateInput) {
     const { owner, name } = parseModelSlug(input.model);
+    const aspectRatio = aspectRatioToReplicateParam(input.aspectRatio);
     const response = await fetch(
       `https://api.replicate.com/v1/models/${owner}/${name}/predictions`,
       {
         body: JSON.stringify({
           input: {
             prompt: input.prompt,
+            ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
             ...(input.negativePrompt
               ? { negative_prompt: input.negativePrompt }
               : {}),

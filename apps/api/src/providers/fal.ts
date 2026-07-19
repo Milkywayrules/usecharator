@@ -1,3 +1,4 @@
+import { aspectRatioToFalImageSize } from "./aspect-ratio";
 import {
   downloadImages,
   type GenerateInput,
@@ -35,6 +36,7 @@ function extractFalImageUrls(payload: unknown): string[] {
 
 export const falAdapter: ProviderAdapter = {
   async generate(input: GenerateInput) {
+    const imageSize = aspectRatioToFalImageSize(input.aspectRatio);
     const query = input.webhookUrl
       ? `?fal_webhook=${encodeURIComponent(input.webhookUrl)}`
       : "";
@@ -43,6 +45,7 @@ export const falAdapter: ProviderAdapter = {
       {
         body: JSON.stringify({
           prompt: input.prompt,
+          ...(imageSize ? { image_size: imageSize } : {}),
           ...(input.negativePrompt
             ? { negative_prompt: input.negativePrompt }
             : {}),

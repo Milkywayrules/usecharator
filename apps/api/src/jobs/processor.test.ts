@@ -40,6 +40,7 @@ function createMockDb(state: {
 }
 
 const baseJobFields = {
+  aspectRatio: null,
   characterId: null,
   createdAt: new Date(),
   error: null,

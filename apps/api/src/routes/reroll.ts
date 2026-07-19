@@ -81,6 +81,7 @@ export async function createRerollJob(
   const [job] = await db
     .insert(generationJobs)
     .values({
+      aspectRatio: source.aspectRatio,
       characterId: source.characterId,
       model: source.model || defaultModelFor(source.provider),
       negativePrompt: source.negativePrompt,

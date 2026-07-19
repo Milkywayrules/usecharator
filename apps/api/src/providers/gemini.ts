@@ -1,3 +1,4 @@
+import { aspectRatioToGeminiImageConfig } from "./aspect-ratio";
 import {
   decodeBase64Image,
   type GenerateInput,
@@ -33,10 +34,19 @@ function extractGeminiImages(payload: unknown): Uint8Array[] {
 
 export const geminiAdapter: ProviderAdapter = {
   async generate(input: GenerateInput) {
+    const imageConfig = aspectRatioToGeminiImageConfig(input.aspectRatio);
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${input.model}:generateContent`;
     const response = await fetch(url, {
       body: JSON.stringify({
         contents: [{ parts: [{ text: input.prompt }] }],
+        ...(imageConfig
+          ? {
+              generationConfig: {
+                imageConfig,
+                responseModalities: ["TEXT", "IMAGE"],
+              },
+            }
+          : {}),
       }),
       headers: {
         "Content-Type": "application/json",

@@ -1,5 +1,5 @@
+import { aspectRatioToOpenAiSize } from "./aspect-ratio";
 import {
-  aspectRatioToOpenAiSize,
   decodeBase64Image,
   type GenerateInput,
   type ProviderAdapter,

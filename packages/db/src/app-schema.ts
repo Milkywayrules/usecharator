@@ -114,6 +114,7 @@ export const characters = pgTable(
 export const generationJobs = pgTable(
   "generation_jobs",
   {
+    aspectRatio: text("aspect_ratio"),
     characterId: uuid("character_id").references(() => characters.id, {
       onDelete: "set null",
     }),

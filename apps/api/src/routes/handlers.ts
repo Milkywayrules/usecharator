@@ -99,6 +99,7 @@ export async function handleGenerationsPost(
   const [job] = await db
     .insert(generationJobs)
     .values({
+      aspectRatio: parsed.data.aspectRatio ?? null,
       characterId: parsed.data.characterId ?? null,
       model,
       negativePrompt: parsed.data.negativePrompt ?? null,

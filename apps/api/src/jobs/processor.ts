@@ -1,6 +1,7 @@
 import type { Db } from "@charator/db";
 import { generationJobs, providerKeys } from "@charator/db";
 import {
+  type AspectRatio,
   type CreateGenerationRequest,
   providerModelDefaults,
 } from "@charator/shared";
@@ -270,6 +271,7 @@ export async function processGenerationJob(
   try {
     const result = await adapter.generate({
       apiKey: credentials.apiKey,
+      aspectRatio: (job.aspectRatio ?? undefined) as AspectRatio | undefined,
       baseUrl: credentials.baseUrl,
       model: job.model,
       negativePrompt: job.negativePrompt ?? undefined,
