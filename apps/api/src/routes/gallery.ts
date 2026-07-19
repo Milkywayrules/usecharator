@@ -259,7 +259,9 @@ export async function handleGalleryDetail(
     owner: {
       displayName: row.ownerDisplayName?.trim() || "Anonymous",
     },
-    referenceImageUrl: referenceImageUrlForKey(row.referenceImageKey),
+    referenceImageUrl: isOwner
+      ? referenceImageUrlForKey(row.referenceImageKey)
+      : null,
     remixCount: remixCountRow?.count ?? 0,
     remixedFrom,
     renders,
