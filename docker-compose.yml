@@ -89,11 +89,9 @@ services:
   postgres:
     image: postgres:17
     restart: unless-stopped
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-charator}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-charator}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-charator}
     volumes:
       - postgres_data:/var/lib/postgresql/data

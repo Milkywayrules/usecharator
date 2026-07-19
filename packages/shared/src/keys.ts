@@ -3,7 +3,13 @@ import { providerSchema } from "./providers";
 
 export const createProviderKeyRequestSchema = z.object({
   apiKey: z.string().min(1),
-  customBaseUrl: z.string().url().optional(),
+  customBaseUrl: z
+    .string()
+    .url()
+    .refine((value) => value.startsWith("https://"), {
+      message: "customBaseUrl must use https",
+    })
+    .optional(),
   label: z.string().min(1).max(64),
   provider: providerSchema,
 });

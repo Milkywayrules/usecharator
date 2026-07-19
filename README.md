@@ -37,6 +37,8 @@ cp .env.example .env
 bun dev
 ```
 
+`docker-compose.override.yml` maps Postgres to `${POSTGRES_PORT:-5432}` on the host for local dev. Production deploys (Coolify) use only the root compose file, so Postgres stays on the internal network.
+
 - Web: http://localhost:3000
 - API health: http://localhost:3001/api/health
 

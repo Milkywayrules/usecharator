@@ -1,5 +1,6 @@
 import { S3Client } from "bun";
 import { config, r2Configured, r2Endpoint } from "../config";
+import { assertPublicHttpsUrl } from "./public-url";
 
 let client: S3Client | null = null;
 
@@ -37,6 +38,7 @@ export function presignedGetUrl(objectKey: string): string {
 }
 
 export async function fetchImageFromUrl(url: string): Promise<Uint8Array> {
+  await assertPublicHttpsUrl(url);
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`failed to download image (${response.status})`);

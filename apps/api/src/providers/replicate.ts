@@ -87,11 +87,12 @@ export const replicateAdapter: ProviderAdapter = {
 
   parseWebhook(body, headers) {
     const secret = process.env.REPLICATE_WEBHOOK_SECRET;
-    if (secret) {
-      const provided = headers.get("x-replicate-webhook-secret");
-      if (provided !== secret) {
-        return null;
-      }
+    if (!secret) {
+      return null;
+    }
+    const provided = headers.get("x-replicate-webhook-secret");
+    if (provided !== secret) {
+      return null;
     }
 
     const payload = body as {

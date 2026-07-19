@@ -1,3 +1,5 @@
+import { assertPublicHttpsUrl } from "../lib/public-url";
+import { fetchImageFromUrl } from "../lib/r2";
 import {
   aspectRatioToOpenAiSize,
   decodeBase64Image,
@@ -12,6 +14,8 @@ export const customAdapter: ProviderAdapter = {
     if (!input.baseUrl) {
       throw new ProviderRequestError("custom provider requires baseUrl");
     }
+
+    await assertPublicHttpsUrl(input.baseUrl);
 
     const base = input.baseUrl.replace(/\/$/, "");
     const response = await fetch(`${base}/v1/images/generations`, {
@@ -41,13 +45,7 @@ export const customAdapter: ProviderAdapter = {
       if (item.b64_json) {
         images.push(decodeBase64Image(item.b64_json));
       } else if (item.url) {
-        const imageResponse = await fetch(item.url);
-        if (!imageResponse.ok) {
-          throw new ProviderRequestError(
-            "failed to download custom provider image"
-          );
-        }
-        images.push(new Uint8Array(await imageResponse.arrayBuffer()));
+        images.push(await fetchImageFromUrl(item.url));
       }
     }
 

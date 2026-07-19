@@ -67,6 +67,17 @@ const app = new Elysia({ prefix: "/api" })
 
 startJobMaintenanceLoop();
 
+if (!config.FAL_WEBHOOK_SECRET) {
+  console.warn(
+    "fal webhooks disabled without FAL_WEBHOOK_SECRET; using poll fallback"
+  );
+}
+if (!config.REPLICATE_WEBHOOK_SECRET) {
+  console.warn(
+    "replicate webhooks disabled without REPLICATE_WEBHOOK_SECRET; using poll fallback"
+  );
+}
+
 console.log(`api listening on http://localhost:${app.server?.port}/api/health`);
 
 export type App = typeof app;

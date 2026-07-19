@@ -66,11 +66,12 @@ export const falAdapter: ProviderAdapter = {
 
   parseWebhook(body, headers) {
     const secret = process.env.FAL_WEBHOOK_SECRET;
-    if (secret) {
-      const provided = headers.get("x-fal-webhook-secret");
-      if (provided !== secret) {
-        return null;
-      }
+    if (!secret) {
+      return null;
+    }
+    const provided = headers.get("x-fal-webhook-secret");
+    if (provided !== secret) {
+      return null;
     }
 
     const payload = body as {

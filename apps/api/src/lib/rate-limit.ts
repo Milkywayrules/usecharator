@@ -39,9 +39,10 @@ export function clientIpFromHeaders(
 ): string {
   const forwarded = headers.get("x-forwarded-for");
   if (forwarded) {
-    const first = forwarded.split(",")[0]?.trim();
-    if (first) {
-      return first;
+    const hops = forwarded.split(",").map((part) => part.trim());
+    const rightmost = hops.at(-1);
+    if (rightmost) {
+      return rightmost;
     }
   }
   return headers.get("x-real-ip") ?? fallback;

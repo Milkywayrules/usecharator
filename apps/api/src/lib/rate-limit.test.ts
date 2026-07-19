@@ -18,10 +18,10 @@ describe("rate limiter", () => {
 });
 
 describe("clientIpFromHeaders", () => {
-  test("prefers the first x-forwarded-for address", () => {
+  test("prefers the rightmost x-forwarded-for address", () => {
     const headers = new Headers({
       "x-forwarded-for": "203.0.113.10, 10.0.0.1",
     });
-    expect(clientIpFromHeaders(headers)).toBe("203.0.113.10");
+    expect(clientIpFromHeaders(headers)).toBe("10.0.0.1");
   });
 });
