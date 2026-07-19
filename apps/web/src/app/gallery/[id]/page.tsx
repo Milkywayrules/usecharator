@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GalleryDetailActions } from "@/components/gallery/gallery-detail-actions";
+import { GalleryReportButton } from "@/components/gallery/gallery-report-button";
 import { CharacterSummary, SpecViewer } from "@/components/gallery/spec-viewer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -82,6 +83,14 @@ export default async function GalleryDetailPage({
               {result.visibility === "private" && result.isOwner ? (
                 <Badge variant="outline">Private (owner view)</Badge>
               ) : null}
+              {result.hiddenByModeration ? (
+                <Badge
+                  className="border-destructive/40 text-destructive"
+                  variant="outline"
+                >
+                  Hidden by moderation
+                </Badge>
+              ) : null}
             </div>
             <h1 className="font-display font-semibold text-3xl tracking-tight">
               {result.name || "Untitled"}
@@ -91,7 +100,13 @@ export default async function GalleryDetailPage({
               {new Date(result.updatedAt).toLocaleDateString()}
             </p>
           </div>
-          <GalleryDetailActions detail={result} />
+          <div className="flex flex-wrap items-center gap-3">
+            <GalleryDetailActions detail={result} />
+            <GalleryReportButton
+              characterId={result.id}
+              isOwner={result.isOwner}
+            />
+          </div>
         </div>
       </div>
 

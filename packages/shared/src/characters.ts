@@ -35,6 +35,7 @@ export type UpdateCharacterRequest = z.infer<
 export const characterResponseSchema = z.object({
   createdAt: z.string().datetime(),
   id: z.string().uuid(),
+  moderationStatus: z.enum(["visible", "hidden"]).optional(),
   name: z.string(),
   spec: z.unknown(),
   themeId: z.string().nullable(),

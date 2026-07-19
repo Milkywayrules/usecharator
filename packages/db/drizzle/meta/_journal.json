@@ -29,6 +29,13 @@
       "when": 1784481760839,
       "tag": "0003_api_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1784481760840,
+      "tag": "0005_moderation",
+      "breakpoints": true
     }
   ]
 }

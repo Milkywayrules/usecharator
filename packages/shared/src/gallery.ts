@@ -36,6 +36,7 @@ export type GalleryRemixLineage = z.infer<typeof galleryRemixLineageSchema>;
 
 export const galleryDetailResponseSchema = z.object({
   createdAt: z.string().datetime(),
+  hiddenByModeration: z.boolean().optional(),
   id: z.string().uuid(),
   isOwner: z.boolean(),
   name: z.string(),

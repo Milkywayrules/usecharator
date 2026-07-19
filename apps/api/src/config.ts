@@ -34,6 +34,9 @@ const envSchema = z.object({
   RATE_LIMIT_ANONYMOUS_PER_HOUR: z.coerce.number().default(10),
   RATE_LIMIT_AUTHENTICATED_PER_HOUR: z.coerce.number().default(60),
   REPLICATE_WEBHOOK_SECRET: z.string().optional(),
+  TELEGRAM_BOT_TOKEN: z.string().optional(),
+  TELEGRAM_BOT_USERNAME: z.string().optional(),
+  TELEGRAM_WEBHOOK_SECRET: z.string().optional(),
 });
 
 export type AppConfig = z.infer<typeof envSchema>;
@@ -57,4 +60,8 @@ export function r2Endpoint(cfg: AppConfig): string {
     return `https://${cfg.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
   }
   throw new Error("R2 endpoint not configured");
+}
+
+export function telegramConfigured(cfg: AppConfig): boolean {
+  return Boolean(cfg.TELEGRAM_BOT_TOKEN && cfg.TELEGRAM_WEBHOOK_SECRET);
 }

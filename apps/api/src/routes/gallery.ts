@@ -1,8 +1,27 @@
-import { characters, generationJobs, user } from "@charator/db";
+import {
+  characterReports,
+  characters,
+  generationJobs,
+  user,
+} from "@charator/db";
+import {
+  reportCharacterRequestSchema,
+  shouldHideCharacter,
+} from "@charator/shared";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db, resolveAuthUser } from "../auth";
+import { config } from "../config";
 import { signedUrlsForJob } from "../jobs/processor";
 import { HttpError } from "../lib/errors";
+import {
+  clientIpFromHeaders,
+  SlidingWindowRateLimiter,
+} from "../lib/rate-limit";
+
+const reportLimiter = new SlidingWindowRateLimiter(
+  config.RATE_LIMIT_ANONYMOUS_PER_HOUR,
+  60 * 60 * 1000
+);
 
 const DEFAULT_PAGE_SIZE = 24;
 const MAX_PAGE_SIZE = 48;
@@ -97,7 +116,10 @@ function parsePagination(request: Request): {
 
 export async function handleGalleryList(request: Request): Promise<Response> {
   const { limit, offset, theme } = parsePagination(request);
-  const filters = [eq(characters.visibility, "public")];
+  const filters = [
+    eq(characters.visibility, "public"),
+    eq(characters.moderationStatus, "visible"),
+  ];
   if (theme) {
     filters.push(eq(characters.themeId, theme));
   }
@@ -149,6 +171,7 @@ export async function handleGalleryDetail(
     .select({
       createdAt: characters.createdAt,
       id: characters.id,
+      moderationStatus: characters.moderationStatus,
       name: characters.name,
       ownerDisplayName: user.name,
       ownerUserId: characters.ownerUserId,
@@ -172,6 +195,13 @@ export async function handleGalleryDetail(
 
   const isOwner = authUser?.id === row.ownerUserId;
   if (row.visibility !== "public" && !isOwner) {
+    throw new HttpError(404, {
+      code: "not_found",
+      message: "character not found",
+    });
+  }
+
+  if (row.moderationStatus === "hidden" && !isOwner) {
     throw new HttpError(404, {
       code: "not_found",
       message: "character not found",
@@ -204,6 +234,7 @@ export async function handleGalleryDetail(
 
   return json({
     createdAt: row.createdAt.toISOString(),
+    hiddenByModeration: isOwner && row.moderationStatus === "hidden",
     id: row.id,
     isOwner,
     name: row.name,
@@ -218,4 +249,88 @@ export async function handleGalleryDetail(
     updatedAt: row.updatedAt.toISOString(),
     ...(isOwner ? { visibility: row.visibility } : {}),
   });
+}
+
+export async function handleGalleryReport(
+  request: Request,
+  characterId: string
+): Promise<Response> {
+  const ip = clientIpFromHeaders(request.headers);
+  const limit = reportLimiter.consume(`report:ip:${ip}`);
+  if (!limit.allowed) {
+    throw new HttpError(429, {
+      code: "rate_limited",
+      message: "too many report requests",
+    });
+  }
+
+  const parsed = reportCharacterRequestSchema.safeParse(
+    await request.json().catch(() => null)
+  );
+  if (!parsed.success) {
+    throw new HttpError(400, {
+      code: "validation_error",
+      message: parsed.error.issues[0]?.message ?? "invalid request",
+    });
+  }
+
+  const [character] = await db
+    .select({
+      id: characters.id,
+      moderationStatus: characters.moderationStatus,
+      visibility: characters.visibility,
+    })
+    .from(characters)
+    .where(eq(characters.id, characterId))
+    .limit(1);
+
+  if (character?.visibility !== "public") {
+    throw new HttpError(404, {
+      code: "not_found",
+      message: "character not found",
+    });
+  }
+
+  const authUser = await resolveAuthUser(request);
+
+  const inserted = await db
+    .insert(characterReports)
+    .values({
+      characterId,
+      detail: parsed.data.detail ?? null,
+      reason: parsed.data.reason,
+      reporterUserId: authUser?.id ?? null,
+    })
+    .returning({ id: characterReports.id })
+    .catch(() => null);
+
+  if (!inserted?.[0]) {
+    throw new HttpError(409, {
+      code: "conflict",
+      message: "you have already reported this character",
+    });
+  }
+
+  const [countRow] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(characterReports)
+    .where(eq(characterReports.characterId, characterId));
+
+  const reportCount = countRow?.count ?? 0;
+  let hidden = character.moderationStatus === "hidden";
+  if (!hidden && shouldHideCharacter(reportCount)) {
+    await db
+      .update(characters)
+      .set({ moderationStatus: "hidden", updatedAt: new Date() })
+      .where(eq(characters.id, characterId));
+    hidden = true;
+  }
+
+  return json(
+    {
+      hidden,
+      reportId: inserted[0].id,
+    },
+    201
+  );
 }

@@ -1,5 +1,6 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
+  boolean,
   foreignKey,
   index,
   jsonb,
@@ -31,6 +32,18 @@ export const generationJobStatusEnum = pgEnum("generation_job_status", [
 export const visibilityEnum = pgEnum("character_visibility", [
   "public",
   "private",
+]);
+
+export const moderationStatusEnum = pgEnum("character_moderation_status", [
+  "visible",
+  "hidden",
+]);
+
+export const characterReportReasonEnum = pgEnum("character_report_reason", [
+  "inappropriate",
+  "spam",
+  "stolen",
+  "other",
 ]);
 
 export const providerKeys = pgTable(
@@ -69,6 +82,9 @@ export const characters = pgTable(
       .defaultNow()
       .notNull(),
     id: uuid("id").defaultRandom().primaryKey(),
+    moderationStatus: moderationStatusEnum("moderation_status")
+      .default("visible")
+      .notNull(),
     name: text("name").notNull(),
     ownerUserId: text("owner_user_id")
       .notNull()
@@ -85,6 +101,7 @@ export const characters = pgTable(
   (table) => [
     index("characters_owner_user_id_idx").on(table.ownerUserId),
     index("characters_visibility_idx").on(table.visibility),
+    index("characters_moderation_status_idx").on(table.moderationStatus),
     index("characters_remixed_from_idx").on(table.remixedFromCharacterId),
     foreignKey({
       columns: [table.remixedFromCharacterId],
@@ -138,6 +155,30 @@ export const providerKeysRelations = relations(providerKeys, ({ one }) => ({
   }),
 }));
 
+export const characterReports = pgTable(
+  "character_reports",
+  {
+    characterId: uuid("character_id")
+      .notNull()
+      .references(() => characters.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    detail: text("detail"),
+    id: uuid("id").defaultRandom().primaryKey(),
+    reason: characterReportReasonEnum("reason").notNull(),
+    reporterUserId: text("reporter_user_id").references(() => user.id, {
+      onDelete: "set null",
+    }),
+  },
+  (table) => [
+    index("character_reports_character_id_idx").on(table.characterId),
+    uniqueIndex("character_reports_character_reporter_idx")
+      .on(table.characterId, table.reporterUserId)
+      .where(sql`${table.reporterUserId} is not null`),
+  ]
+);
+
 export const charactersRelations = relations(characters, ({ one, many }) => ({
   generationJobs: many(generationJobs),
   owner: one(user, {
@@ -150,7 +191,22 @@ export const charactersRelations = relations(characters, ({ one, many }) => ({
     relationName: "characterRemixLineage",
   }),
   remixes: many(characters, { relationName: "characterRemixLineage" }),
+  reports: many(characterReports),
 }));
+
+export const characterReportsRelations = relations(
+  characterReports,
+  ({ one }) => ({
+    character: one(characters, {
+      fields: [characterReports.characterId],
+      references: [characters.id],
+    }),
+    reporter: one(user, {
+      fields: [characterReports.reporterUserId],
+      references: [user.id],
+    }),
+  })
+);
 
 export const generationJobsRelations = relations(generationJobs, ({ one }) => ({
   character: one(characters, {
@@ -192,6 +248,54 @@ export const apiTokens = pgTable(
 export const apiTokensRelations = relations(apiTokens, ({ one }) => ({
   user: one(user, {
     fields: [apiTokens.userId],
+    references: [user.id],
+  }),
+}));
+
+export const telegramLinkCodes = pgTable(
+  "telegram_link_codes",
+  {
+    code: text("code").primaryKey(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (table) => [index("telegram_link_codes_user_id_idx").on(table.userId)]
+);
+
+export const telegramLinks = pgTable(
+  "telegram_links",
+  {
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    notifyTelegram: boolean("notify_telegram").default(true).notNull(),
+    telegramChatId: text("telegram_chat_id").notNull(),
+    telegramUsername: text("telegram_username"),
+    userId: text("user_id")
+      .primaryKey()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    index("telegram_links_telegram_chat_id_idx").on(table.telegramChatId),
+  ]
+);
+
+export const telegramLinkCodesRelations = relations(
+  telegramLinkCodes,
+  ({ one }) => ({
+    user: one(user, {
+      fields: [telegramLinkCodes.userId],
+      references: [user.id],
+    }),
+  })
+);
+
+export const telegramLinksRelations = relations(telegramLinks, ({ one }) => ({
+  user: one(user, {
+    fields: [telegramLinks.userId],
     references: [user.id],
   }),
 }));
