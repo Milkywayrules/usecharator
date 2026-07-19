@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+  foreignKey,
   index,
   jsonb,
   pgEnum,
@@ -72,6 +73,7 @@ export const characters = pgTable(
     ownerUserId: text("owner_user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    remixedFromCharacterId: uuid("remixed_from_character_id"),
     spec: jsonb("spec").$type<unknown>().notNull(),
     themeId: text("theme_id"),
     updatedAt: timestamp("updated_at", { withTimezone: true })
@@ -80,7 +82,16 @@ export const characters = pgTable(
       .notNull(),
     visibility: visibilityEnum("visibility").default("public").notNull(),
   },
-  (table) => [index("characters_owner_user_id_idx").on(table.ownerUserId)]
+  (table) => [
+    index("characters_owner_user_id_idx").on(table.ownerUserId),
+    index("characters_visibility_idx").on(table.visibility),
+    index("characters_remixed_from_idx").on(table.remixedFromCharacterId),
+    foreignKey({
+      columns: [table.remixedFromCharacterId],
+      foreignColumns: [table.id],
+      name: "characters_remixed_from_character_id_fk",
+    }).onDelete("set null"),
+  ]
 );
 
 export const generationJobs = pgTable(
@@ -133,6 +144,12 @@ export const charactersRelations = relations(characters, ({ one, many }) => ({
     fields: [characters.ownerUserId],
     references: [user.id],
   }),
+  remixedFrom: one(characters, {
+    fields: [characters.remixedFromCharacterId],
+    references: [characters.id],
+    relationName: "characterRemixLineage",
+  }),
+  remixes: many(characters, { relationName: "characterRemixLineage" }),
 }));
 
 export const generationJobsRelations = relations(generationJobs, ({ one }) => ({

@@ -2,11 +2,13 @@ import { Elysia } from "elysia";
 import { auth } from "./auth";
 import { config } from "./config";
 import { errorResponse, HttpError } from "./lib/errors";
+import { handleGalleryDetail, handleGalleryList } from "./routes/gallery";
 import {
   handleCharactersDelete,
   handleCharactersList,
   handleCharactersPatch,
   handleCharactersPost,
+  handleCharactersRemix,
   handleFalWebhook,
   handleGenerationGet,
   handleGenerationsPost,
@@ -16,7 +18,6 @@ import {
   handleReplicateWebhook,
   startJobMaintenanceLoop,
 } from "./routes/handlers";
-import { handleGalleryDetail, handleGalleryList } from "./routes/gallery";
 
 async function dispatch(handler: () => Promise<Response>): Promise<Response> {
   try {
@@ -52,6 +53,9 @@ const app = new Elysia({ prefix: "/api" })
   )
   .delete("/characters/:id", ({ request, params }) =>
     dispatch(() => handleCharactersDelete(request, params.id))
+  )
+  .post("/characters/:id/remix", ({ request, params }) =>
+    dispatch(() => handleCharactersRemix(request, params.id))
   )
   .get("/gallery", ({ request }) => dispatch(() => handleGalleryList(request)))
   .get("/gallery/:id", ({ request, params }) =>

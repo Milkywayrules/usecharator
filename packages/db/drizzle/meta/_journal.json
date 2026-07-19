@@ -15,6 +15,13 @@
       "when": 1784481760837,
       "tag": "0001_job_key_theme",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784481760838,
+      "tag": "0002_remix_gallery",
+      "breakpoints": true
     }
   ]
 }

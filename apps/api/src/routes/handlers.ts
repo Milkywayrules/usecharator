@@ -3,6 +3,7 @@ import {
   createCharacterRequestSchema,
   createGenerationRequestSchema,
   createProviderKeyRequestSchema,
+  deriveRemixName,
   updateCharacterRequestSchema,
 } from "@charator/shared";
 import { and, eq } from "drizzle-orm";
@@ -300,6 +301,67 @@ export async function handleCharactersDelete(
   }
 
   return new Response(null, { status: 204 });
+}
+
+export async function handleCharactersRemix(
+  request: Request,
+  characterId: string
+): Promise<Response> {
+  const userSession = await requireSessionUser(request);
+
+  const [source] = await db
+    .select()
+    .from(characters)
+    .where(eq(characters.id, characterId))
+    .limit(1);
+
+  if (!source) {
+    throw new HttpError(404, {
+      code: "not_found",
+      message: "character not found",
+    });
+  }
+
+  const canRemix =
+    source.visibility === "public" || source.ownerUserId === userSession.id;
+  if (!canRemix) {
+    throw new HttpError(404, {
+      code: "not_found",
+      message: "character not found",
+    });
+  }
+
+  const [row] = await db
+    .insert(characters)
+    .values({
+      name: deriveRemixName(source.name),
+      ownerUserId: userSession.id,
+      remixedFromCharacterId: source.id,
+      spec: source.spec,
+      themeId: source.themeId,
+      visibility: "private",
+    })
+    .returning();
+
+  if (!row) {
+    throw new HttpError(500, {
+      code: "internal_error",
+      message: "failed to create remix",
+    });
+  }
+
+  return json(
+    {
+      createdAt: row.createdAt.toISOString(),
+      id: row.id,
+      name: row.name,
+      spec: row.spec,
+      themeId: row.themeId ?? null,
+      updatedAt: row.updatedAt.toISOString(),
+      visibility: row.visibility,
+    },
+    201
+  );
 }
 
 export async function handleKeysList(request: Request): Promise<Response> {
