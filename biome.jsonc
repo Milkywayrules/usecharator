@@ -1,0 +1,17 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
+  "extends": [
+    "ultracite/biome/core",
+    "ultracite/biome/react",
+    "ultracite/biome/next"
+  ],
+  "files": {
+    "includes": [
+      "!**/.next",
+      "!**/dist",
+      "!**/node_modules",
+      "!**/.turbo",
+      "!knowledge-base-of-king-the-user"
+    ]
+  }
+}

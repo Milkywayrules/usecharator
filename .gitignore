@@ -1,0 +1,32 @@
+# dependencies
+node_modules
+
+# build outputs
+.next
+dist
+.turbo
+out
+
+# env
+.env
+.env.local
+.env.*.local
+
+# logs
+*.log
+npm-debug.log*
+
+# os
+.DS_Store
+Thumbs.db
+
+# coverage
+coverage
+
+# drizzle
+drizzle/meta
+
+# ide
+.idea
+*.swp
+*.swo
