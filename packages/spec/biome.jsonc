@@ -1,0 +1,10 @@
+{
+	"root": false,
+	"linter": {
+		"rules": {
+			"performance": {
+				"noBarrelFile": "off"
+			}
+		}
+	}
+}

@@ -1,0 +1,212 @@
+{
+	"spec_version": 2,
+	"meta": {
+		"id": "shrine-flame-guardian",
+		"name": "Hikari",
+		"tags": ["shrine", "fire", "stoic", "nature"],
+		"notes": "second config showing non-witch urban ice path; fierce shrine guardian",
+		"inspiration": ""
+	},
+	"identity": {
+		"gender": "female",
+		"gender_notes": "",
+		"age_range": "adult",
+		"age_notes": "late 20s appearance",
+		"ethnicity_appearance": "",
+		"vibe_keywords": []
+	},
+	"personality": {
+		"primary": "fierce_bold",
+		"secondary": ["stoic_serious"],
+		"demeanor_notes": "duty-bound, speaks little, intensity in silence",
+		"social_energy": "",
+		"speech_impression": ""
+	},
+	"archetype": {
+		"role": "shrine_maiden",
+		"occupation": "sacred flame guardian",
+		"combat_style": "hybrid",
+		"faction": "",
+		"era_setting": ""
+	},
+	"appearance": {
+		"face": {
+			"shape": "sharp",
+			"features": "mature",
+			"makeup": "natural",
+			"freckles": false,
+			"beauty_mark": false,
+			"scars": "subtle",
+			"eyebrows": "",
+			"lips": "",
+			"ears": "",
+			"facial_hair": "none"
+		},
+		"hair": {
+			"color": "black",
+			"color_secondary": "red",
+			"style": "hime_cut",
+			"length": "long",
+			"bangs": "blunt",
+			"accessories": ["ribbons"],
+			"texture": "",
+			"volume": "",
+			"parting": "",
+			"shine": ""
+		},
+		"eyes": {
+			"color": "amber_gold",
+			"heterochromia": false,
+			"left_color": "",
+			"right_color": "",
+			"shape": "sharp",
+			"pupils": "glowing",
+			"highlights": "",
+			"lashes": "",
+			"under_eye": ""
+		},
+		"skin": {
+			"tone": "medium",
+			"undertone": "warm",
+			"texture": ""
+		},
+		"body": {
+			"type": "athletic",
+			"height_impression": "tall",
+			"posture": "elegant",
+			"muscle_definition": "",
+			"proportions_notes": ""
+		}
+	},
+	"outfit": {
+		"style": {
+			"primary": "kimono_fusion",
+			"secondary": "light_armor_mage"
+		},
+		"length": "long",
+		"silhouette": "layered",
+		"palette": {
+			"primary": "crimson",
+			"secondary": "white",
+			"accent": "gold",
+			"metal": "gold"
+		},
+		"pieces": {
+			"top": "sleeveless miko top with armor pauldrons",
+			"bottom": "long hakama-style skirt split for movement",
+			"outerwear": "detached_sleeves",
+			"footwear": "tabi boots",
+			"gloves": "arm_warmers",
+			"headwear": "",
+			"legwear": ""
+		},
+		"details": ["bare_shoulders", "belts", "fur_trim"],
+		"condition": "",
+		"pattern": "",
+		"material": "",
+		"exposure_level": ""
+	},
+	"magic": {
+		"element": "fire",
+		"secondary_element": "light_holy",
+		"power_level": "intense",
+		"effects": ["fire_embers", "holy_rays", "aura_glow", "elemental_wings"],
+		"cast_style": "weapon_slash",
+		"glow": {
+			"color": "gold_orange",
+			"intensity": "high"
+		},
+		"particle_density": "",
+		"radius": "",
+		"signature_name": ""
+	},
+	"pose": {
+		"expression": "determined",
+		"mouth": "closed",
+		"gaze": "viewer",
+		"body": "weapon_ready",
+		"hands": "weapon_ready",
+		"energy": "moderate",
+		"head_tilt": "",
+		"legs": "",
+		"weight_shift": "",
+		"facing": "",
+		"motion_blur": ""
+	},
+	"framing": {
+		"shot": "three_quarter",
+		"camera_angle": "low",
+		"composition": "symmetrical",
+		"depth_of_field": "",
+		"crop_notes": ""
+	},
+	"setting": {
+		"location": "shrine",
+		"environment": "fantasy",
+		"time": "dusk",
+		"weather": "clear",
+		"atmosphere": ["warm_sunset", "magical_particles", "lens_flare"],
+		"background_detail": "detailed",
+		"foreground": ["embers", "petals"],
+		"era": "",
+		"season": "",
+		"crowd_level": "",
+		"lighting_source": ""
+	},
+	"props": {
+		"hat": "none",
+		"weapon": "sword",
+		"weapon_detail": "flaming_blade",
+		"offhand": "none",
+		"floating_objects": ["feathers"],
+		"accessories": ["earrings", "necklace"],
+		"weapon_size": "",
+		"carry_style": "",
+		"pets_familiars": []
+	},
+	"art": {
+		"style": "dark_cinematic",
+		"era": "contemporary",
+		"line": "clean",
+		"shading": "detailed",
+		"lighting": "backlit",
+		"color": "high_contrast",
+		"finish": "key_visual",
+		"saturation": "",
+		"contrast": "",
+		"film_grain": null,
+		"texture_overlay": ""
+	},
+	"generation": {
+		"aspect_ratio": "3:4",
+		"output_dir": "output",
+		"output_file": "shrine-flame-guardian.png",
+		"mood_keywords": ["sacred", "intense", "sunset"],
+		"avoid": ["cute", "chibi", "modern_city"],
+		"reference_notes": "unrelated archetype example; not a tweak of ice-witch",
+		"prompt_extra": ""
+	},
+	"control": {
+		"mode": "balanced",
+		"section_modes": {
+			"identity": "inherit",
+			"personality": "inherit",
+			"archetype": "inherit",
+			"appearance": "inherit",
+			"outfit": "inherit",
+			"magic": "inherit",
+			"pose": "inherit",
+			"framing": "inherit",
+			"setting": "inherit",
+			"props": "inherit",
+			"art": "inherit"
+		},
+		"locked": [],
+		"freeform": {
+			"overall": "",
+			"appearance": "",
+			"outfit": "",
+			"setting": ""
+		}
+	}
+}

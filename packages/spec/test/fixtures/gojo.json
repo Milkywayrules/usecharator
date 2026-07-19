@@ -1,0 +1,212 @@
+{
+	"spec_version": 2,
+	"control": {
+		"mode": "expressive",
+		"section_modes": {
+			"identity": "inherit",
+			"personality": "inherit",
+			"archetype": "inherit",
+			"appearance": "inherit",
+			"outfit": "inherit",
+			"magic": "inherit",
+			"pose": "inherit",
+			"framing": "inherit",
+			"setting": "inherit",
+			"props": "inherit",
+			"art": "inherit"
+		},
+		"locked": [],
+		"freeform": {
+			"overall": "",
+			"appearance": "",
+			"outfit": "",
+			"setting": ""
+		}
+	},
+	"meta": {
+		"id": "gojo",
+		"name": "",
+		"tags": [],
+		"notes": "",
+		"inspiration": ""
+	},
+	"identity": {
+		"gender": "",
+		"gender_notes": "",
+		"age_range": "",
+		"age_notes": "",
+		"ethnicity_appearance": "",
+		"vibe_keywords": []
+	},
+	"personality": {
+		"primary": "",
+		"secondary": [],
+		"demeanor_notes": "",
+		"social_energy": "",
+		"speech_impression": ""
+	},
+	"archetype": {
+		"role": "",
+		"occupation": "",
+		"combat_style": "",
+		"faction": "",
+		"era_setting": ""
+	},
+	"appearance": {
+		"face": {
+			"shape": "",
+			"features": "",
+			"makeup": "",
+			"eyebrows": "",
+			"lips": "",
+			"ears": "",
+			"freckles": null,
+			"beauty_mark": null,
+			"scars": "",
+			"facial_hair": "none"
+		},
+		"hair": {
+			"color": "",
+			"color_secondary": "",
+			"style": "",
+			"length": "",
+			"bangs": "",
+			"texture": "",
+			"volume": "",
+			"parting": "",
+			"shine": "",
+			"accessories": []
+		},
+		"eyes": {
+			"color": "",
+			"heterochromia": null,
+			"left_color": "",
+			"right_color": "",
+			"shape": "",
+			"pupils": "",
+			"highlights": "",
+			"lashes": "",
+			"under_eye": ""
+		},
+		"skin": {
+			"tone": "",
+			"undertone": "",
+			"texture": ""
+		},
+		"body": {
+			"type": "",
+			"height_impression": "",
+			"muscle_definition": "",
+			"proportions_notes": "",
+			"posture": ""
+		}
+	},
+	"outfit": {
+		"style": {
+			"primary": "",
+			"secondary": ""
+		},
+		"length": "",
+		"silhouette": "",
+		"condition": "",
+		"pattern": "",
+		"material": "",
+		"exposure_level": "",
+		"palette": {
+			"primary": "",
+			"secondary": "",
+			"accent": "",
+			"metal": ""
+		},
+		"pieces": {
+			"top": "",
+			"bottom": "",
+			"outerwear": "",
+			"footwear": "",
+			"gloves": "",
+			"headwear": "",
+			"legwear": ""
+		},
+		"details": []
+	},
+	"magic": {
+		"element": "",
+		"secondary_element": "",
+		"power_level": "",
+		"particle_density": "",
+		"radius": "",
+		"effects": [],
+		"cast_style": "",
+		"signature_name": "",
+		"glow": {
+			"color": "",
+			"intensity": ""
+		}
+	},
+	"pose": {
+		"expression": "",
+		"mouth": "",
+		"gaze": "",
+		"head_tilt": "",
+		"body": "",
+		"hands": "",
+		"legs": "",
+		"weight_shift": "",
+		"facing": "",
+		"energy": "",
+		"motion_blur": ""
+	},
+	"framing": {
+		"shot": "",
+		"camera_angle": "",
+		"composition": "",
+		"depth_of_field": "",
+		"crop_notes": ""
+	},
+	"setting": {
+		"location": "",
+		"environment": "",
+		"era": "",
+		"time": "",
+		"season": "",
+		"weather": "",
+		"crowd_level": "",
+		"lighting_source": "",
+		"atmosphere": [],
+		"background_detail": "",
+		"foreground": []
+	},
+	"props": {
+		"hat": "",
+		"weapon": "",
+		"weapon_detail": "",
+		"weapon_size": "",
+		"carry_style": "",
+		"offhand": "",
+		"floating_objects": [],
+		"accessories": [],
+		"pets_familiars": []
+	},
+	"art": {
+		"style": "",
+		"era": "",
+		"line": "",
+		"shading": "",
+		"lighting": "",
+		"color": "",
+		"saturation": "",
+		"contrast": "",
+		"film_grain": null,
+		"texture_overlay": "",
+		"finish": ""
+	},
+	"generation": {
+		"aspect_ratio": "9:16",
+		"output_dir": "output",
+		"output_file": "",
+		"mood_keywords": [],
+		"prompt_extra": "",
+		"avoid": [],
+		"reference_notes": ""
+	}
+}
