@@ -1,18 +1,24 @@
 "use client";
 
 import type { GenerationJobResponse } from "@charator/shared";
-import { useQuery } from "@tanstack/react-query";
+import { isTerminalJobStatus } from "@charator/shared";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   CheckCircle2Icon,
   CircleIcon,
   DownloadIcon,
   Loader2Icon,
+  RotateCcwIcon,
   XCircleIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { use } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { getGenerationJob } from "@/lib/api-client";
+import { getGenerationJob, rerollGeneration } from "@/lib/api-client";
+import { authClient } from "@/lib/auth-client";
+import { getLocalKey } from "@/lib/local-keys";
 
 const ACTIVE = new Set(["queued", "running"]);
 
@@ -78,6 +84,9 @@ export default function GenerateJobPage({
   params: Promise<{ jobId: string }>;
 }) {
   const { jobId } = use(params);
+  const router = useRouter();
+  const { data: session } = authClient.useSession();
+  const signedIn = Boolean(session?.user);
 
   const jobQuery = useQuery({
     queryFn: () => getGenerationJob(jobId),
@@ -88,7 +97,29 @@ export default function GenerateJobPage({
     },
   });
 
+  const rerollMutation = useMutation({
+    mutationFn: async () => {
+      const job = jobQuery.data;
+      if (!job) {
+        throw new Error("Job not loaded");
+      }
+      const body = signedIn ? {} : { apiKey: getLocalKey(job.provider) ?? "" };
+      if (!(signedIn || body.apiKey)) {
+        throw new Error("No stored API key — generate again from the wizard");
+      }
+      return rerollGeneration(jobId, body);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+    onSuccess: (data) => {
+      toast.success("Re-roll started");
+      router.push(`/generate/${data.jobId}`);
+    },
+  });
+
   const job = jobQuery.data;
+  const canReroll = job ? isTerminalJobStatus(job.status) : false;
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 px-4 py-10 sm:px-6">
@@ -152,7 +183,21 @@ export default function GenerateJobPage({
         </div>
       ) : null}
 
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
+        {canReroll ? (
+          <Button
+            disabled={rerollMutation.isPending}
+            onClick={() => rerollMutation.mutate()}
+            type="button"
+          >
+            {rerollMutation.isPending ? (
+              <Loader2Icon className="animate-spin" />
+            ) : (
+              <RotateCcwIcon />
+            )}
+            Re-roll
+          </Button>
+        ) : null}
         <Button asChild variant="outline">
           <Link href="/create">Back to wizard</Link>
         </Button>
