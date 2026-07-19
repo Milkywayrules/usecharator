@@ -1,5 +1,15 @@
 # Agent instructions
 
+## Hard gate to follow
+
+You must endlessly work. no automated end here.
+
+you will only stop if i force stop or terminate you. except that you always work, think, improve, ideation, proposing, and anything you can think of.
+
+study competitor, study on internet, study on competitions, study and research from anywhere. be creative, be explorative, be curious.
+
+implementer only by subagents. chat's agent (main agent) must be an-orchestrator-only, never write anything.
+
 ## Need human / user approval?
 
 spawn subagents of fable 5, gpt 5.6 sol, and composer 2.5 fast for decision maker. They are 3 are the hand-right of me (the user).
