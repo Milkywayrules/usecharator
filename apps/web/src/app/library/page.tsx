@@ -86,15 +86,29 @@ function CharacterCard({
           {character.role ? <span>· {character.role}</span> : null}
         </div>
         {signedIn && onToggleVisibility ? (
-          <label className="flex items-center justify-between text-sm">
-            <span>Public</span>
-            <Switch
-              checked={character.visibility === "public"}
-              onCheckedChange={(checked) =>
-                onToggleVisibility(checked ? "public" : "private")
-              }
-            />
-          </label>
+          <div className="space-y-2">
+            <label className="flex items-center justify-between text-sm">
+              <span>Public in gallery</span>
+              <Switch
+                checked={character.visibility === "public"}
+                onCheckedChange={(checked) =>
+                  onToggleVisibility(checked ? "public" : "private")
+                }
+              />
+            </label>
+            {character.visibility === "public" ? (
+              <Link
+                className="text-accent text-xs underline-offset-4 hover:underline"
+                href={`/gallery/${character.id}`}
+              >
+                View in gallery
+              </Link>
+            ) : (
+              <p className="text-muted-foreground text-xs">
+                Private — not in gallery
+              </p>
+            )}
+          </div>
         ) : null}
         <div className="flex flex-wrap gap-2">
           <Button

@@ -6,7 +6,11 @@ import {
   type CreateProviderKeyRequest,
   characterResponseSchema,
   createGenerationResponseSchema,
+  type GalleryDetailResponse,
+  type GalleryListResponse,
   type GenerationJobResponse,
+  galleryDetailResponseSchema,
+  galleryListResponseSchema,
   generationJobResponseSchema,
   type ProviderKeyResponse,
   providerKeyResponseSchema,
@@ -126,6 +130,43 @@ export async function deleteCharacter(id: string): Promise<void> {
   if (result.data instanceof Response && !result.data.ok) {
     throw new Error(`Delete failed (${result.data.status})`);
   }
+}
+
+export async function listGallery(params?: {
+  limit?: number;
+  offset?: number;
+  theme?: string | null;
+}): Promise<GalleryListResponse> {
+  const query: Record<string, string> = {};
+  if (params?.offset !== undefined) {
+    query.offset = String(params.offset);
+  }
+  if (params?.limit !== undefined) {
+    query.limit = String(params.limit);
+  }
+  if (params?.theme) {
+    query.theme = params.theme;
+  }
+  return readTreatyData(
+    await client.api.gallery.get({ query }),
+    galleryListResponseSchema
+  );
+}
+
+export async function getGalleryCharacter(
+  id: string
+): Promise<GalleryDetailResponse> {
+  return readTreatyData(
+    await client.api.gallery({ id }).get(),
+    galleryDetailResponseSchema
+  );
+}
+
+export async function remixCharacter(id: string): Promise<CharacterResponse> {
+  return readTreatyData(
+    await client.api.characters({ id }).remix.post(),
+    characterResponseSchema
+  );
 }
 
 export async function listProviderKeys(): Promise<ProviderKeyResponse[]> {
