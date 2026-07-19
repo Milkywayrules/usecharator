@@ -22,6 +22,19 @@ import {
 import { getProviderAdapter } from "../providers/registry";
 import type { ProviderAdapter } from "../providers/types";
 
+// dynamic import keeps lib/telegram out of the processor module graph;
+// notification failures must never affect job status, so errors only log.
+function dispatchTelegramNotify(
+  db: Db,
+  job: typeof generationJobs.$inferSelect
+): void {
+  import("../lib/telegram")
+    .then(({ notifyJobFinished }) => notifyJobFinished(db, job))
+    .catch((error) =>
+      console.error(`telegram notify dispatch failed for job ${job.id}`, error)
+    );
+}
+
 export async function resolveApiKey(
   db: Db,
   body: CreateGenerationRequest,
@@ -143,7 +156,7 @@ export async function markJobFailed(
   jobId: string,
   error: string
 ): Promise<void> {
-  await db
+  const [updated] = await db
     .update(generationJobs)
     .set({
       error: redactSecrets(error).slice(0, 2000),
@@ -151,8 +164,12 @@ export async function markJobFailed(
       status: "failed",
       updatedAt: new Date(),
     })
-    .where(activeJobWhere(jobId));
+    .where(activeJobWhere(jobId))
+    .returning();
   clearEphemeralCredentials(jobId);
+  if (updated) {
+    dispatchTelegramNotify(db, updated);
+  }
 }
 
 export async function markJobRunning(db: Db, jobId: string): Promise<void> {
@@ -180,7 +197,7 @@ export async function persistJobImages(
     keys.push(await uploadGenerationImage(jobId, index, image));
   }
 
-  await db
+  const [updated] = await db
     .update(generationJobs)
     .set({
       error: null,
@@ -189,9 +206,13 @@ export async function persistJobImages(
       status: "succeeded",
       updatedAt: new Date(),
     })
-    .where(activeJobWhere(jobId));
+    .where(activeJobWhere(jobId))
+    .returning();
 
   clearEphemeralCredentials(jobId);
+  if (updated) {
+    dispatchTelegramNotify(db, updated);
+  }
   return keys;
 }
 

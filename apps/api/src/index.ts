@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
 import { auth } from "./auth";
-import { config } from "./config";
+import { config, telegramConfigured } from "./config";
 import { errorResponse, HttpError } from "./lib/errors";
 import { v1OpenApi } from "./openapi";
 import {
@@ -13,6 +13,13 @@ import {
   mountProgrammaticRoutes,
   V1_ROUTE_PREFIX,
 } from "./routes/register";
+import {
+  handleTelegramLinkCodePost,
+  handleTelegramLinkDelete,
+  handleTelegramLinkGet,
+  handleTelegramLinkPatch,
+  handleTelegramWebhook,
+} from "./routes/telegram";
 
 async function dispatch(handler: () => Promise<Response>): Promise<Response> {
   try {
@@ -53,6 +60,21 @@ const app = new Elysia({ prefix: "/api" })
   .post("/webhooks/replicate", ({ request }) =>
     dispatch(() => handleReplicateWebhook(request))
   )
+  .post("/webhooks/telegram", ({ request }) =>
+    dispatch(() => handleTelegramWebhook(request))
+  )
+  .post("/telegram/link-code", ({ request }) =>
+    dispatch(() => handleTelegramLinkCodePost(request))
+  )
+  .get("/telegram/link", ({ request }) =>
+    dispatch(() => handleTelegramLinkGet(request))
+  )
+  .patch("/telegram/link", ({ request }) =>
+    dispatch(() => handleTelegramLinkPatch(request))
+  )
+  .delete("/telegram/link", ({ request }) =>
+    dispatch(() => handleTelegramLinkDelete(request))
+  )
   .listen(config.PORT);
 
 startJobMaintenanceLoop();
@@ -65,6 +87,11 @@ if (!config.FAL_WEBHOOK_SECRET) {
 if (!config.REPLICATE_WEBHOOK_SECRET) {
   console.warn(
     "replicate webhooks disabled without REPLICATE_WEBHOOK_SECRET; using poll fallback"
+  );
+}
+if (!telegramConfigured(config)) {
+  console.warn(
+    "telegram notifications disabled without TELEGRAM_BOT_TOKEN and TELEGRAM_WEBHOOK_SECRET"
   );
 }
 

@@ -18,17 +18,21 @@ function createMockDb(state: {
     update: () => ({
       set: (values: Record<string, unknown>) => ({
         where: () => {
-          if (
+          const skipped =
             state.guardActiveStatus &&
             state.job &&
-            !["queued", "running"].includes(state.job.status)
-          ) {
-            return;
+            !["queued", "running"].includes(state.job.status);
+
+          if (!skipped) {
+            state.updates.push(values);
+            if (state.job) {
+              Object.assign(state.job, values);
+            }
           }
-          state.updates.push(values);
-          if (state.job) {
-            Object.assign(state.job, values);
-          }
+
+          return {
+            returning: async () => (skipped || !state.job ? [] : [state.job]),
+          };
         },
       }),
     }),
