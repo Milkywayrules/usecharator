@@ -6,6 +6,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  real,
   text,
   timestamp,
   uniqueIndex,
@@ -89,6 +90,7 @@ export const characters = pgTable(
     ownerUserId: text("owner_user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    referenceImageKey: text("reference_image_key"),
     remixedFromCharacterId: uuid("remixed_from_character_id"),
     spec: jsonb("spec").$type<unknown>().notNull(),
     themeId: text("theme_id"),
@@ -133,6 +135,8 @@ export const generationJobs = pgTable(
     providerKeyId: uuid("provider_key_id").references(() => providerKeys.id, {
       onDelete: "set null",
     }),
+    referenceImageKeys: text("reference_image_keys").array(),
+    referenceStrength: real("reference_strength"),
     specSnapshot: jsonb("spec_snapshot").$type<unknown>(),
     startedAt: timestamp("started_at", { withTimezone: true }),
     status: generationJobStatusEnum("status").default("queued").notNull(),

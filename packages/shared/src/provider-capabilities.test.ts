@@ -16,11 +16,16 @@ describe("provider capability descriptors", () => {
     }
   });
 
-  test("every catalog model has a capability entry", () => {
+  test("catalog models declare reference support where verified", () => {
     for (const descriptor of PROVIDER_CAPABILITY_DESCRIPTORS) {
       for (const model of descriptor.models) {
         expect(model.id.length).toBeGreaterThan(0);
-        expect(model.supportsReferenceImages.kind).toBe("none");
+        if (descriptor.provider === "custom") {
+          expect(model.supportsReferenceImages.kind).toBe("none");
+        }
+        if (descriptor.provider === "openai" && model.id === "gpt-image-1") {
+          expect(model.supportsReferenceImages.kind).toBe("supported");
+        }
       }
     }
   });

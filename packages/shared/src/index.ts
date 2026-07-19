@@ -96,6 +96,25 @@ export {
   providerSchema,
 } from "./providers";
 export {
+  formatReferenceCapableAlternatives,
+  listReferenceCapableModels,
+  modelSupportsReferenceImages,
+  modelSupportsReferenceStrength,
+  type ReferenceCapableModel,
+  referenceImageMaxCount,
+} from "./reference-capabilities";
+export {
+  MAX_REFERENCE_IMAGE_BYTES,
+  parseReferenceDataUrl,
+  type ReferenceImageMimeType,
+  referenceJobImageSchema,
+  referenceStrengthSchema,
+  setCharacterAnchorFromJobSchema,
+  setCharacterAnchorUploadSchema,
+  type ValidatedReferenceImage,
+  validateReferenceImageBytes,
+} from "./reference-images";
+export {
   type CharacterGenerationHistoryItem,
   type CharacterGenerationsResponse,
   characterGenerationHistoryItemSchema,

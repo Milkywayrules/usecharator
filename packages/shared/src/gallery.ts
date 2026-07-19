@@ -66,6 +66,7 @@ export const galleryDetailResponseSchema = z.object({
   isOwner: z.boolean(),
   name: z.string(),
   owner: galleryOwnerSchema,
+  referenceImageUrl: z.string().url().nullable().optional(),
   remixCount: z.number().int().nonnegative(),
   remixedFrom: galleryRemixLineageSchema.nullable(),
   renders: z.array(z.string().url()),

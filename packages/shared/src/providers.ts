@@ -51,6 +51,7 @@ export const providerModelOptions: Record<
     models: [
       { id: "fal-ai/flux/dev", label: "Flux Dev" },
       { id: "fal-ai/flux/schnell", label: "Flux Schnell" },
+      { id: "fal-ai/ideogram/character", label: "Ideogram Character" },
     ],
   },
   gemini: {
@@ -77,6 +78,10 @@ export const providerModelOptions: Record<
       {
         id: "black-forest-labs/flux-schnell",
         label: "Flux Schnell",
+      },
+      {
+        id: "black-forest-labs/flux-2-pro",
+        label: "Flux 2 Pro",
       },
     ],
   },

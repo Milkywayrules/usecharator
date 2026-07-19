@@ -37,6 +37,7 @@ export const characterResponseSchema = z.object({
   id: z.string().uuid(),
   moderationStatus: z.enum(["visible", "hidden"]).optional(),
   name: z.string(),
+  referenceImageUrl: z.string().url().nullable().optional(),
   spec: z.unknown(),
   themeId: z.string().nullable(),
   updatedAt: z.string().datetime(),

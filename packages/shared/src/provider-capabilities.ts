@@ -50,6 +50,8 @@ export const modelCapabilityDescriptorSchema = z.object({
   supportsAspectRatios: aspectRatioCapabilitySchema,
   supportsNegativePrompt: z.boolean(),
   supportsReferenceImages: referenceImageCapabilitySchema,
+  /** When true, `referenceStrength` (0–1) is forwarded to the provider adapter. */
+  supportsReferenceStrength: z.boolean().optional(),
 });
 
 export type ModelCapabilityDescriptor = z.infer<
@@ -91,6 +93,16 @@ const FIXED_STANDARD: AspectRatioCapability = {
 
 const NO_REFERENCE: ReferenceImageCapability = { kind: "none" };
 
+const SINGLE_REFERENCE: ReferenceImageCapability = {
+  kind: "supported",
+  maxCount: 1,
+};
+
+const MULTI_REFERENCE: ReferenceImageCapability = {
+  kind: "supported",
+  maxCount: 8,
+};
+
 function modelDescriptor(
   provider: Provider,
   id: string,
@@ -103,6 +115,7 @@ function modelDescriptor(
       | "supportsAspectRatios"
       | "supportsNegativePrompt"
       | "supportsReferenceImages"
+      | "supportsReferenceStrength"
     >
   > = {}
 ): ModelCapabilityDescriptor {
@@ -129,19 +142,40 @@ export const PROVIDER_CAPABILITY_DESCRIPTORS: ProviderCapabilityDescriptor[] =
           return modelDescriptor(provider, entry.id, entry.label, {
             openRouterImageApi: true,
             supportsNegativePrompt: false,
+            supportsReferenceImages: SINGLE_REFERENCE,
           });
         case "openai":
           return modelDescriptor(provider, entry.id, entry.label, {
             supportsNegativePrompt: false,
+            supportsReferenceImages: SINGLE_REFERENCE,
+            supportsReferenceStrength: true,
           });
         case "gemini":
           return modelDescriptor(provider, entry.id, entry.label, {
             supportsNegativePrompt: false,
+            supportsReferenceImages: SINGLE_REFERENCE,
           });
         case "fal":
-          return modelDescriptor(provider, entry.id, entry.label);
+          return modelDescriptor(
+            provider,
+            entry.id,
+            entry.label,
+            entry.id === "fal-ai/ideogram/character"
+              ? {
+                  supportsNegativePrompt: false,
+                  supportsReferenceImages: SINGLE_REFERENCE,
+                }
+              : {}
+          );
         case "replicate":
-          return modelDescriptor(provider, entry.id, entry.label);
+          return modelDescriptor(
+            provider,
+            entry.id,
+            entry.label,
+            entry.id === "black-forest-labs/flux-2-pro"
+              ? { supportsReferenceImages: MULTI_REFERENCE }
+              : {}
+          );
         case "custom":
           return modelDescriptor(provider, entry.id, entry.label, {
             supportsNegativePrompt: false,
