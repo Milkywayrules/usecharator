@@ -13,6 +13,7 @@ import { and, desc, eq, ilike, inArray, sql } from "drizzle-orm";
 import { db, resolveAuthUser } from "../auth";
 import { config } from "../config";
 import { signedUrlsForJob } from "../jobs/processor";
+import { referenceImageUrlForKey } from "../lib/character-response";
 import { hashReporterIp } from "../lib/crypto";
 import { HttpError } from "../lib/errors";
 import {
@@ -191,6 +192,7 @@ export async function handleGalleryDetail(
       name: characters.name,
       ownerDisplayName: user.name,
       ownerUserId: characters.ownerUserId,
+      referenceImageKey: characters.referenceImageKey,
       remixedFromCharacterId: characters.remixedFromCharacterId,
       spec: characters.spec,
       themeId: characters.themeId,
@@ -257,6 +259,7 @@ export async function handleGalleryDetail(
     owner: {
       displayName: row.ownerDisplayName?.trim() || "Anonymous",
     },
+    referenceImageUrl: referenceImageUrlForKey(row.referenceImageKey),
     remixCount: remixCountRow?.count ?? 0,
     remixedFrom,
     renders,

@@ -38,5 +38,7 @@ describe("route mounts", () => {
       );
     }
     expect(v1Paths).toContain("GET /v1/providers/capabilities");
+    expect(v1Paths).toContain("POST /v1/characters/:id/anchor");
+    expect(v1Paths).toContain("DELETE /v1/characters/:id/anchor");
   });
 });

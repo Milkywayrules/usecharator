@@ -23,13 +23,19 @@ import {
   resolveApiKey,
   signedUrlsForJob,
 } from "../jobs/processor";
+import { toCharacterResponse } from "../lib/character-response";
 import { decryptSecret, encryptSecret, maskApiKey } from "../lib/crypto";
 import { HttpError } from "../lib/errors";
+import {
+  assertReferenceCharacterOwnership,
+  attachGenerationReferences,
+} from "../lib/generation-create";
 import { validatePublicHttpsUrl } from "../lib/public-url";
 import {
   clientIpFromHeaders,
   SlidingWindowRateLimiter,
 } from "../lib/rate-limit";
+import { ReferenceResolutionError } from "../lib/reference-generation";
 import { getProviderAdapter } from "../providers/registry";
 import { createRerollJob } from "./reroll";
 
@@ -48,6 +54,26 @@ function json(data: unknown, status = 200): Response {
 
 async function readJson<T>(request: Request): Promise<T> {
   return (await request.json()) as T;
+}
+
+async function attachJobReferencesOrThrow(
+  jobId: string,
+  body: Parameters<typeof attachGenerationReferences>[2],
+  userId: string | null,
+  modelId: string
+): Promise<void> {
+  try {
+    await attachGenerationReferences(db, jobId, body, userId, modelId);
+  } catch (error) {
+    if (error instanceof ReferenceResolutionError) {
+      // biome-ignore lint/style/useErrorCause: HttpError is a typed API boundary, not a wrapper
+      throw new HttpError(error.httpStatus, {
+        code: "validation_error",
+        message: error.message,
+      });
+    }
+    throw error;
+  }
 }
 
 export async function handleGenerationsPost(
@@ -96,6 +122,12 @@ export async function handleGenerationsPost(
 
   const model = defaultModelFor(parsed.data.provider, parsed.data.model);
 
+  await assertReferenceCharacterOwnership(
+    db,
+    parsed.data,
+    authUser ? authUser.id : null
+  );
+
   const [job] = await db
     .insert(generationJobs)
     .values({
@@ -120,6 +152,12 @@ export async function handleGenerationsPost(
   }
 
   rememberJobCredentials(job.id, credentials, authUser ? authUser.id : null);
+  await attachJobReferencesOrThrow(
+    job.id,
+    parsed.data,
+    authUser ? authUser.id : null,
+    model
+  );
   processGenerationJob(db, job.id, credentials).catch((error) =>
     console.error(error)
   );
@@ -150,6 +188,7 @@ export async function handleGenerationGet(
   }
 
   return json({
+    characterId: job.characterId,
     createdAt: job.createdAt.toISOString(),
     error: job.error,
     finishedAt: job.finishedAt?.toISOString() ?? null,
@@ -279,18 +318,7 @@ export async function handleCharactersList(
     .from(characters)
     .where(eq(characters.ownerUserId, user.id));
 
-  return json(
-    rows.map((row) => ({
-      createdAt: row.createdAt.toISOString(),
-      id: row.id,
-      moderationStatus: row.moderationStatus,
-      name: row.name,
-      spec: row.spec,
-      themeId: row.themeId,
-      updatedAt: row.updatedAt.toISOString(),
-      visibility: row.visibility,
-    }))
-  );
+  return json(rows.map((row) => toCharacterResponse(row)));
 }
 
 export async function handleCharactersPost(
@@ -318,18 +346,14 @@ export async function handleCharactersPost(
     })
     .returning();
 
-  return json(
-    {
-      createdAt: row?.createdAt.toISOString(),
-      id: row?.id,
-      name: row?.name,
-      spec: row?.spec,
-      themeId: row?.themeId ?? null,
-      updatedAt: row?.updatedAt.toISOString(),
-      visibility: row?.visibility,
-    },
-    201
-  );
+  if (!row) {
+    throw new HttpError(500, {
+      code: "internal_error",
+      message: "failed to create character",
+    });
+  }
+
+  return json(toCharacterResponse(row), 201);
 }
 
 export async function handleCharactersPatch(
@@ -378,15 +402,14 @@ export async function handleCharactersPatch(
     .where(eq(characters.id, characterId))
     .returning();
 
-  return json({
-    createdAt: row?.createdAt.toISOString(),
-    id: row?.id,
-    name: row?.name,
-    spec: row?.spec,
-    themeId: row?.themeId ?? null,
-    updatedAt: row?.updatedAt.toISOString(),
-    visibility: row?.visibility,
-  });
+  if (!row) {
+    throw new HttpError(500, {
+      code: "internal_error",
+      message: "failed to update character",
+    });
+  }
+
+  return json(toCharacterResponse(row));
 }
 
 export async function handleCharactersDelete(
@@ -463,18 +486,7 @@ export async function handleCharactersRemix(
     });
   }
 
-  return json(
-    {
-      createdAt: row.createdAt.toISOString(),
-      id: row.id,
-      name: row.name,
-      spec: row.spec,
-      themeId: row.themeId ?? null,
-      updatedAt: row.updatedAt.toISOString(),
-      visibility: row.visibility,
-    },
-    201
-  );
+  return json(toCharacterResponse(row), 201);
 }
 
 export async function handleKeysList(request: Request): Promise<Response> {

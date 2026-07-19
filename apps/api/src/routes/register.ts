@@ -1,5 +1,9 @@
 import type { Elysia } from "elysia";
 import {
+  handleCharacterAnchorDelete,
+  handleCharacterAnchorPost,
+} from "./anchor";
+import {
   handleGalleryDetail,
   handleGalleryList,
   handleGalleryReport,
@@ -90,6 +94,18 @@ export const SHARED_PROGRAMMATIC_ROUTES: RouteMount[] = [
       handleCharacterGenerations(request, params.id ?? ""),
     method: "get",
     path: "/characters/:id/generations",
+  },
+  {
+    handler: (request, params) =>
+      handleCharacterAnchorPost(request, params.id ?? ""),
+    method: "post",
+    path: "/characters/:id/anchor",
+  },
+  {
+    handler: (request, params) =>
+      handleCharacterAnchorDelete(request, params.id ?? ""),
+    method: "delete",
+    path: "/characters/:id/anchor",
   },
   {
     handler: (request) => handleGalleryList(request),

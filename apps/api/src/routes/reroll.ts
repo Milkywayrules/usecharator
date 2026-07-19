@@ -88,6 +88,8 @@ export async function createRerollJob(
       prompt: source.prompt,
       provider: source.provider,
       providerKeyId: credentials.providerKeyId ?? null,
+      referenceImageKeys: source.referenceImageKeys,
+      referenceStrength: source.referenceStrength,
       specSnapshot: source.specSnapshot,
       status: "queued",
       userId: authUser ? authUser.id : null,
