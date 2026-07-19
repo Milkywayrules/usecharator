@@ -85,6 +85,13 @@
       "when": 1784481760847,
       "tag": "0011_sheet_batches_active_uniq",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1784481760848,
+      "tag": "0012_workspaces",
+      "breakpoints": true
     }
   ]
 }

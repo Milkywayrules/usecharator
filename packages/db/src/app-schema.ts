@@ -13,7 +13,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-import { user } from "./auth-schema";
+import { organization, user } from "./auth-schema";
 
 export const providerEnum = pgEnum("provider", [
   "openrouter",
@@ -73,6 +73,9 @@ export const providerKeys = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
   },
   (table) => [
     uniqueIndex("provider_keys_user_provider_label_idx").on(
@@ -81,6 +84,7 @@ export const providerKeys = pgTable(
       table.label
     ),
     index("provider_keys_user_id_idx").on(table.userId),
+    index("provider_keys_workspace_id_idx").on(table.workspaceId),
   ]
 );
 
@@ -107,9 +111,13 @@ export const characters = pgTable(
       .$onUpdate(() => new Date())
       .notNull(),
     visibility: visibilityEnum("visibility").default("public").notNull(),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
   },
   (table) => [
     index("characters_owner_user_id_idx").on(table.ownerUserId),
+    index("characters_workspace_id_idx").on(table.workspaceId),
     index("characters_visibility_idx").on(table.visibility),
     index("characters_moderation_status_idx").on(table.moderationStatus),
     index("characters_remixed_from_idx").on(table.remixedFromCharacterId),
@@ -140,9 +148,13 @@ export const sheetBatches = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
   },
   (table) => [
     index("sheet_batches_user_id_idx").on(table.userId),
+    index("sheet_batches_workspace_id_idx").on(table.workspaceId),
     index("sheet_batches_character_id_idx").on(table.characterId),
     index("sheet_batches_status_idx").on(table.status),
   ]
@@ -184,9 +196,13 @@ export const generationJobs = pgTable(
       .$onUpdate(() => new Date())
       .notNull(),
     userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+    workspaceId: text("workspace_id").references(() => organization.id, {
+      onDelete: "set null",
+    }),
   },
   (table) => [
     index("generation_jobs_user_id_idx").on(table.userId),
+    index("generation_jobs_workspace_id_idx").on(table.workspaceId),
     index("generation_jobs_status_idx").on(table.status),
     index("generation_jobs_provider_job_id_idx").on(table.providerJobId),
     index("generation_jobs_sheet_batch_id_idx").on(table.sheetBatchId),
@@ -197,6 +213,10 @@ export const providerKeysRelations = relations(providerKeys, ({ one }) => ({
   user: one(user, {
     fields: [providerKeys.userId],
     references: [user.id],
+  }),
+  workspace: one(organization, {
+    fields: [providerKeys.workspaceId],
+    references: [organization.id],
   }),
 }));
 
@@ -244,6 +264,10 @@ export const charactersRelations = relations(characters, ({ one, many }) => ({
   remixes: many(characters, { relationName: "characterRemixLineage" }),
   reports: many(characterReports),
   sheetBatches: many(sheetBatches),
+  workspace: one(organization, {
+    fields: [characters.workspaceId],
+    references: [organization.id],
+  }),
 }));
 
 export const sheetBatchesRelations = relations(
@@ -257,6 +281,10 @@ export const sheetBatchesRelations = relations(
     user: one(user, {
       fields: [sheetBatches.userId],
       references: [user.id],
+    }),
+    workspace: one(organization, {
+      fields: [sheetBatches.workspaceId],
+      references: [organization.id],
     }),
   })
 );
@@ -292,6 +320,10 @@ export const generationJobsRelations = relations(generationJobs, ({ one }) => ({
     fields: [generationJobs.userId],
     references: [user.id],
   }),
+  workspace: one(organization, {
+    fields: [generationJobs.workspaceId],
+    references: [organization.id],
+  }),
 }));
 
 export const apiTokens = pgTable(
@@ -309,9 +341,13 @@ export const apiTokens = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
   },
   (table) => [
     index("api_tokens_user_id_idx").on(table.userId),
+    index("api_tokens_workspace_id_idx").on(table.workspaceId),
     uniqueIndex("api_tokens_token_hash_idx").on(table.tokenHash),
   ]
 );
@@ -320,6 +356,10 @@ export const apiTokensRelations = relations(apiTokens, ({ one }) => ({
   user: one(user, {
     fields: [apiTokens.userId],
     references: [user.id],
+  }),
+  workspace: one(organization, {
+    fields: [apiTokens.workspaceId],
+    references: [organization.id],
   }),
 }));
 

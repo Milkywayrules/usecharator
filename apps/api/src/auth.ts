@@ -3,12 +3,16 @@ import {
   apiTokens,
   createDb,
   type Db,
+  invitation,
+  member,
+  organization,
   session as sessionTable,
   user,
   verification,
 } from "@charator/db";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { organization as organizationPlugin } from "better-auth/plugins";
 import { and, eq, isNull } from "drizzle-orm";
 import { config } from "./config";
 import {
@@ -16,6 +20,10 @@ import {
   isValidApiTokenFormat,
   parseBearerToken,
 } from "./lib/api-token";
+import {
+  createPersonalWorkspace,
+  getFirstOwnedWorkspaceId,
+} from "./lib/workspace";
 
 const connection = createDb(config.DATABASE_URL);
 export const db: Db = connection.db;
@@ -27,11 +35,47 @@ export const auth = betterAuth({
     provider: "pg",
     schema: {
       account,
+      invitation,
+      member,
+      organization,
       session: sessionTable,
       user,
       verification,
     },
   }),
+  databaseHooks: {
+    session: {
+      create: {
+        before: async (session) => {
+          const workspaceId = await getFirstOwnedWorkspaceId(
+            db,
+            session.userId
+          );
+          if (!workspaceId) {
+            return { data: session };
+          }
+          return {
+            data: {
+              ...session,
+              activeOrganizationId: workspaceId,
+            },
+          };
+        },
+      },
+    },
+    user: {
+      create: {
+        after: async (createdUser) => {
+          await createPersonalWorkspace(db, createdUser.id, createdUser.name);
+        },
+      },
+    },
+  },
+  plugins: [
+    organizationPlugin({
+      teams: { enabled: false },
+    }),
+  ],
   secret: config.BETTER_AUTH_SECRET,
   socialProviders: {
     github: {
@@ -53,6 +97,7 @@ export type AuthMethod = "bearer" | "session";
 export interface AuthUser extends SessionUser {
   authMethod: AuthMethod;
   tokenId?: string;
+  workspaceId?: string;
 }
 
 const tokenLastUsedWrites = new Map<string, number>();
@@ -101,6 +146,7 @@ export async function resolveUserFromBearerToken(
         userId: user.id,
         userImage: user.image,
         userName: user.name,
+        workspaceId: apiTokens.workspaceId,
       })
       .from(apiTokens)
       .innerJoin(user, eq(apiTokens.userId, user.id))
@@ -122,6 +168,7 @@ export async function resolveUserFromBearerToken(
       image: row.userImage,
       name: row.userName,
       tokenId: row.id,
+      workspaceId: row.workspaceId,
     };
   } catch {
     return null;

@@ -26,6 +26,12 @@ export * from "./auth-schema";
 export {
   account,
   accountRelations,
+  invitation,
+  invitationRelations,
+  member,
+  memberRelations,
+  organization,
+  organizationRelations,
   session,
   sessionRelations,
   user,
