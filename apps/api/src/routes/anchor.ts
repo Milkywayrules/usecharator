@@ -1,5 +1,6 @@
 import { characters } from "@charator/db";
 import {
+  MAX_REFERENCE_IMAGE_BYTES,
   parseReferenceDataUrl,
   setCharacterAnchorFromJobSchema,
   setCharacterAnchorUploadSchema,
@@ -22,6 +23,13 @@ function json(data: unknown, status = 200): Response {
 
 async function readJson<T>(request: Request): Promise<T> {
   return (await request.json()) as T;
+}
+
+export function multipartReferenceSizeError(file: File): string | null {
+  if (file.size > MAX_REFERENCE_IMAGE_BYTES) {
+    return `reference image exceeds ${MAX_REFERENCE_IMAGE_BYTES} bytes`;
+  }
+  return null;
 }
 
 function mapReferenceError(error: unknown): never {
@@ -65,6 +73,13 @@ export async function handleCharacterAnchorPost(
       throw new HttpError(400, {
         code: "validation_error",
         message: "multipart upload requires an image field",
+      });
+    }
+    const sizeError = multipartReferenceSizeError(file);
+    if (sizeError) {
+      throw new HttpError(400, {
+        code: "validation_error",
+        message: sizeError,
       });
     }
     const bytes = new Uint8Array(await file.arrayBuffer());

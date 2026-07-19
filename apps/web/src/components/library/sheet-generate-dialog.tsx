@@ -243,9 +243,8 @@ export function SheetGenerateDialog({
               className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-amber-900 text-sm dark:text-amber-100"
               data-testid="sheet-text-only-notice"
             >
-              The selected model does not support reference images. The sheet
-              will still run using text-only prompts — identity is locked in the
-              spec.
+              Use character anchor requires a reference-capable model. Choose a
+              model marked ref or turn off the anchor toggle.
             </p>
           ) : null}
 
@@ -284,7 +283,7 @@ export function SheetGenerateDialog({
 
           <Button
             className="w-full"
-            disabled={mutation.isPending || !providerKeyId}
+            disabled={mutation.isPending || !providerKeyId || textOnlyAnchor}
             onClick={() => mutation.mutate()}
             type="button"
           >
