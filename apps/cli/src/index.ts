@@ -5,6 +5,7 @@ import { charactersCommand } from "./commands/characters";
 import { galleryCommand } from "./commands/gallery";
 import { generateCommand, jobsCommand } from "./commands/generate";
 import { keysCommand } from "./commands/keys";
+import { sheetCommand } from "./commands/sheet";
 import { specCommand } from "./commands/spec";
 import { themesCommand } from "./commands/themes";
 import { globalArgDefs } from "./context";
@@ -23,6 +24,7 @@ const main = defineCommand({
     generate: generateCommand,
     jobs: jobsCommand,
     keys: keysCommand,
+    sheet: sheetCommand,
     spec: specCommand,
     themes: themesCommand,
   },

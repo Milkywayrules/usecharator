@@ -5,9 +5,13 @@ import {
   characterVisibilitySchema,
   createGenerationRequestSchema,
   createGenerationResponseSchema,
+  createSheetRequestSchema,
+  createSheetResponseSchema,
   galleryListResponseSchema,
   generationJobResponseSchema,
   providerSchema,
+  sheetBatchResponseSchema,
+  sheetPresetIdSchema,
   specRenderResponseSchema,
 } from "@charator/shared";
 import { type CharacterSpec, characterSpecSchema } from "@charator/spec";
@@ -246,6 +250,48 @@ export async function generateImage(
   return createGenerationResponseSchema.parse(data);
 }
 
+export async function generateSheet(
+  client: CharatorClient,
+  input: {
+    apiKey?: string;
+    characterId: string;
+    model?: string;
+    preset: z.infer<typeof sheetPresetIdSchema>;
+    provider: z.infer<typeof providerSchema>;
+    providerKeyId?: string;
+    useAnchor?: boolean;
+  }
+) {
+  await fetchOwnedCharacter(client, input.characterId);
+
+  const body = createSheetRequestSchema.parse({
+    ...(input.apiKey ? { apiKey: input.apiKey } : {}),
+    ...(input.model ? { model: input.model } : {}),
+    ...(input.providerKeyId ? { providerKeyId: input.providerKeyId } : {}),
+    ...(input.useAnchor ? { useAnchor: true } : {}),
+    preset: input.preset,
+    provider: input.provider,
+  });
+
+  const data = await client.request<unknown>(
+    "POST",
+    `/characters/${input.characterId}/sheet`,
+    {
+      auth: "required",
+      body,
+    }
+  );
+
+  return createSheetResponseSchema.parse(data);
+}
+
+export async function getSheetBatch(client: CharatorClient, batchId: string) {
+  const data = await client.request<unknown>("GET", `/sheets/${batchId}`, {
+    auth: "required",
+  });
+  return sheetBatchResponseSchema.parse(data);
+}
+
 export async function getGeneration(client: CharatorClient, jobId: string) {
   const data = await client.request<unknown>("GET", `/generations/${jobId}`, {
     auth: "optional",
@@ -481,6 +527,43 @@ export function registerTools(server: McpServer, client: CharatorClient): void {
           providerKeyId,
           theme,
           ...(spec === undefined ? {} : { spec: parseSpecInput(spec) }),
+        })
+      )
+  );
+
+  server.registerTool(
+    "generate_sheet",
+    {
+      description:
+        "Start a character sheet batch (turnaround, expressions, or poses). Requires CHARATOR_API_TOKEN and exactly one of providerKeyId or apiKey.",
+      inputSchema: {
+        apiKey: z.string().optional(),
+        characterId: z.string().uuid(),
+        model: z.string().optional(),
+        preset: sheetPresetIdSchema.default("turnaround"),
+        provider: providerSchema,
+        providerKeyId: z.string().uuid().optional(),
+        useAnchor: z.boolean().optional(),
+      },
+    },
+    async ({
+      apiKey,
+      characterId,
+      model,
+      preset,
+      provider,
+      providerKeyId,
+      useAnchor,
+    }) =>
+      runTool(() =>
+        generateSheet(client, {
+          apiKey,
+          characterId,
+          model,
+          preset,
+          provider,
+          providerKeyId,
+          useAnchor,
         })
       )
   );
