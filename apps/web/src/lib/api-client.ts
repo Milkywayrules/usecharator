@@ -8,10 +8,13 @@ import {
   type CreateGenerationRequest,
   type CreateGenerationResponse,
   type CreateProviderKeyRequest,
+  type CreateSheetRequest,
+  type CreateSheetResponse,
   characterGenerationsResponseSchema,
   characterResponseSchema,
   createApiTokenResponseSchema,
   createGenerationResponseSchema,
+  createSheetResponseSchema,
   type GalleryDetailResponse,
   type GalleryListResponse,
   type GenerationJobResponse,
@@ -28,6 +31,8 @@ import {
   type RerollGenerationResponse,
   reportCharacterResponseSchema,
   rerollGenerationResponseSchema,
+  type SheetBatchResponse,
+  sheetBatchResponseSchema,
   type TelegramLinkCodeResponse,
   type TelegramLinkStatus,
   telegramLinkCodeResponseSchema,
@@ -99,10 +104,13 @@ export async function postGeneration(
 }
 
 export async function listCharacters(): Promise<CharacterResponse[]> {
-  return readTreatyData(
-    await api.characters.get(),
-    characterResponseSchema.array()
-  );
+  const response = await fetch(`${resolveBaseUrl()}/api/characters`, {
+    credentials: "include",
+  });
+  if (!response.ok) {
+    throw new Error(`characters request failed (${response.status})`);
+  }
+  return characterResponseSchema.array().parse(await response.json());
 }
 
 export async function createCharacter(body: {
@@ -343,4 +351,51 @@ export async function deleteCharacterAnchor(
   if (result.data instanceof Response && !result.data.ok) {
     throw new Error(`Delete anchor failed (${result.data.status})`);
   }
+}
+
+export async function postCharacterSheet(
+  characterId: string,
+  body: CreateSheetRequest
+): Promise<CreateSheetResponse> {
+  const response = await fetch(
+    `${resolveBaseUrl()}/api/characters/${characterId}/sheet`,
+    {
+      body: JSON.stringify(body),
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    }
+  );
+  if (!response.ok) {
+    const payload: unknown = await response.json().catch(() => null);
+    const message =
+      typeof payload === "object" &&
+      payload !== null &&
+      "message" in payload &&
+      typeof payload.message === "string"
+        ? payload.message
+        : `sheet request failed (${response.status})`;
+    throw new Error(message);
+  }
+  return createSheetResponseSchema.parse(await response.json());
+}
+
+export async function getSheetBatch(
+  batchId: string
+): Promise<SheetBatchResponse> {
+  const response = await fetch(`${resolveBaseUrl()}/api/sheets/${batchId}`, {
+    credentials: "include",
+  });
+  if (!response.ok) {
+    const payload: unknown = await response.json().catch(() => null);
+    const message =
+      typeof payload === "object" &&
+      payload !== null &&
+      "message" in payload &&
+      typeof payload.message === "string"
+        ? payload.message
+        : `sheet batch request failed (${response.status})`;
+    throw new Error(message);
+  }
+  return sheetBatchResponseSchema.parse(await response.json());
 }

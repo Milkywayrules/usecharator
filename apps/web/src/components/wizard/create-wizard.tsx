@@ -40,7 +40,9 @@ import { useWizardStore } from "@/stores/wizard-store";
 
 export function CreateWizard() {
   const {
+    characterAnchorUrl,
     draftVersion,
+    editingCharacterId,
     spec,
     themeId,
     stepIndex,
@@ -110,7 +112,12 @@ export function CreateWizard() {
         <div className="space-y-8">
           <ReviewStep spec={form.getValues()} themeId={themeId} />
           <SaveToLibraryButton spec={form.getValues()} themeId={themeId} />
-          <GeneratePanel spec={form.getValues()} themeId={themeId} />
+          <GeneratePanel
+            characterAnchorUrl={characterAnchorUrl}
+            characterId={editingCharacterId ?? undefined}
+            spec={form.getValues()}
+            themeId={themeId}
+          />
         </div>
       );
     }

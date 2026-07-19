@@ -7,6 +7,7 @@ import {
   CopyIcon,
   DownloadIcon,
   HistoryIcon,
+  LayoutGridIcon,
   PencilIcon,
   SparklesIcon,
   Trash2Icon,
@@ -15,6 +16,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { SheetGenerateDialog } from "@/components/library/sheet-generate-dialog";
 import { ImportSpecButton } from "@/components/spec/import-spec-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -58,6 +60,7 @@ function CharacterCard({
   onEdit,
   onExport,
   onGenerate,
+  onGenerateSheet,
   onHistory,
   onRemoveAnchor,
   onToggleVisibility,
@@ -79,6 +82,7 @@ function CharacterCard({
   onEdit: () => void;
   onExport: () => void;
   onGenerate: () => void;
+  onGenerateSheet?: () => void;
   onHistory?: () => void;
   onRemoveAnchor?: () => void;
   onToggleVisibility?: (next: "public" | "private") => void;
@@ -198,6 +202,17 @@ function CharacterCard({
             <SparklesIcon />
             Generate
           </Button>
+          {onGenerateSheet ? (
+            <Button
+              onClick={onGenerateSheet}
+              size="default"
+              type="button"
+              variant="outline"
+            >
+              <LayoutGridIcon />
+              Generate sheet
+            </Button>
+          ) : null}
           {onHistory ? (
             <Button
               onClick={onHistory}
@@ -233,6 +248,11 @@ export default function LibraryPage() {
 
   const [localChars, setLocalChars] = useState<LocalCharacterRecord[]>([]);
   const [importOpen, setImportOpen] = useState(false);
+  const [sheetTarget, setSheetTarget] = useState<{
+    anchorUrl?: string | null;
+    id: string;
+    name: string;
+  } | null>(null);
 
   const serverQuery = useQuery({
     enabled: signedIn,
@@ -320,7 +340,10 @@ export default function LibraryPage() {
       return;
     }
     const spec = parseCharacterSpec(row.spec);
-    loadDraft(spec, normalizeThemeId(row.themeId) ?? null);
+    loadDraft(spec, normalizeThemeId(row.themeId) ?? null, {
+      anchorUrl: row.referenceImageUrl,
+      characterId: row.id,
+    });
     router.push("/create");
   }
 
@@ -483,8 +506,17 @@ export default function LibraryPage() {
                 } else {
                   handleEditLocal(character.id);
                 }
-                router.push("/create");
               }}
+              onGenerateSheet={
+                signedIn
+                  ? () =>
+                      setSheetTarget({
+                        anchorUrl: character.referenceImageUrl,
+                        id: character.id,
+                        name: character.name,
+                      })
+                  : undefined
+              }
               onHistory={
                 signedIn
                   ? () => router.push(`/library/${character.id}/history`)
@@ -534,6 +566,20 @@ export default function LibraryPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {sheetTarget ? (
+        <SheetGenerateDialog
+          characterAnchorUrl={sheetTarget.anchorUrl}
+          characterId={sheetTarget.id}
+          characterName={sheetTarget.name}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSheetTarget(null);
+            }
+          }}
+          open
+        />
+      ) : null}
     </div>
   );
 }

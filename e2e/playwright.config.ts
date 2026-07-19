@@ -57,7 +57,7 @@ export default defineConfig({
     {
       command: process.env.CI
         ? "bun run start"
-        : "bun run build && bun run start",
+        : "E2E=1 bun run build && E2E=1 bun run start",
       cwd: "../apps/web",
       env: {
         ...process.env,
