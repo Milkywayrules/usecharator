@@ -25,6 +25,11 @@ verbatim output format for each subagent:
 - etc
 ```
 
+## Unit test, e2e test, and other test
+
+use e2e test, setup playwright.
+use bun test for unit test.
+
 ## Personal behavior & coding principles (MUST FOLLOW)
 
 ### Scope & quality — two axes, both always on (not modes)
