@@ -67,6 +67,10 @@ export default function SettingsPage() {
   const { data: session } = authClient.useSession();
   const signedIn = Boolean(session?.user);
   const { resolvedTheme, setTheme } = useTheme();
+  const [themeReady, setThemeReady] = useState(false);
+  useEffect(() => {
+    setThemeReady(true);
+  }, []);
   const queryClient = useQueryClient();
 
   const [provider, setProvider] = useState<Provider>("openrouter");
@@ -182,7 +186,11 @@ export default function SettingsPage() {
       queryClient.invalidateQueries({ queryKey: ["api-tokens"] }),
   });
 
-  const localKeys = readLocalKeys();
+  const [localKeys, setLocalKeysSnapshot] = useState(() => readLocalKeys());
+
+  function refreshLocalKeys() {
+    setLocalKeysSnapshot(readLocalKeys());
+  }
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 px-4 py-10 sm:px-6">
@@ -205,11 +213,20 @@ export default function SettingsPage() {
             onClick={() =>
               setTheme(resolvedTheme === "dark" ? "light" : "dark")
             }
+            suppressHydrationWarning
             type="button"
             variant="outline"
           >
-            {resolvedTheme === "dark" ? <SunIcon /> : <MoonIcon />}
-            {resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
+            {themeReady && resolvedTheme === "dark" ? (
+              <SunIcon />
+            ) : (
+              <MoonIcon />
+            )}
+            {themeReady
+              ? resolvedTheme === "dark"
+                ? "Light mode"
+                : "Dark mode"
+              : "Toggle theme"}
           </Button>
         </CardContent>
       </Card>
@@ -589,8 +606,8 @@ export default function SettingsPage() {
                       <Button
                         onClick={() => {
                           clearLocalKey(item);
+                          refreshLocalKeys();
                           toast.success("Key cleared");
-                          window.location.reload();
                         }}
                         type="button"
                         variant="outline"
@@ -625,8 +642,9 @@ export default function SettingsPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>API key</Label>
+                <Label htmlFor="byok-api-key">API key</Label>
                 <Input
+                  id="byok-api-key"
                   onChange={(e) => setLocalDraft(e.target.value)}
                   type="password"
                   value={localDraft}
@@ -636,6 +654,7 @@ export default function SettingsPage() {
                 disabled={!localDraft}
                 onClick={() => {
                   setLocalKey(provider, localDraft);
+                  refreshLocalKeys();
                   toast.success("Key saved locally");
                 }}
                 type="button"

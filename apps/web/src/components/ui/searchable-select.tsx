@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 interface SearchableSelectProps {
   className?: string;
   disabled?: boolean;
+  id?: string;
   onChange: (value: string) => void;
   options: readonly string[];
   placeholder?: string;
@@ -24,6 +25,7 @@ interface SearchableSelectProps {
 export function SearchableSelect({
   className,
   disabled,
+  id,
   onChange,
   options,
   placeholder = "Select…",
@@ -48,6 +50,7 @@ export function SearchableSelect({
         <Button
           className={cn("w-full justify-between font-normal", className)}
           disabled={disabled}
+          id={id}
           type="button"
           variant="outline"
         >

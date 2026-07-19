@@ -9,6 +9,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 interface WizardState {
+  draftVersion: number;
   loadDraft: (spec: CharacterSpec, themeId?: ThemeId | null) => void;
   reset: () => void;
   setSpec: (spec: CharacterSpec) => void;
@@ -22,13 +23,21 @@ interface WizardState {
 export const useWizardStore = create<WizardState>()(
   persist(
     (set) => ({
-      loadDraft: (spec, themeId = null) => set({ spec, stepIndex: 0, themeId }),
+      draftVersion: 0,
+      loadDraft: (spec, themeId = null) =>
+        set((state) => ({
+          draftVersion: state.draftVersion + 1,
+          spec,
+          stepIndex: 0,
+          themeId,
+        })),
       reset: () =>
-        set({
+        set((state) => ({
+          draftVersion: state.draftVersion + 1,
           spec: createEmptySpec(),
           stepIndex: 0,
           themeId: null,
-        }),
+        })),
       setSpec: (spec) => set({ spec }),
       setStepIndex: (stepIndex) => set({ stepIndex }),
       setThemeId: (themeId) => set({ themeId }),
@@ -36,6 +45,13 @@ export const useWizardStore = create<WizardState>()(
       stepIndex: 0,
       themeId: null,
     }),
-    { name: "charator-wizard-draft" }
+    {
+      name: "charator-wizard-draft",
+      partialize: (state) => ({
+        spec: state.spec,
+        stepIndex: state.stepIndex,
+        themeId: state.themeId,
+      }),
+    }
   )
 );

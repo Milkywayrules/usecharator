@@ -7,7 +7,9 @@ const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: path.join(import.meta.dirname, "../../"),
   async rewrites() {
-    if (process.env.NODE_ENV !== "development") {
+    const proxyApi =
+      process.env.NODE_ENV === "development" || process.env.E2E === "1";
+    if (!proxyApi) {
       return [];
     }
     return [

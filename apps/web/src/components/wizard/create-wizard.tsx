@@ -39,8 +39,15 @@ import {
 import { useWizardStore } from "@/stores/wizard-store";
 
 export function CreateWizard() {
-  const { spec, themeId, stepIndex, setSpec, setStepIndex, setThemeId } =
-    useWizardStore();
+  const {
+    draftVersion,
+    spec,
+    themeId,
+    stepIndex,
+    setSpec,
+    setStepIndex,
+    setThemeId,
+  } = useWizardStore();
 
   const form = useForm<CharacterSpec>({
     defaultValues: spec,
@@ -48,9 +55,10 @@ export function CreateWizard() {
     resolver: zodResolver(characterSpecSchema),
   });
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: draftVersion is the explicit import/reset signal
   useEffect(() => {
-    form.reset(spec);
-  }, [form, spec]);
+    form.reset(useWizardStore.getState().spec);
+  }, [draftVersion, form]);
 
   useEffect(() => {
     const subscription = form.watch((values) => {

@@ -24,7 +24,10 @@ export function PromptPreviewPanel({
   const validation = validateSpec(spec);
 
   return (
-    <div className={cn("flex h-full flex-col", className)}>
+    <div
+      className={cn("flex h-full flex-col", className)}
+      data-testid="prompt-preview-panel"
+    >
       <div className="border-b px-4 py-3">
         <h2 className="font-display font-semibold text-sm">Live prompt</h2>
         <p className="text-muted-foreground text-xs">

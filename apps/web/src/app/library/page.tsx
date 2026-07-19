@@ -184,6 +184,7 @@ function CharacterCard({
             </Button>
           ) : null}
           <Button
+            aria-label="Delete"
             onClick={onDelete}
             size="default"
             type="button"
@@ -466,7 +467,7 @@ export default function LibraryPage() {
       )}
 
       <Dialog onOpenChange={setImportOpen} open={importOpen}>
-        <DialogContent>
+        <DialogContent data-testid="library-import-dialog">
           <DialogHeader>
             <DialogTitle>Import local characters?</DialogTitle>
             <DialogDescription>

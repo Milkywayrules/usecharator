@@ -36,6 +36,7 @@ export function SpecField({ control, entry, error }: SpecFieldProps) {
           if (entry.kind === "enum" && entry.options) {
             return (
               <SearchableSelect
+                id={entry.path}
                 onChange={field.onChange}
                 options={entry.options}
                 value={String(field.value ?? "")}
@@ -46,6 +47,7 @@ export function SpecField({ control, entry, error }: SpecFieldProps) {
             return (
               <Switch
                 checked={field.value === true}
+                id={entry.path}
                 onCheckedChange={(checked) =>
                   field.onChange(checked ? true : null)
                 }
