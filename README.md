@@ -50,6 +50,16 @@ bun dev
 | `bun run build` | Production build (Turbo) |
 | `bun run lint` | Biome + Ultracite check |
 | `bun run typecheck` | TypeScript `--noEmit` across workspaces |
+| `bun run ci:smoke` | API + Postgres smoke checks (requires running API and `DATABASE_URL`) |
+
+## CI
+
+GitHub Actions runs on every push to `main` and on pull requests (`.github/workflows/ci.yml`):
+
+- **fast** — `bun install --frozen-lockfile`, then `bunx turbo build lint typecheck test` (Bun + Turbo caches).
+- **integration** — Postgres 17 service, Drizzle migrations via `packages/db`, API boot with CI-only dummy auth/env secrets, then `scripts/ci-smoke.ts` (health, empty gallery, seeded read/write path).
+
+**Release gate:** deploy only from green `main`. Do not promote builds from failing or skipped CI runs.
 
 ## Deploy notes
 
