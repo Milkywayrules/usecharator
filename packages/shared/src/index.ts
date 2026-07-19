@@ -44,6 +44,7 @@ export {
 } from "./keys";
 export {
   type CharacterReportReason,
+  canRemixCharacter,
   characterReportReasonSchema,
   MODERATION_HIDE_THRESHOLD,
   type ModerationStatus,

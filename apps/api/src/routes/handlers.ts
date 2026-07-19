@@ -1,5 +1,6 @@
 import { characters, generationJobs, providerKeys } from "@charator/db";
 import {
+  canRemixCharacter,
   createCharacterRequestSchema,
   createGenerationRequestSchema,
   createProviderKeyRequestSchema,
@@ -428,9 +429,14 @@ export async function handleCharactersRemix(
     });
   }
 
-  const canRemix =
-    source.visibility === "public" || source.ownerUserId === userSession.id;
-  if (!canRemix) {
+  if (
+    !canRemixCharacter({
+      moderationStatus: source.moderationStatus,
+      ownerUserId: source.ownerUserId,
+      viewerUserId: userSession.id,
+      visibility: source.visibility,
+    })
+  ) {
     throw new HttpError(404, {
       code: "not_found",
       message: "character not found",

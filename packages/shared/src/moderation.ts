@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { CharacterVisibility } from "./providers";
 
 export const characterReportReasonSchema = z.enum([
   "inappropriate",
@@ -39,4 +40,17 @@ export function shouldHideCharacter(
   threshold = MODERATION_HIDE_THRESHOLD
 ): boolean {
   return reportCount >= threshold;
+}
+
+export function canRemixCharacter(input: {
+  moderationStatus: ModerationStatus;
+  ownerUserId: string;
+  viewerUserId: string;
+  visibility: CharacterVisibility;
+}): boolean {
+  const isOwner = input.ownerUserId === input.viewerUserId;
+  return (
+    isOwner ||
+    (input.visibility === "public" && input.moderationStatus === "visible")
+  );
 }
