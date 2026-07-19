@@ -24,6 +24,18 @@ export {
   parseCharacterSpec,
 } from "./schema";
 export {
+  buildSheetVariants,
+  getSheetPreset,
+  listSheetPresets,
+  SHEET_PRESET_IDS,
+  SHEET_PRESETS,
+  type SheetPresetDefinition,
+  type SheetPresetId,
+  type SheetVariantDefinition,
+  type SheetVariantResult,
+  sheetVariantCount,
+} from "./sheet-presets";
+export {
   CHARATOR_SPEC_FILE_VERSION,
   exportSpecFile,
   type ParseSpecFileFailure,
