@@ -1,23 +1,28 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { DM_Sans, Syne } from "next/font/google";
+import { AppShell } from "@/components/layout/app-shell";
+import { Providers } from "@/components/providers";
 import { UmamiAnalytics } from "@/components/umami-analytics";
 import "./globals.css";
 
-const geistSans = Geist({
+const syne = Syne({
   subsets: ["latin"],
-  variable: "--font-geist-sans",
+  variable: "--font-display",
 });
 
-const geistMono = Geist_Mono({
+const dmSans = DM_Sans({
   subsets: ["latin"],
-  variable: "--font-geist-mono",
+  variable: "--font-body",
 });
 
 export const metadata: Metadata = {
   applicationName: "Chara Tor",
   description:
     "Wizard-driven character image generator. Bring your own API keys.",
-  title: "Chara Tor",
+  title: {
+    default: "Chara Tor",
+    template: "%s · Chara Tor",
+  },
 };
 
 export default function RootLayout({
@@ -26,11 +31,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html className="dark" lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} min-h-dvh font-sans`}
+        className={`${syne.variable} ${dmSans.variable} min-h-dvh font-sans antialiased`}
       >
-        {children}
+        <Providers>
+          <AppShell>{children}</AppShell>
+        </Providers>
         <UmamiAnalytics />
       </body>
     </html>
