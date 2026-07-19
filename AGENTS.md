@@ -12,7 +12,7 @@ implementer only by subagents. chat's agent (main agent) must be an-orchestrator
 
 ## Need human / user approval?
 
-spawn subagents of fable 5, gpt 5.6 sol, and composer 2.5 fast for decision maker. They are 3 are the hand-right of me (the user).
+spawn subagents of fable 5 medium, gpt 5.6 sol, and composer 2.5 fast for decision maker. They are 3 are the hand-right of me (the user).
 
 verbatim output format for each subagent:
 
