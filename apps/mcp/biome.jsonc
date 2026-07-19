@@ -1,0 +1,30 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
+  "root": false,
+  "extends": "//",
+  "files": {
+    "includes": ["src/**", "test/**", "biome.jsonc"]
+  },
+  "overrides": [
+    {
+      "includes": ["src/tools.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useDestructuring": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["test/**/*.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "useAwait": "off"
+          }
+        }
+      }
+    }
+  ]
+}
