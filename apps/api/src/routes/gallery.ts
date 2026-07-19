@@ -1,0 +1,221 @@
+import { characters, generationJobs, user } from "@charator/db";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { db, getSessionUser } from "../auth";
+import { signedUrlsForJob } from "../jobs/processor";
+import { HttpError } from "../lib/errors";
+
+const DEFAULT_PAGE_SIZE = 24;
+const MAX_PAGE_SIZE = 48;
+const MAX_DETAIL_RENDERS = 24;
+
+function json(data: unknown, status = 200): Response {
+  return Response.json(data, { status });
+}
+
+async function coverUrlsByCharacterIds(
+  characterIds: string[]
+): Promise<Map<string, string | null>> {
+  const covers = new Map<string, string | null>();
+  if (characterIds.length === 0) {
+    return covers;
+  }
+
+  const jobs = await db
+    .select({
+      characterId: generationJobs.characterId,
+      createdAt: generationJobs.createdAt,
+      imageKeys: generationJobs.imageKeys,
+    })
+    .from(generationJobs)
+    .where(
+      and(
+        inArray(generationJobs.characterId, characterIds),
+        eq(generationJobs.status, "succeeded")
+      )
+    )
+    .orderBy(desc(generationJobs.createdAt));
+
+  for (const job of jobs) {
+    if (!job.characterId || covers.has(job.characterId)) {
+      continue;
+    }
+    const [firstKey] = job.imageKeys;
+    if (!firstKey) {
+      covers.set(job.characterId, null);
+      continue;
+    }
+    const [url] = signedUrlsForJob([firstKey]);
+    covers.set(job.characterId, url ?? null);
+  }
+
+  return covers;
+}
+
+async function renderUrlsForCharacter(characterId: string): Promise<string[]> {
+  const jobs = await db
+    .select({ imageKeys: generationJobs.imageKeys })
+    .from(generationJobs)
+    .where(
+      and(
+        eq(generationJobs.characterId, characterId),
+        eq(generationJobs.status, "succeeded")
+      )
+    )
+    .orderBy(desc(generationJobs.createdAt))
+    .limit(MAX_DETAIL_RENDERS);
+
+  const renders: string[] = [];
+  for (const job of jobs) {
+    for (const url of signedUrlsForJob(job.imageKeys)) {
+      renders.push(url);
+      if (renders.length >= MAX_DETAIL_RENDERS) {
+        return renders;
+      }
+    }
+  }
+  return renders;
+}
+
+function parsePagination(request: Request): {
+  limit: number;
+  offset: number;
+  theme: string | null;
+} {
+  const url = new URL(request.url);
+  const offsetRaw = Number(url.searchParams.get("offset") ?? "0");
+  const limitRaw = Number(
+    url.searchParams.get("limit") ?? String(DEFAULT_PAGE_SIZE)
+  );
+  const offset = Number.isFinite(offsetRaw) && offsetRaw > 0 ? offsetRaw : 0;
+  const limit = Math.min(
+    MAX_PAGE_SIZE,
+    Math.max(1, Number.isFinite(limitRaw) ? limitRaw : DEFAULT_PAGE_SIZE)
+  );
+  const theme = url.searchParams.get("theme");
+  return { limit, offset, theme: theme?.trim() ? theme.trim() : null };
+}
+
+export async function handleGalleryList(request: Request): Promise<Response> {
+  const { limit, offset, theme } = parsePagination(request);
+  const filters = [eq(characters.visibility, "public")];
+  if (theme) {
+    filters.push(eq(characters.themeId, theme));
+  }
+
+  const rows = await db
+    .select({
+      createdAt: characters.createdAt,
+      id: characters.id,
+      name: characters.name,
+      ownerDisplayName: user.name,
+      themeId: characters.themeId,
+      updatedAt: characters.updatedAt,
+    })
+    .from(characters)
+    .innerJoin(user, eq(characters.ownerUserId, user.id))
+    .where(and(...filters))
+    .orderBy(desc(characters.createdAt))
+    .limit(limit + 1)
+    .offset(offset);
+
+  const hasMore = rows.length > limit;
+  const page = hasMore ? rows.slice(0, limit) : rows;
+  const covers = await coverUrlsByCharacterIds(page.map((row) => row.id));
+
+  return json({
+    hasMore,
+    items: page.map((row) => ({
+      coverImageUrl: covers.get(row.id) ?? null,
+      createdAt: row.createdAt.toISOString(),
+      id: row.id,
+      name: row.name,
+      owner: {
+        displayName: row.ownerDisplayName?.trim() || "Anonymous",
+      },
+      themeId: row.themeId,
+      updatedAt: row.updatedAt.toISOString(),
+    })),
+    nextOffset: offset + page.length,
+  });
+}
+
+export async function handleGalleryDetail(
+  request: Request,
+  characterId: string
+): Promise<Response> {
+  const sessionUser = await getSessionUser(request);
+
+  const [row] = await db
+    .select({
+      createdAt: characters.createdAt,
+      id: characters.id,
+      name: characters.name,
+      ownerDisplayName: user.name,
+      ownerUserId: characters.ownerUserId,
+      remixedFromCharacterId: characters.remixedFromCharacterId,
+      spec: characters.spec,
+      themeId: characters.themeId,
+      updatedAt: characters.updatedAt,
+      visibility: characters.visibility,
+    })
+    .from(characters)
+    .innerJoin(user, eq(characters.ownerUserId, user.id))
+    .where(eq(characters.id, characterId))
+    .limit(1);
+
+  if (!row) {
+    throw new HttpError(404, {
+      code: "not_found",
+      message: "character not found",
+    });
+  }
+
+  const isOwner = sessionUser?.id === row.ownerUserId;
+  if (row.visibility !== "public" && !isOwner) {
+    throw new HttpError(404, {
+      code: "not_found",
+      message: "character not found",
+    });
+  }
+
+  let remixedFrom: { id: string; name: string } | null = null;
+  if (row.remixedFromCharacterId) {
+    const [source] = await db
+      .select({
+        id: characters.id,
+        name: characters.name,
+        visibility: characters.visibility,
+      })
+      .from(characters)
+      .where(eq(characters.id, row.remixedFromCharacterId))
+      .limit(1);
+
+    if (source?.visibility === "public") {
+      remixedFrom = { id: source.id, name: source.name };
+    }
+  }
+
+  const [remixCountRow] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(characters)
+    .where(eq(characters.remixedFromCharacterId, characterId));
+
+  const renders = await renderUrlsForCharacter(characterId);
+
+  return json({
+    createdAt: row.createdAt.toISOString(),
+    id: row.id,
+    isOwner,
+    name: row.name,
+    owner: {
+      displayName: row.ownerDisplayName?.trim() || "Anonymous",
+    },
+    remixCount: remixCountRow?.count ?? 0,
+    remixedFrom,
+    renders,
+    spec: row.spec,
+    themeId: row.themeId,
+    updatedAt: row.updatedAt.toISOString(),
+    ...(isOwner ? { visibility: row.visibility } : {}),
+  });
+}

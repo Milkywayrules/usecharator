@@ -12,6 +12,19 @@ export {
   apiErrorSchema,
 } from "./errors";
 export {
+  deriveRemixName,
+  type GalleryDetailResponse,
+  type GalleryListItem,
+  type GalleryListResponse,
+  type GalleryOwner,
+  type GalleryRemixLineage,
+  galleryDetailResponseSchema,
+  galleryListItemSchema,
+  galleryListResponseSchema,
+  galleryOwnerSchema,
+  galleryRemixLineageSchema,
+} from "./gallery";
+export {
   type CreateGenerationRequest,
   type CreateGenerationResponse,
   createGenerationRequestSchema,

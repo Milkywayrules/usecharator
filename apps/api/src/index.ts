@@ -16,6 +16,7 @@ import {
   handleReplicateWebhook,
   startJobMaintenanceLoop,
 } from "./routes/handlers";
+import { handleGalleryDetail, handleGalleryList } from "./routes/gallery";
 
 async function dispatch(handler: () => Promise<Response>): Promise<Response> {
   try {
@@ -51,6 +52,10 @@ const app = new Elysia({ prefix: "/api" })
   )
   .delete("/characters/:id", ({ request, params }) =>
     dispatch(() => handleCharactersDelete(request, params.id))
+  )
+  .get("/gallery", ({ request }) => dispatch(() => handleGalleryList(request)))
+  .get("/gallery/:id", ({ request, params }) =>
+    dispatch(() => handleGalleryDetail(request, params.id))
   )
   .get("/keys", ({ request }) => dispatch(() => handleKeysList(request)))
   .post("/keys", ({ request }) => dispatch(() => handleKeysPost(request)))
