@@ -1,10 +1,14 @@
 import type { App } from "@charator/api/src/index";
 import {
+  type ApiTokenListItem,
+  apiTokenListItemSchema,
   type CharacterResponse,
+  type CreateApiTokenResponse,
   type CreateGenerationRequest,
   type CreateGenerationResponse,
   type CreateProviderKeyRequest,
   characterResponseSchema,
+  createApiTokenResponseSchema,
   createGenerationResponseSchema,
   type GalleryDetailResponse,
   type GalleryListResponse,
@@ -27,6 +31,8 @@ function resolveBaseUrl(): string {
 }
 
 const client = treaty<App>(resolveBaseUrl());
+// biome-ignore lint/suspicious/noExplicitAny: route-table mounts are not reflected on the exported App type
+const api = client.api as any;
 
 async function parseJson<T>(
   response: Response,
@@ -64,7 +70,7 @@ export async function getGenerationJob(
   id: string
 ): Promise<GenerationJobResponse> {
   return readTreatyData(
-    await client.api.generations({ id }).get(),
+    await api.generations({ id }).get(),
     generationJobResponseSchema
   );
 }
@@ -73,14 +79,14 @@ export async function postGeneration(
   body: CreateGenerationRequest
 ): Promise<CreateGenerationResponse> {
   return readTreatyData(
-    await client.api.generations.post(body),
+    await api.generations.post(body),
     createGenerationResponseSchema
   );
 }
 
 export async function listCharacters(): Promise<CharacterResponse[]> {
   return readTreatyData(
-    await client.api.characters.get(),
+    await api.characters.get(),
     characterResponseSchema.array()
   );
 }
@@ -92,7 +98,7 @@ export async function createCharacter(body: {
   visibility: "public" | "private";
 }): Promise<CharacterResponse> {
   return readTreatyData(
-    await client.api.characters.post({
+    await api.characters.post({
       name: body.name,
       spec: body.spec,
       visibility: body.visibility,
@@ -112,7 +118,7 @@ export async function patchCharacter(
   }
 ): Promise<CharacterResponse> {
   return readTreatyData(
-    await client.api.characters({ id }).patch({
+    await api.characters({ id }).patch({
       ...(body.name === undefined ? {} : { name: body.name }),
       ...(body.spec === undefined ? {} : { spec: body.spec }),
       ...(body.visibility === undefined ? {} : { visibility: body.visibility }),
@@ -123,7 +129,7 @@ export async function patchCharacter(
 }
 
 export async function deleteCharacter(id: string): Promise<void> {
-  const result = await client.api.characters({ id }).delete();
+  const result = await api.characters({ id }).delete();
   if (result.error) {
     throw result.error;
   }
@@ -148,7 +154,7 @@ export async function listGallery(params?: {
     query.theme = params.theme;
   }
   return readTreatyData(
-    await client.api.gallery.get({ query }),
+    await api.gallery.get({ query }),
     galleryListResponseSchema
   );
 }
@@ -157,21 +163,21 @@ export async function getGalleryCharacter(
   id: string
 ): Promise<GalleryDetailResponse> {
   return readTreatyData(
-    await client.api.gallery({ id }).get(),
+    await api.gallery({ id }).get(),
     galleryDetailResponseSchema
   );
 }
 
 export async function remixCharacter(id: string): Promise<CharacterResponse> {
   return readTreatyData(
-    await client.api.characters({ id }).remix.post(),
+    await api.characters({ id }).remix.post(),
     characterResponseSchema
   );
 }
 
 export async function listProviderKeys(): Promise<ProviderKeyResponse[]> {
   return readTreatyData(
-    await client.api.keys.get(),
+    await api.keys.get(),
     providerKeyResponseSchema.array()
   );
 }
@@ -179,18 +185,38 @@ export async function listProviderKeys(): Promise<ProviderKeyResponse[]> {
 export async function createProviderKey(
   body: CreateProviderKeyRequest
 ): Promise<ProviderKeyResponse> {
-  return readTreatyData(
-    await client.api.keys.post(body),
-    providerKeyResponseSchema
-  );
+  return readTreatyData(await api.keys.post(body), providerKeyResponseSchema);
 }
 
 export async function deleteProviderKey(id: string): Promise<void> {
-  const result = await client.api.keys({ id }).delete();
+  const result = await api.keys({ id }).delete();
   if (result.error) {
     throw result.error;
   }
   if (result.data instanceof Response && !result.data.ok) {
     throw new Error(`Delete failed (${result.data.status})`);
+  }
+}
+
+export async function listApiTokens(): Promise<ApiTokenListItem[]> {
+  return readTreatyData(await api.tokens.get(), apiTokenListItemSchema.array());
+}
+
+export async function createApiToken(body: {
+  name: string;
+}): Promise<CreateApiTokenResponse> {
+  return readTreatyData(
+    await api.tokens.post(body),
+    createApiTokenResponseSchema
+  );
+}
+
+export async function revokeApiToken(id: string): Promise<void> {
+  const result = await api.tokens({ id }).delete();
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.data instanceof Response && !result.data.ok) {
+    throw new Error(`Revoke failed (${result.data.status})`);
   }
 }

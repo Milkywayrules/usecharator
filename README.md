@@ -58,6 +58,29 @@ bun dev
 - **DNS**: point `charator.dioilham.com` to the VPS through Cloudflare.
 - **Routing**: Traefik labels in `docker-compose.yml` route `/` to web and `/api` to the API service.
 
+## Programmatic API
+
+Stable programmatic routes live under `/api/v1/*`. Legacy `/api/*` paths remain for the web app.
+
+- **Base URL (production):** `https://charator.dioilham.com`
+- **Interactive docs:** `/api/v1/docs` (JSON spec at `/api/v1/docs/json`)
+- **Auth:** create an API token in Settings (session required), then send `Authorization: Bearer ct_live_…` on resource routes. Token management routes accept session cookies only — a leaked token cannot mint more tokens.
+
+Example — create a generation job with a saved provider key:
+
+```bash
+curl -sS -X POST "https://charator.dioilham.com/api/v1/generations" \
+  -H "Authorization: Bearer ct_live_YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "Modern anime illustration of a shrine guardian.",
+    "provider": "openrouter",
+    "providerKeyId": "YOUR_SAVED_KEY_UUID"
+  }'
+```
+
+Public metadata (no auth): `GET /api/v1/themes`, `GET /api/v1/spec/catalog`, `POST /api/v1/spec/render`.
+
 ## Epic 1.1 scope
 
 This foundation epic sets up the monorepo, skeleton apps, Drizzle placeholder, and deploy artifacts. Spec engine, provider adapters, auth, and wizard UI land in later epics.
