@@ -207,7 +207,7 @@ export async function listGallery(params?: {
   }
   const response = await fetch(url, { credentials: "include" });
   if (!response.ok) {
-    throw new Error("gallery list request failed (" + response.status + ")");
+    throw new Error(`gallery list request failed (${response.status})`);
   }
   return galleryListResponseSchema.parse(await response.json());
 }

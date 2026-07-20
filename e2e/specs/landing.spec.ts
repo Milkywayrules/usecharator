@@ -17,17 +17,17 @@ const MOCK_TRENDING_LIST = {
   nextOffset: 1,
 };
 
-async function mockTrendingGalleryApi(page: import('@playwright/test').Page) {
+async function mockTrendingGalleryApi(page: import("@playwright/test").Page) {
   await page.route(
-    (url) => url.pathname === '/api/gallery',
+    (url) => url.pathname === "/api/gallery",
     async (route) => {
-      if (route.request().method() !== 'GET') {
+      if (route.request().method() !== "GET") {
         await route.continue();
         return;
       }
       await route.fulfill({
         body: JSON.stringify(MOCK_TRENDING_LIST),
-        contentType: 'application/json',
+        contentType: "application/json",
         status: 200,
       });
     }
