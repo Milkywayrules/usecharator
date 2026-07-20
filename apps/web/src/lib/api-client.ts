@@ -40,7 +40,11 @@ import {
   reportCharacterResponseSchema,
   rerollGenerationResponseSchema,
   type SheetBatchResponse,
+  type StCardExportJsonResponse,
+  type StCardImportResponse,
   sheetBatchResponseSchema,
+  stCardExportJsonResponseSchema,
+  stCardImportResponseSchema,
   type TelegramLinkCodeResponse,
   type TelegramLinkStatus,
   telegramLinkCodeResponseSchema,
@@ -51,6 +55,7 @@ import {
   workspaceResponseSchema,
 } from "@charator/shared";
 import type { ThemeId } from "@charator/spec";
+import { characterSpecSchema } from "@charator/spec";
 import { treaty } from "@elysiajs/eden";
 import type { QueryClient } from "@tanstack/react-query";
 import { themeIdForRequest } from "./theme-id";
@@ -547,4 +552,56 @@ export function invalidateWorkspaceScopedQueries(
   queryClient.invalidateQueries({ queryKey: ["provider-keys"] });
   queryClient.invalidateQueries({ queryKey: ["api-tokens"] });
   queryClient.invalidateQueries({ queryKey: ["entitlements"] });
+}
+
+export async function importStCard(file: File): Promise<StCardImportResponse> {
+  const formData = new FormData();
+  formData.set("file", file);
+  const response = await fetch(
+    `${resolveBaseUrl()}/api/v1/spec/import/st-card`,
+    {
+      body: formData,
+      credentials: "include",
+      method: "POST",
+    }
+  );
+  const json = await readJsonOrThrow(response);
+  const parsed = stCardImportResponseSchema.parse(json);
+  characterSpecSchema.parse(parsed.spec);
+  return parsed;
+}
+
+export type StCardExportResult =
+  | { blob: Blob; kind: "png" }
+  | ({ kind: "json" } & StCardExportJsonResponse);
+
+export async function exportStCard(
+  characterId: string
+): Promise<StCardExportResult> {
+  const response = await fetch(
+    `${resolveBaseUrl()}/api/characters/${characterId}/export/st-card`,
+    {
+      credentials: "include",
+    }
+  );
+
+  if (!response.ok) {
+    const body: unknown = await response.json().catch(() => null);
+    const message =
+      typeof body === "object" &&
+      body !== null &&
+      "message" in body &&
+      typeof body.message === "string"
+        ? body.message
+        : `Export failed (${response.status})`;
+    throw new Error(message);
+  }
+
+  const contentType = response.headers.get("content-type") ?? "";
+  if (contentType.includes("image/png")) {
+    return { blob: await response.blob(), kind: "png" };
+  }
+
+  const json = await response.json();
+  return { kind: "json", ...stCardExportJsonResponseSchema.parse(json) };
 }

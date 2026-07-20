@@ -17,7 +17,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { SheetGenerateDialog } from "@/components/library/sheet-generate-dialog";
+import { ExportStCardButton } from "@/components/spec/export-st-card-button";
 import { ImportSpecButton } from "@/components/spec/import-spec-button";
+import { ImportStCardButton } from "@/components/spec/import-st-card-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -63,8 +65,9 @@ function CharacterCard({
   onGenerateSheet,
   onHistory,
   onRemoveAnchor,
-  onToggleVisibility,
   signedIn,
+  stCardExport,
+  onToggleVisibility,
 }: {
   character: {
     id: string;
@@ -87,6 +90,7 @@ function CharacterCard({
   onRemoveAnchor?: () => void;
   onToggleVisibility?: (next: "public" | "private") => void;
   signedIn: boolean;
+  stCardExport?: { id: string; name: string };
 }) {
   const themeLabel = character.themeId
     ? getTheme(character.themeId).label
@@ -193,6 +197,12 @@ function CharacterCard({
             <DownloadIcon />
             Export JSON
           </Button>
+          {stCardExport ? (
+            <ExportStCardButton
+              characterId={stCardExport.id}
+              characterName={stCardExport.name}
+            />
+          ) : null}
           <Button
             onClick={onGenerate}
             size="default"
@@ -458,6 +468,7 @@ export default function LibraryPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <ImportSpecButton onImported={() => router.push("/create")} />
+          <ImportStCardButton onImported={() => router.push("/create")} />
           <Button asChild>
             <Link href="/create">New character</Link>
           </Button>
@@ -534,6 +545,11 @@ export default function LibraryPage() {
                   : undefined
               }
               signedIn={signedIn}
+              stCardExport={
+                signedIn
+                  ? { id: character.id, name: character.name }
+                  : undefined
+              }
             />
           ))}
         </div>

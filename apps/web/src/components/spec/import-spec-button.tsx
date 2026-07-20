@@ -59,6 +59,7 @@ export function ImportSpecButton({
         accept=".json,application/json"
         aria-hidden
         className="hidden"
+        data-testid="spec-file-input"
         onChange={handleFileChange}
         ref={inputRef}
         type="file"
