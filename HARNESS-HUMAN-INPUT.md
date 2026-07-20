@@ -129,7 +129,8 @@ Mirrors [docs/DEPLOY.md](./docs/DEPLOY.md). King executes — leave unchecked un
 ### Pre-flight
 
 - [ ] Export Doppler production config to a local file (never commit)
-- [ ] `bun scripts/prod-boot-check.ts --env .env.production` passes (all STOP keys)
+- [ ] `bun run deploy:preflight` passes before Coolify deploy (wraps prod-boot-check; uses `.env.production` or rehearsal template)
+- [ ] `bun scripts/prod-boot-check.ts --env .env.production` passes (all STOP keys) when exporting real Doppler secrets
 - [ ] Review [docs/DOPPLER-KEYS.md](./docs/DOPPLER-KEYS.md) — optional keys decided
 
 ### Infrastructure

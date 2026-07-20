@@ -4,6 +4,23 @@ Step-by-step guide for King's production deploy (section A in [HARNESS-HUMAN-INP
 
 See also: [DOPPLER-KEYS.md](./DOPPLER-KEYS.md) for the full env reference.
 
+## 15-minute King checklist
+
+Condensed path before Coolify — full detail in sections below and [HARNESS § F](../HARNESS-HUMAN-INPUT.md#f-king-deploy-checklist).
+
+| Step | Command / action |
+| --- | --- |
+| 1. Generate local secrets (dev or paste into Doppler) | `bun run secrets:generate` — add `-- --values` to print values to stdout |
+| 2. Export Doppler production config (never commit) | `doppler secrets download --no-file --format env > .env.production` |
+| 3. Pre-flight boot check (no remote curls) | `bun run deploy:preflight` — uses `.env.production` or falls back to rehearsal template |
+| 4. Cloudflare DNS | `charator.dioilham.com` → VPS (proxied) — [§ 2](#2-cloudflare-dns--vps) |
+| 5. R2 bucket + API token → Doppler | [§ 3](#3-cloudflare-r2-bucket--keys) |
+| 6. GitHub OAuth production app → Doppler | [§ 4](#4-github-oauth-production-app) |
+| 7. Doppler → Coolify, deploy compose | [§ 5–6](#5-doppler--coolify-env-sync) |
+| 8. Post-deploy smoke | [§ 8](#8-post-deploy-smoke-checks) |
+
+Helper scripts live in `scripts/` — they reduce friction; King still executes deploy (sections **A** / **F** in the harness).
+
 ## Prerequisites
 
 - VPS with [Coolify](https://coolify.io) installed
