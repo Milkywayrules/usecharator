@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Manually assign a pricing tier to a user (no payment provider in v7).
+ * Manually assign a pricing tier to a user (bypasses billing webhooks).
  *
  * Usage: bun run tier:set --user <email-or-id> --tier pro
  */
