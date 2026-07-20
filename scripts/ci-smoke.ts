@@ -308,12 +308,8 @@ async function main(): Promise<void> {
 
 async function runBillingSmoke(): Promise<void> {
   const { createDb, subscriptions, user } = await import("@charator/db");
-  const { MockPaymentProvider, signWebhookPayload } = await import(
-    "@charator/payments"
-  );
-  const { applyBillingWebhookEvent } = await import(
-    "../apps/api/src/lib/billing-events.ts"
-  );
+  const { MockPaymentProvider, applyBillingWebhookEvent, signWebhookPayload } =
+    await import("@charator/payments");
   const { eq } = await import("drizzle-orm");
   const { client, db } = createDb(DATABASE_URL!);
   const webhookSecret =
@@ -346,7 +342,7 @@ async function runBillingSmoke(): Promise<void> {
       checkout.id
     );
     const verified = provider.verifyWebhook(rawBody, signature);
-    await applyBillingWebhookEvent(verified);
+    await applyBillingWebhookEvent(db, verified);
     console.log("OK mock checkout completed via webhook path");
 
     const subscription = await provider.getSubscription(CI_SMOKE_USER_ID);
@@ -367,7 +363,7 @@ async function runBillingSmoke(): Promise<void> {
     const cancelEvent = await provider.cancelSubscription(CI_SMOKE_USER_ID, {
       atPeriodEnd: true,
     });
-    await applyBillingWebhookEvent(cancelEvent);
+    await applyBillingWebhookEvent(db, cancelEvent);
 
     const [afterCancel] = await db
       .select({ tier: user.tier })

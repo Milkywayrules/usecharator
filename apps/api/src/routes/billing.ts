@@ -13,7 +13,7 @@ import {
 } from "@charator/shared";
 import { db, requireSessionUser } from "../auth";
 import { config, mockBillingEnabled } from "../config";
-import { applyBillingWebhookEvent } from "../lib/billing-events";
+import { applyBillingWebhookEventForApi as applyBillingWebhookEvent } from "../lib/billing-events";
 import { getUserTier } from "../lib/entitlements";
 import { HttpError } from "../lib/errors";
 import { paymentProvider } from "../lib/payment-provider";

@@ -1,4 +1,5 @@
 export type { SubscriptionStatus } from "@charator/shared";
+export { applyBillingWebhookEvent } from "./apply-webhook";
 export { getPaymentProvider, resolvePaymentProviderConfig } from "./factory";
 export {
   MockPaymentProvider,
