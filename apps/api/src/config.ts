@@ -1,3 +1,4 @@
+import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
 /** Dev-only default; must not be used when `NODE_ENV` is production. */
@@ -14,7 +15,7 @@ const base64KeySchema = z
     }
   }, "must decode to 32 bytes");
 
-const envSchema = z.object({
+const server = {
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: z.string().url(),
   DATABASE_URL: z.string().min(1),
@@ -46,11 +47,12 @@ const envSchema = z.object({
   TELEGRAM_BOT_USERNAME: z.string().optional(),
   TELEGRAM_WEBHOOK_SECRET: z.string().optional(),
   WEB_APP_URL: z.string().url().default("http://localhost:3000"),
-});
+} as const;
 
-export type AppConfig = z.infer<typeof envSchema>;
-
-function assertProductionSecrets(cfg: AppConfig): void {
+function assertProductionSecrets(cfg: {
+  NODE_ENV: "development" | "production" | "test";
+  PAYMENT_WEBHOOK_SECRET: string;
+}): void {
   if (cfg.NODE_ENV !== "production") {
     return;
   }
@@ -65,26 +67,29 @@ function assertProductionSecrets(cfg: AppConfig): void {
   }
 }
 
-function normalizeEnv(
-  env: Record<string, string | undefined>
-): Record<string, string | undefined> {
-  return Object.fromEntries(
-    Object.entries(env).map(([key, value]) => [
-      key,
-      value === "" ? undefined : value,
-    ])
-  );
-}
-
-export function parseAppConfig(
-  env: Record<string, string | undefined> = process.env
-): AppConfig {
-  const parsed = envSchema.parse(normalizeEnv(env));
+function buildEnv(runtimeEnv: Record<string, string | undefined>) {
+  const parsed = createEnv({
+    emptyStringAsUndefined: true,
+    runtimeEnv,
+    server,
+  });
   assertProductionSecrets(parsed);
   return parsed;
 }
 
-export const config: AppConfig = parseAppConfig();
+export type AppConfig = ReturnType<typeof buildEnv>;
+
+export function parseAppConfig(
+  runtimeEnv: Record<string, string | undefined> = process.env
+): AppConfig {
+  return buildEnv(runtimeEnv);
+}
+
+/** Validated runtime environment for the API process. */
+export const env = buildEnv(process.env);
+
+/** @deprecated Prefer `env` — kept for existing imports. */
+export const config = env;
 
 export function githubConfigured(cfg: AppConfig): boolean {
   return Boolean(cfg.GITHUB_CLIENT_ID && cfg.GITHUB_CLIENT_SECRET);
