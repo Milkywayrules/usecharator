@@ -205,3 +205,14 @@ Tracked work after harness items 1–8 landed on `main`. Agents own these; King 
 | Opus right-hand sign-off | **RETRY** | Optional re-run each epic batch; not blocking agent work or harness closure (section **C**) |
 
 All section **H** epics closed 2026-07-20.
+
+---
+
+## I) v9 agent epics
+
+Post-harness product epics for v9. Agents own implementation; mark **DONE** when merged to `main`.
+
+| Epic | Status | Notes |
+|------|--------|-------|
+| Epic 3 — BYOK cost transparency | **IN PR** | `feat/v9-cost-estimates` — static provider pricing table, capabilities `costEstimate`, generate panel + sheet batch UI |
+| Epic 4 — Settings generations this month | **BLOCKED** | entitlements API does not expose monthly generation count yet — surface-only when field exists |

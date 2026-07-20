@@ -16,6 +16,11 @@ test.describe("generate panel reference UI", () => {
                   execution: "sync",
                   id: "gpt-image-1",
                   label: "GPT Image 1",
+                  costEstimate: {
+                    label: "GPT Image 1",
+                    usdMax: 0.08,
+                    usdMin: 0.04,
+                  },
                   supportsAspectRatios: { kind: "fixed", values: ["1:1"] },
                   supportsNegativePrompt: false,
                   supportsReferenceImages: { kind: "supported", maxCount: 1 },
@@ -68,6 +73,23 @@ test.describe("generate panel reference UI", () => {
 
     await expect(panel.getByTestId("reference-file-error")).toContainText(
       "png, jpeg, or webp"
+    );
+  });
+
+  test("shows BYOK cost estimate before generate when model is priced", async ({
+    page,
+  }) => {
+    await jumpToWizardStep(page, "review");
+
+    const panel = page.getByTestId("generate-panel");
+    await panel.getByRole("combobox").first().click();
+    await page.getByRole("option", { name: "OpenAI" }).click();
+
+    await expect(panel.getByTestId("generate-cost-estimate")).toContainText(
+      "per image"
+    );
+    await expect(panel.getByTestId("generate-cost-estimate")).toContainText(
+      "provider bills separately"
     );
   });
 });

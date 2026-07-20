@@ -2,6 +2,8 @@
 
 import {
   type CreateSheetRequest,
+  formatCostEstimateBatchTotal,
+  getGenerationCostEstimate,
   getModelCapabilityDescriptor,
   type Provider,
   providerModelDefaults,
@@ -65,6 +67,11 @@ export function SheetGenerateDialog({
 
   const modelDescriptor = useMemo(
     () => getModelCapabilityDescriptor(provider, model),
+    [provider, model]
+  );
+
+  const costEstimate = useMemo(
+    () => getGenerationCostEstimate(provider, model),
     [provider, model]
   );
   const modelSupportsRefs =
@@ -279,6 +286,9 @@ export function SheetGenerateDialog({
           >
             This will make <strong>{estimatedCalls} provider calls</strong> with
             your key.
+            {costEstimate ? (
+              <> {formatCostEstimateBatchTotal(costEstimate, estimatedCalls)}</>
+            ) : null}
           </p>
 
           <Button
