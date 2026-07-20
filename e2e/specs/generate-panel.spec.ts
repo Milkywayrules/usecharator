@@ -83,7 +83,7 @@ test.describe("generate panel reference UI", () => {
 
     const panel = page.getByTestId("generate-panel");
     await panel.getByRole("combobox").first().click();
-    await page.getByRole("option", { name: "OpenAI" }).click();
+    await page.getByRole("option", { name: "OpenAI", exact: true }).click();
 
     await expect(panel.getByTestId("generate-cost-estimate")).toContainText(
       "per image"
