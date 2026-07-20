@@ -131,6 +131,7 @@ GitHub Actions runs on every push to `main` and on pull requests (`.github/workf
 - **Coolify**: deploy the root `docker-compose.yml` as a single resource.
 - **Migrations**: the `migrate` one-shot service runs Drizzle migrations before the API starts (`depends_on: service_completed_successfully`). Re-deploys re-run idempotently.
 - **Secrets**: inject via Doppler in Coolify — do not commit `.env` files.
+- **OpenTelemetry (optional)**: set `OTEL_EXPORTER_OTLP_ENDPOINT` on the API service to export traces over OTLP HTTP; `OTEL_SERVICE_NAME` defaults to `charator-api`. When the endpoint is unset, tracing stays fully disabled with no startup cost.
 - **DNS**: point `charator.dioilham.com` to the VPS through Cloudflare.
 - **Routing**: Traefik labels in `docker-compose.yml` route `/` to web and `/api` to the API service.
 - **Telegram notifications**: set `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, and optionally `TELEGRAM_BOT_USERNAME` on the API service, then register the webhook once (replace `<token>` and `<secret>`):

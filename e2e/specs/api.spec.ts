@@ -6,6 +6,8 @@ test.describe("API health and catalog", () => {
   test("/api/health returns ok", async ({ request }) => {
     const response = await request.get(`${API_ORIGIN}/api/health`);
     expect(response.ok()).toBeTruthy();
+    expect(response.headers()["x-content-type-options"]).toBe("nosniff");
+    expect(response.headers()["x-request-id"]).toBeTruthy();
     await expect(response.json()).resolves.toEqual({ status: "ok" });
   });
 
