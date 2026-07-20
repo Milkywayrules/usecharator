@@ -17,23 +17,21 @@ const MOCK_TRENDING_LIST = {
   nextOffset: 1,
 };
 
-async function mockTrendingGalleryApi(page: import("@playwright/test").Page) {
-  await page.route("**/api/gallery**", async (route) => {
-    const url = route.request().url();
-    if (
-      url.includes("/api/gallery?") ||
-      url.endsWith("/api/gallery") ||
-      url.includes("sort=most_remixed")
-    ) {
+async function mockTrendingGalleryApi(page: import('@playwright/test').Page) {
+  await page.route(
+    (url) => url.pathname === '/api/gallery',
+    async (route) => {
+      if (route.request().method() !== 'GET') {
+        await route.continue();
+        return;
+      }
       await route.fulfill({
         body: JSON.stringify(MOCK_TRENDING_LIST),
-        contentType: "application/json",
+        contentType: 'application/json',
         status: 200,
       });
-      return;
     }
-    await route.continue();
-  });
+  );
 }
 
 test.describe("landing and navigation", () => {
