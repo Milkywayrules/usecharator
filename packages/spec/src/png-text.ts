@@ -154,17 +154,23 @@ function decodeZtxtKeywordAndText(data: Uint8Array): PngTextChunk {
   const compressed = rest.subarray(1);
   let inflated: Uint8Array;
   try {
-    inflated = inflateSync(compressed);
-  } catch {
+    inflated = inflateSync(compressed, {
+      maxOutputLength: MAX_PNG_CHUNK_DATA_BYTES,
+    });
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ERR_BUFFER_TOO_LARGE"
+    ) {
+      throw new PngTextError(
+        "chunk_data_oversized",
+        `decompressed zTXt exceeds ${MAX_PNG_CHUNK_DATA_BYTES} bytes`
+      );
+    }
     throw new PngTextError(
       "unsupported_compression",
       "zTXt chunk could not be decompressed"
-    );
-  }
-  if (inflated.length > MAX_PNG_CHUNK_DATA_BYTES) {
-    throw new PngTextError(
-      "chunk_data_oversized",
-      `decompressed zTXt exceeds ${MAX_PNG_CHUNK_DATA_BYTES} bytes`
     );
   }
   return {
@@ -283,11 +289,26 @@ function buildTextChunk(keyword: string, text: string): Uint8Array {
 export function readPngTextChunks(bytes: Uint8Array): PngTextChunk[] {
   const parsed = parsePngChunks(bytes);
   const textChunks: PngTextChunk[] = [];
+  const seenCardKeywords = new Set<string>();
   for (const chunk of parsed) {
     if (chunk.type === "tEXt") {
-      textChunks.push(decodeTexKeywordAndText(chunk.data));
+      const decoded = decodeTexKeywordAndText(chunk.data);
+      if (REPLACEABLE_KEYWORDS.has(decoded.keyword)) {
+        if (seenCardKeywords.has(decoded.keyword)) {
+          continue;
+        }
+        seenCardKeywords.add(decoded.keyword);
+      }
+      textChunks.push(decoded);
     } else if (chunk.type === "zTXt") {
-      textChunks.push(decodeZtxtKeywordAndText(chunk.data));
+      const decoded = decodeZtxtKeywordAndText(chunk.data);
+      if (REPLACEABLE_KEYWORDS.has(decoded.keyword)) {
+        if (seenCardKeywords.has(decoded.keyword)) {
+          continue;
+        }
+        seenCardKeywords.add(decoded.keyword);
+      }
+      textChunks.push(decoded);
     }
   }
   return textChunks;

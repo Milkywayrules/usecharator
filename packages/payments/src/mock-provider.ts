@@ -96,11 +96,11 @@ export class MockPaymentProvider implements PaymentProvider {
       throw new Error("no active subscription");
     }
 
-    // Mock provider applies cancel immediately regardless of atPeriodEnd — real
-    // Stripe/Polar adapters would honor end-of-period semantics.
     return this.buildSubscriptionCanceledEvent({
       cancelAtPeriodEnd: options.atPeriodEnd,
+      currentPeriodEnd: existing.currentPeriodEnd,
       subscriptionId: existing.id,
+      tier: existing.tier,
       userId,
     });
   }
@@ -185,15 +185,18 @@ export class MockPaymentProvider implements PaymentProvider {
 
   buildSubscriptionCanceledEvent(input: {
     cancelAtPeriodEnd: boolean;
+    currentPeriodEnd: Date;
     subscriptionId: string;
+    tier: TierId;
     userId: string;
   }): WebhookEvent {
     return {
       data: {
         cancelAtPeriodEnd: input.cancelAtPeriodEnd,
+        currentPeriodEnd: input.currentPeriodEnd.toISOString(),
         status: "canceled",
         subscriptionId: input.subscriptionId,
-        tier: "free",
+        tier: input.tier,
         userId: input.userId,
       },
       id: randomId("evt_mock"),

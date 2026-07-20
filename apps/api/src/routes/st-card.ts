@@ -21,9 +21,44 @@ function json(data: unknown, status = 200): Response {
   return Response.json(data, { status });
 }
 
-async function readJsonBody(request: Request): Promise<unknown> {
+async function readJsonBody(
+  request: Request,
+  maxBytes: number
+): Promise<unknown> {
+  const contentLengthHeader = request.headers.get("content-length");
+  if (contentLengthHeader !== null) {
+    const contentLength = Number(contentLengthHeader);
+    if (!Number.isFinite(contentLength) || contentLength < 0) {
+      throw new HttpError(400, {
+        code: "validation_error",
+        message: "invalid Content-Length header",
+      });
+    }
+    if (contentLength > maxBytes) {
+      throw new HttpError(413, {
+        code: "payload_too_large",
+        message: `request body exceeds ${maxBytes} bytes`,
+      });
+    }
+  }
+
+  const raw = await request.arrayBuffer();
+  if (raw.byteLength > maxBytes) {
+    throw new HttpError(413, {
+      code: "payload_too_large",
+      message: `request body exceeds ${maxBytes} bytes`,
+    });
+  }
+
+  if (raw.byteLength === 0) {
+    throw new HttpError(400, {
+      code: "validation_error",
+      message: "request body required",
+    });
+  }
+
   try {
-    return await request.json();
+    return JSON.parse(Buffer.from(raw).toString("utf8"));
   } catch {
     // biome-ignore lint/style/useErrorCause: HttpError is a typed API boundary, not a wrapper
     throw new HttpError(400, {
@@ -128,7 +163,7 @@ export async function handleStCardImport(request: Request): Promise<Response> {
     return json(importFromBytes(bytes, file.name));
   }
 
-  const body = await readJsonBody(request);
+  const body = await readJsonBody(request, MAX_ST_CARD_PNG_BYTES);
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     throw new HttpError(400, {
       code: "validation_error",

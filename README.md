@@ -73,7 +73,7 @@ Platform tiers (Free, Plus, Pro, Studio) are enforced via entitlements. The defa
 - `POST /api/billing/webhook` — provider-agnostic webhook receiver (`Payment-Signature` HMAC)
 - `POST /api/billing/mock/complete` — dev/e2e helper that signs and dispatches `checkout.completed` through the webhook path
 
-**Tier writes** (besides `tier:set`) happen only after a verified webhook event.
+**Tier writes** (besides `tier:set`) happen only after a verified webhook event. Cancel-at-period-end keeps the paid tier until `currentPeriodEnd`; entitlements downgrade lazily on the next entitlement check after the period ends.
 
 ### Swapping in Stripe or Polar later
 

@@ -4,6 +4,7 @@ import {
   generationJobs,
   member,
   sheetBatches,
+  subscriptions,
   user,
 } from "@charator/db";
 import {
@@ -44,7 +45,29 @@ export async function resolveEntitlements(
   db: DbExecutor,
   userId: string
 ): Promise<ResolvedEntitlements> {
-  const tier = await getUserTier(db, userId);
+  let tier = await getUserTier(db, userId);
+
+  if (tier !== "free") {
+    const [subscription] = await db
+      .select({
+        cancelAtPeriodEnd: subscriptions.cancelAtPeriodEnd,
+        currentPeriodEnd: subscriptions.currentPeriodEnd,
+        status: subscriptions.status,
+      })
+      .from(subscriptions)
+      .where(eq(subscriptions.userId, userId))
+      .limit(1);
+
+    if (
+      subscription?.status === "canceled" &&
+      subscription.cancelAtPeriodEnd &&
+      subscription.currentPeriodEnd <= new Date()
+    ) {
+      await db.update(user).set({ tier: "free" }).where(eq(user.id, userId));
+      tier = "free";
+    }
+  }
+
   return { limits: limitsForTier(tier), tier };
 }
 

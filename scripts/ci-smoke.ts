@@ -370,13 +370,13 @@ async function runBillingSmoke(): Promise<void> {
       .from(user)
       .where(eq(user.id, CI_SMOKE_USER_ID))
       .limit(1);
-    if (afterCancel?.tier !== "free") {
+    if (afterCancel?.tier !== "plus") {
       console.error(
-        `FAIL billing cancel: expected free tier, got ${afterCancel?.tier}`
+        `FAIL billing cancel at period end: expected plus tier until period end, got ${afterCancel?.tier}`
       );
       process.exit(1);
     }
-    console.log("OK billing loop canceled back to free");
+    console.log("OK billing cancel at period end keeps plus tier");
 
     const tamperedPayload = JSON.stringify({
       data: { tier: "studio", userId: CI_SMOKE_USER_ID },
