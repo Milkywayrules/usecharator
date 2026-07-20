@@ -11,9 +11,19 @@ const CI_SMOKE_USER_ID = "ci-smoke-user";
 const CI_SMOKE_WORKSPACE_ID = `ws_${CI_SMOKE_USER_ID}`;
 const CI_SMOKE_MEMBER_ID = `mbr_${CI_SMOKE_USER_ID}`;
 const CI_SMOKE_CHARACTER_ID = "00000000-0000-4000-8000-000000000001";
+const CI_SMOKE_REMIX_CHARACTER_ID = "00000000-0000-4000-8000-000000000002";
 
 interface GalleryListResponse {
   items: { id: string; name: string }[];
+}
+
+interface GalleryLineageResponse {
+  children: { items: { id: string }[]; total: number };
+  parent: { id: string } | { unavailable: true } | null;
+}
+
+interface GallerySpecDiffResponse {
+  sections: { sectionKey: string; changes: { path: string }[] }[];
 }
 
 async function fetchJson<T>(path: string, label: string): Promise<T> {
@@ -46,8 +56,18 @@ async function seedGalleryFixture(): Promise<string> {
 
   const { characters, createDb, member, organization, user } =
     await import("@charator/db");
+  const { createEmptySpec } = await import("@charator/spec");
   const { client, db } = createDb(DATABASE_URL);
   const now = new Date();
+  const parentSpec = createEmptySpec();
+  parentSpec.meta.id = "ci-smoke";
+  parentSpec.meta.name = "CI Smoke Character";
+  parentSpec.identity.gender = "female";
+
+  const remixSpec = createEmptySpec();
+  remixSpec.meta.id = "ci-smoke-remix";
+  remixSpec.meta.name = "CI Smoke Remix";
+  remixSpec.identity.gender = "male";
 
   try {
     await db
@@ -88,10 +108,22 @@ async function seedGalleryFixture(): Promise<string> {
         moderationStatus: "visible",
         name: "CI Smoke Character",
         ownerUserId: CI_SMOKE_USER_ID,
-        spec: {
-          meta: { id: "ci-smoke", name: "CI Smoke Character" },
-          spec_version: 2,
-        },
+        spec: parentSpec,
+        themeId: "anime",
+        visibility: "public",
+        workspaceId: CI_SMOKE_WORKSPACE_ID,
+      })
+      .onConflictDoNothing();
+
+    await db
+      .insert(characters)
+      .values({
+        id: CI_SMOKE_REMIX_CHARACTER_ID,
+        moderationStatus: "visible",
+        name: "CI Smoke Remix",
+        ownerUserId: CI_SMOKE_USER_ID,
+        remixedFromCharacterId: CI_SMOKE_CHARACTER_ID,
+        spec: remixSpec,
         themeId: "anime",
         visibility: "public",
         workspaceId: CI_SMOKE_WORKSPACE_ID,
@@ -101,7 +133,9 @@ async function seedGalleryFixture(): Promise<string> {
     await client.end();
   }
 
-  console.log(`OK seeded gallery fixture (${CI_SMOKE_CHARACTER_ID})`);
+  console.log(
+    `OK seeded gallery fixture (${CI_SMOKE_CHARACTER_ID}, remix ${CI_SMOKE_REMIX_CHARACTER_ID})`
+  );
   return CI_SMOKE_CHARACTER_ID;
 }
 
@@ -184,6 +218,51 @@ async function main(): Promise<void> {
     );
     process.exit(1);
   }
+
+  const lineage = await fetchJson<GalleryLineageResponse>(
+    `/api/gallery/${characterId}/lineage`,
+    "GET /api/gallery/:id/lineage"
+  );
+  const lineageHasRemix = lineage.children.items.some(
+    (item) => item.id === CI_SMOKE_REMIX_CHARACTER_ID
+  );
+  if (!lineageHasRemix) {
+    console.error(
+      `FAIL GET /api/gallery/:id/lineage: expected remix child ${CI_SMOKE_REMIX_CHARACTER_ID}`
+    );
+    process.exit(1);
+  }
+  console.log("OK GET /api/gallery/:id/lineage lists public remix child");
+
+  const mostRemixed = await fetchJson<GalleryListResponse>(
+    "/api/gallery?sort=most_remixed",
+    "GET /api/gallery?sort=most_remixed"
+  );
+  if (mostRemixed.items[0]?.id !== characterId) {
+    console.error(
+      `FAIL GET /api/gallery?sort=most_remixed: expected parent ${characterId} first, got ${mostRemixed.items[0]?.id ?? "none"}`
+    );
+    process.exit(1);
+  }
+  console.log("OK GET /api/gallery?sort=most_remixed ranks parent first");
+
+  const specDiff = await fetchJson<GallerySpecDiffResponse>(
+    `/api/gallery/${CI_SMOKE_REMIX_CHARACTER_ID}/spec-diff?other=${characterId}`,
+    "GET /api/gallery/:id/spec-diff"
+  );
+  const identitySection = specDiff.sections.find(
+    (section) => section.sectionKey === "identity"
+  );
+  const genderChange = identitySection?.changes.find(
+    (change) => change.path === "identity.gender"
+  );
+  if (!genderChange) {
+    console.error(
+      "FAIL GET /api/gallery/:id/spec-diff: expected identity.gender change"
+    );
+    process.exit(1);
+  }
+  console.log("OK GET /api/gallery/:id/spec-diff returns changed section");
 
   console.log("ci smoke passed");
 }
