@@ -40,6 +40,7 @@ interface GalleryCardRow {
   id: string;
   name: string;
   ownerDisplayName: string | null;
+  remixCount: number;
   themeId: string | null;
   updatedAt: Date;
 }
@@ -111,6 +112,7 @@ function mapRowsToGalleryCards(
     owner: {
       displayName: row.ownerDisplayName?.trim() || "Anonymous",
     },
+    remixCount: row.remixCount,
     themeId: row.themeId,
     updatedAt: row.updatedAt.toISOString(),
   }));
@@ -275,6 +277,7 @@ export async function handleGalleryList(request: Request): Promise<Response> {
       id: characters.id,
       name: characters.name,
       ownerDisplayName: user.name,
+      remixCount: visibleRemixCountSubquery,
       themeId: characters.themeId,
       updatedAt: characters.updatedAt,
     })
@@ -418,6 +421,7 @@ async function fetchLineageCharacterRow(characterId: string): Promise<
       moderationStatus: characters.moderationStatus,
       name: characters.name,
       ownerDisplayName: user.name,
+      remixCount: visibleRemixCountSubquery,
       remixedFromCharacterId: characters.remixedFromCharacterId,
       themeId: characters.themeId,
       updatedAt: characters.updatedAt,
@@ -514,6 +518,7 @@ async function fetchVisibleRemixChildren(
         id: characters.id,
         name: characters.name,
         ownerDisplayName: user.name,
+        remixCount: visibleRemixCountSubquery,
         themeId: characters.themeId,
         updatedAt: characters.updatedAt,
       })

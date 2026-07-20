@@ -42,6 +42,7 @@ export const galleryListItemSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
   owner: galleryOwnerSchema,
+  remixCount: z.number().int().nonnegative().optional(),
   themeId: z.string().nullable(),
   updatedAt: z.string().datetime(),
 });

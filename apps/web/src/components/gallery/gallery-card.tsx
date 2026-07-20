@@ -37,6 +37,11 @@ export function GalleryCard({ item }: { item: GalleryListItem }) {
         <CardHeader className="gap-2 pb-3">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary">{themeLabel}</Badge>
+            {item.remixCount !== undefined && item.remixCount > 0 ? (
+              <Badge variant="outline">
+                {item.remixCount} {item.remixCount === 1 ? "remix" : "remixes"}
+              </Badge>
+            ) : null}
           </div>
           <CardTitle className="line-clamp-2 text-lg">
             {item.name || "Untitled"}

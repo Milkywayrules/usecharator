@@ -189,26 +189,27 @@ export async function listGallery(params?: {
   sort?: GallerySort | null;
   theme?: string | null;
 }): Promise<GalleryListResponse> {
-  const query: Record<string, string> = {};
+  const url = new URL("/api/gallery", resolveBaseUrl());
   if (params?.offset !== undefined) {
-    query.offset = String(params.offset);
+    url.searchParams.set("offset", String(params.offset));
   }
   if (params?.limit !== undefined) {
-    query.limit = String(params.limit);
+    url.searchParams.set("limit", String(params.limit));
   }
   if (params?.theme) {
-    query.theme = params.theme;
+    url.searchParams.set("theme", params.theme);
   }
   if (params?.q) {
-    query.q = params.q;
+    url.searchParams.set("q", params.q);
   }
   if (params?.sort && params.sort !== "recent") {
-    query.sort = params.sort;
+    url.searchParams.set("sort", params.sort);
   }
-  return readTreatyData(
-    await api.gallery.get({ query }),
-    galleryListResponseSchema
-  );
+  const response = await fetch(url, { credentials: "include" });
+  if (!response.ok) {
+    throw new Error(`gallery list request failed (${response.status})`);
+  }
+  return galleryListResponseSchema.parse(await response.json());
 }
 
 export async function getGalleryCharacter(
