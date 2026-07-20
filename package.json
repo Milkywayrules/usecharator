@@ -17,6 +17,8 @@
     "contract:verify": "PACT_PROVIDER_VERIFY=1 bun run --filter=@charator/contract-tests test:provider",
     "ci:smoke": "bun scripts/ci-smoke.ts",
     "prod:boot-check": "bun scripts/prod-boot-check.ts",
+    "secrets:generate": "bash scripts/generate-local-secrets.sh",
+    "deploy:preflight": "bash scripts/deploy-preflight.sh",
     "e2e": "playwright test --config e2e/playwright.config.ts"
   },
   "devDependencies": {
