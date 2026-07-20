@@ -228,6 +228,471 @@
       }
     },
     {
+      "description": "a spec catalog request",
+      "providerStates": [
+        {
+          "name": "spec catalog is available"
+        }
+      ],
+      "request": {
+        "headers": {
+          "Accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/spec/catalog"
+      },
+      "response": {
+        "body": {
+          "corePaths": [
+            "control.mode"
+          ],
+          "fieldCatalog": [
+            {
+              "description": "global strictness",
+              "kind": "enum",
+              "label": "mode",
+              "path": "control.mode",
+              "tier": "core"
+            }
+          ],
+          "sectionTitles": {
+            "appearance": "Appearance",
+            "archetype": "Archetype",
+            "art": "Art direction",
+            "framing": "Framing",
+            "identity": "Identity",
+            "magic": "Magic",
+            "outfit": "Outfit",
+            "personality": "Personality",
+            "pose": "Pose",
+            "props": "Props",
+            "setting": "Setting"
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.corePaths": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type",
+                  "min": 1
+                }
+              ]
+            },
+            "$.corePaths[*]": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.fieldCatalog": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type",
+                  "min": 1
+                }
+              ]
+            },
+            "$.fieldCatalog[*].description": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.fieldCatalog[*].kind": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.fieldCatalog[*].label": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.fieldCatalog[*].path": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.fieldCatalog[*].tier": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.sectionTitles": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.sectionTitles.appearance": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.sectionTitles.archetype": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.sectionTitles.art": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.sectionTitles.framing": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.sectionTitles.identity": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.sectionTitles.magic": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.sectionTitles.outfit": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.sectionTitles.personality": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.sectionTitles.pose": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.sectionTitles.props": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.sectionTitles.setting": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a spec render request with minimal spec",
+      "providerStates": [
+        {
+          "name": "spec render accepts minimal body"
+        }
+      ],
+      "request": {
+        "body": {
+          "spec": {
+            "appearance": {
+              "body": {
+                "height_impression": "",
+                "muscle_definition": "",
+                "posture": "",
+                "proportions_notes": "",
+                "type": ""
+              },
+              "eyes": {
+                "color": "",
+                "heterochromia": null,
+                "highlights": "",
+                "lashes": "",
+                "left_color": "",
+                "pupils": "",
+                "right_color": "",
+                "shape": "",
+                "under_eye": ""
+              },
+              "face": {
+                "beauty_mark": null,
+                "ears": "",
+                "eyebrows": "",
+                "facial_hair": "",
+                "features": "",
+                "freckles": null,
+                "lips": "",
+                "makeup": "",
+                "scars": "",
+                "shape": ""
+              },
+              "hair": {
+                "accessories": [],
+                "bangs": "",
+                "color": "",
+                "color_secondary": "",
+                "length": "",
+                "parting": "",
+                "shine": "",
+                "style": "",
+                "texture": "",
+                "volume": ""
+              },
+              "skin": {
+                "texture": "",
+                "tone": "",
+                "undertone": ""
+              }
+            },
+            "archetype": {
+              "combat_style": "",
+              "era_setting": "",
+              "faction": "",
+              "occupation": "",
+              "role": ""
+            },
+            "art": {
+              "color": "",
+              "contrast": "",
+              "era": "",
+              "film_grain": null,
+              "finish": "",
+              "lighting": "",
+              "line": "",
+              "saturation": "",
+              "shading": "",
+              "style": "",
+              "texture_overlay": ""
+            },
+            "control": {
+              "freeform": {
+                "appearance": "",
+                "outfit": "",
+                "overall": "",
+                "setting": ""
+              },
+              "locked": [],
+              "mode": "expressive",
+              "section_modes": {
+                "appearance": "inherit",
+                "archetype": "inherit",
+                "art": "inherit",
+                "framing": "inherit",
+                "identity": "inherit",
+                "magic": "inherit",
+                "outfit": "inherit",
+                "personality": "inherit",
+                "pose": "inherit",
+                "props": "inherit",
+                "setting": "inherit"
+              }
+            },
+            "framing": {
+              "camera_angle": "",
+              "composition": "",
+              "crop_notes": "",
+              "depth_of_field": "",
+              "shot": ""
+            },
+            "generation": {
+              "aspect_ratio": "",
+              "avoid": [],
+              "mood_keywords": [],
+              "output_dir": "output",
+              "output_file": "",
+              "prompt_extra": "",
+              "reference_notes": ""
+            },
+            "identity": {
+              "age_notes": "",
+              "age_range": "",
+              "ethnicity_appearance": "",
+              "gender": "",
+              "gender_notes": "",
+              "vibe_keywords": []
+            },
+            "magic": {
+              "cast_style": "",
+              "effects": [],
+              "element": "",
+              "glow": {
+                "color": "",
+                "intensity": ""
+              },
+              "particle_density": "",
+              "power_level": "",
+              "radius": "",
+              "secondary_element": "",
+              "signature_name": ""
+            },
+            "meta": {
+              "id": "",
+              "inspiration": "",
+              "name": "Pact fixture",
+              "notes": "",
+              "tags": []
+            },
+            "outfit": {
+              "condition": "",
+              "details": [],
+              "exposure_level": "",
+              "length": "",
+              "material": "",
+              "palette": {
+                "accent": "",
+                "metal": "",
+                "primary": "",
+                "secondary": ""
+              },
+              "pattern": "",
+              "pieces": {
+                "bottom": "",
+                "footwear": "",
+                "gloves": "",
+                "headwear": "",
+                "legwear": "",
+                "outerwear": "",
+                "top": ""
+              },
+              "silhouette": "",
+              "style": {
+                "primary": "",
+                "secondary": ""
+              }
+            },
+            "personality": {
+              "demeanor_notes": "",
+              "primary": "",
+              "secondary": [],
+              "social_energy": "",
+              "speech_impression": ""
+            },
+            "pose": {
+              "body": "",
+              "energy": "",
+              "expression": "",
+              "facing": "",
+              "gaze": "",
+              "hands": "",
+              "head_tilt": "",
+              "legs": "",
+              "motion_blur": "",
+              "mouth": "",
+              "weight_shift": ""
+            },
+            "props": {
+              "accessories": [],
+              "carry_style": "",
+              "floating_objects": [],
+              "hat": "",
+              "offhand": "",
+              "pets_familiars": [],
+              "weapon": "",
+              "weapon_detail": "",
+              "weapon_size": ""
+            },
+            "setting": {
+              "atmosphere": [],
+              "background_detail": "",
+              "crowd_level": "",
+              "environment": "",
+              "era": "",
+              "foreground": [],
+              "lighting_source": "",
+              "location": "",
+              "season": "",
+              "time": "",
+              "weather": ""
+            },
+            "spec_version": 2
+          }
+        },
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/spec/render"
+      },
+      "response": {
+        "body": {
+          "prompt": "character illustration prompt"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.prompt": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a themes list request",
       "providerStates": [
         {
@@ -290,6 +755,51 @@
           }
         },
         "status": 200
+      }
+    },
+    {
+      "description": "an entitlements request without credentials",
+      "providerStates": [
+        {
+          "name": "user is not authenticated"
+        }
+      ],
+      "request": {
+        "headers": {
+          "Accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/me/entitlements"
+      },
+      "response": {
+        "body": {
+          "code": "unauthorized",
+          "message": "sign in required"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.code": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.message": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "status": 401
       }
     }
   ],

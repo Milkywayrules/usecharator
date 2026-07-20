@@ -30,7 +30,13 @@ describe("charator-api provider verification", () => {
           Promise.resolve("generation missing"),
         "provider capabilities are configured": () =>
           Promise.resolve("capabilities ready"),
+        "spec catalog is available": () =>
+          Promise.resolve("spec catalog ready"),
+        "spec render accepts minimal body": () =>
+          Promise.resolve("spec render ready"),
         "themes catalog is available": () => Promise.resolve("themes ready"),
+        "user is not authenticated": () =>
+          Promise.resolve("no authenticated user"),
       },
     });
 

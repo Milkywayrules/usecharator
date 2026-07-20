@@ -390,6 +390,47 @@ function openApiDetailForRoute(
     description: authDescription,
     summary: `${route.method.toUpperCase()} ${fullPath}`,
     tags: [routeTag(route.path)],
+    ...openApiErrorResponsesForRoute(route),
+  };
+}
+
+function openApiErrorResponsesForRoute(
+  route: RouteMount
+): Record<string, unknown> {
+  const documentsMutationErrors =
+    route.method === "post" &&
+    (route.path === "/generations" || route.path === "/characters");
+  if (!documentsMutationErrors) {
+    return {};
+  }
+
+  const apiError = {
+    content: {
+      "application/json": {
+        schema: { $ref: "#/components/schemas/ApiError" },
+      },
+    },
+  };
+
+  return {
+    responses: {
+      400: {
+        ...apiError,
+        description: "Validation error (`validation_error`).",
+      },
+      401: {
+        ...apiError,
+        description: "Missing or invalid bearer token or session cookie.",
+      },
+      402: {
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/TierLimitError" },
+          },
+        },
+        description: "Plan limit reached (`tier_limit`).",
+      },
+    },
   };
 }
 

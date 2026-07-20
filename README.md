@@ -108,6 +108,8 @@ Env vars: `PAYMENT_PROVIDER`, `PAYMENT_WEBHOOK_SECRET`, `WEB_APP_URL`. See `.env
 bunx turbo test
 ```
 
+**API contract tests** — Pact consumer tests write fixtures under `packages/contract-tests/pacts/`; provider verification replays them against a running API (`bun run contract:test`, `bun run contract:verify` with `PACT_PROVIDER_VERIFY=1`).
+
 **End-to-end tests** — Playwright suite in `e2e/` (anonymous flows, degraded API without Postgres). Install Chromium once, then run:
 
 ```bash
