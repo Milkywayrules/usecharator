@@ -2,12 +2,14 @@ import {
   apiTokens,
   characters,
   type Db,
+  generationJobs,
   member,
   organization,
   providerKeys,
   session as sessionTable,
 } from "@charator/db";
 import { and, asc, eq, sql } from "drizzle-orm";
+import type { DbExecutor } from "./entitlement-lock";
 import { assertEntitlementForOwner } from "./entitlements";
 
 export function personalWorkspaceName(userName: string): string {
@@ -102,7 +104,7 @@ export async function setActiveOrganizationForSession(
 }
 
 export async function countOwnedWorkspaces(
-  db: Db,
+  db: DbExecutor,
   userId: string
 ): Promise<number> {
   const [row] = await db
@@ -136,12 +138,25 @@ export async function workspaceHasBlockingResources(
     .select({ count: sql<number>`count(*)::int` })
     .from(apiTokens)
     .where(eq(apiTokens.workspaceId, workspaceId));
-  return (tokenCount?.count ?? 0) > 0;
+  if ((tokenCount?.count ?? 0) > 0) {
+    return true;
+  }
+
+  const [generationCount] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(generationJobs)
+    .where(
+      and(
+        eq(generationJobs.workspaceId, workspaceId),
+        eq(generationJobs.status, "succeeded")
+      )
+    );
+  return (generationCount?.count ?? 0) > 0;
 }
 
 /** Enforces workspace count against the user's pricing tier. */
 export async function assertWorkspaceCreationAllowed(
-  db: Db,
+  db: DbExecutor,
   userId: string
 ): Promise<void> {
   const current = await countOwnedWorkspaces(db, userId);

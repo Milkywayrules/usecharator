@@ -11,6 +11,7 @@ import {
   requireSessionUser,
   resolveAuthUser,
 } from "../auth";
+import { withOwnerEntitlementLock } from "../lib/entitlement-lock";
 import { HttpError } from "../lib/errors";
 import {
   assertWorkspaceCreationAllowed,
@@ -79,25 +80,25 @@ export async function handleWorkspacesPost(
     });
   }
 
-  await assertWorkspaceCreationAllowed(db, user.id);
-
   const slug = workspaceSlugFromName(parsed.data.name);
   const id = crypto.randomUUID();
   const now = new Date();
 
-  await db.insert(organization).values({
-    createdAt: now,
-    id,
-    name: parsed.data.name,
-    slug,
-  });
-
-  await db.insert(member).values({
-    createdAt: now,
-    id: crypto.randomUUID(),
-    organizationId: id,
-    role: "owner",
-    userId: user.id,
+  await withOwnerEntitlementLock(db, user.id, async (tx) => {
+    await assertWorkspaceCreationAllowed(tx, user.id);
+    await tx.insert(organization).values({
+      createdAt: now,
+      id,
+      name: parsed.data.name,
+      slug,
+    });
+    await tx.insert(member).values({
+      createdAt: now,
+      id: crypto.randomUUID(),
+      organizationId: id,
+      role: "owner",
+      userId: user.id,
+    });
   });
 
   const session = await auth.api.getSession({ headers: request.headers });
@@ -175,7 +176,7 @@ export async function handleWorkspacesDelete(
     throw new HttpError(409, {
       code: "workspace_not_empty",
       message:
-        "workspace still contains characters, provider keys, or API tokens",
+        "workspace still contains characters, provider keys, API tokens, or generation history — delete generation history first",
     });
   }
 
