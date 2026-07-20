@@ -17,9 +17,7 @@ import {
 import { getProductionWarnMissing } from "../apps/api/src/lib/startup-guards";
 
 function printUsage(): never {
-  console.error(
-    "usage: bun scripts/prod-boot-check.ts --env <path> [--warn]"
-  );
+  console.error("usage: bun scripts/prod-boot-check.ts --env <path> [--warn]");
   process.exit(1);
 }
 

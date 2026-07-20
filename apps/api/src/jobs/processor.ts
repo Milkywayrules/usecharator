@@ -24,6 +24,7 @@ import {
 } from "../lib/r2";
 import { redactSecrets } from "../lib/redact-secrets";
 import { loadReferenceImagesForJob } from "../lib/reference-generation";
+import { markUserActivatedOnFirstSuccess } from "../lib/user-activation";
 import { getProviderAdapter } from "../providers/registry";
 import type { ProviderAdapter } from "../providers/types";
 
@@ -243,6 +244,9 @@ export async function persistJobImages(
   if (updated) {
     await onSheetMemberFinished(db, updated);
     dispatchTelegramNotify(db, updated);
+    if (updated.status === "succeeded") {
+      await markUserActivatedOnFirstSuccess(db, updated.userId);
+    }
   }
   return keys;
 }
