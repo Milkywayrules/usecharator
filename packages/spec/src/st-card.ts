@@ -8,10 +8,7 @@ import { effectiveMode, shouldIncludeField } from "./control";
 import { FIELD_ORDER } from "./data/field-order";
 import { SECTION_TITLES } from "./data/paths";
 import { createEmptySpec } from "./empty";
-import {
-  type CharacterSpec,
-  parseCharacterSpec,
-} from "./schema";
+import { type CharacterSpec, parseCharacterSpec } from "./schema";
 import type { ThemeId } from "./themes";
 import { formatValue, humanize, isEmpty } from "./utils";
 import { SPEC_VERSION } from "./validate";
