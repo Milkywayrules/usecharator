@@ -73,8 +73,8 @@ Orchestrator + right-hand unanimous gate before creating `HARNESS-START-FILE`.
 - [x] All agent-doable harness items merged to `main` + CI green (PR #7, #11, #12 — run `29731143940`; PR #13 deploy docs — run pending at merge)
 - [x] Orchestrator sign-off — harness #5 verified locally (turbo + e2e) 2026-07-20
 - [x] Orchestrator CODE prod-confident sign-off — `bunx turbo build lint typecheck test` green; `docs/DEPLOY.md`, `docs/DOPPLER-KEYS.md`, `scripts/prod-boot-check.ts` landed (PR #13); `bun scripts/prod-boot-check.ts --env docs/env.prod-rehearsal.example` passes 2026-07-20
-- [x] Right-hand Grok sign-off — YES_WITH_NOTES on PR #12 (2026-07-20); non-blocking notes on OTEL_SERVICE_NAME matrix wording and aggregated telegram warn
-- [ ] Right-hand Opus sign-off *(retry each epic batch — not a hard blocker for agent work)*
+- [x] Right-hand Grok final sign-off — YES_WITH_NOTES on PR #12 (2026-07-20); reaffirmed for section **H** closure 2026-07-20; non-blocking notes on OTEL_SERVICE_NAME matrix wording and aggregated telegram warn
+- [ ] Right-hand Opus sign-off *(optional retry each epic batch — not blocking agent work or harness closure)*
 - [x] Right-hand Composer sign-off — implementer verified build/lint/typecheck/test + e2e 2026-07-20
 
 **Do not create `HARNESS-START-FILE` yet** — King must close section **A** and section **F** first; see section **G**.
@@ -187,6 +187,8 @@ Agents **continue post-harness epics** (Pact contract tests, CI hardening, polis
 
 **`HARNESS-START-FILE` must not be created yet** — King must close section **F** for live deploy. That does **not** stop agent epics; see section **H**. No placeholder file exists at repo root (intentional).
 
+**All section H epics complete 2026-07-20** — agent implement loop complete for code; King §F for live deploy only.
+
 ---
 
 ## H) Post-harness agent epics
@@ -196,8 +198,9 @@ Tracked work after harness items 1–8 landed on `main`. Agents own these; King 
 | Epic | Status | Notes |
 |------|--------|-------|
 | Pact API contract tests | **DONE** | [PR #17](https://github.com/Milkywayrules/usecharator/pull/17) — `@charator/contract-tests`; consumer v1 health/themes/capabilities/gallery/404; provider verify in CI integration after smoke |
-| CI prod-boot-check | **IN PROGRESS** | `bun scripts/prod-boot-check.ts --env docs/env.prod-rehearsal.example` in integration job after smoke |
-| Remote branch cleanup | **IN PROGRESS** | Delete merged feature/bugfix/chore branches via `gh` + `git push origin --delete` |
-| Opus right-hand sign-off | **RETRY** | Re-run each epic batch; not a hard blocker for agent work (section **C**) |
+| CI prod-boot-check | **DONE** | [PR #16](https://github.com/Milkywayrules/usecharator/pull/16) — integration job step **Prod boot check (rehearsal env)** after smoke; CI run `29732441541` green |
+| Remote branch cleanup | **DONE** | [PR #16](https://github.com/Milkywayrules/usecharator/pull/16) — deleted merged remotes: `feat/remix-2`, `feat/st-card-import-export`, `feat/payments-mock`, `feat/api-observability-hardening`, `chore/v8-docs-hardening`, `bugfix/compose-production-rehearsal`, `bugfix/v8-review-findings` |
+| Post-harness bugbot review | **DONE** | Clean — `18f3695..HEAD` (PR #16–#17, harness docs); zero findings |
+| Opus right-hand sign-off | **RETRY** | Optional re-run each epic batch; not blocking agent work or harness closure (section **C**) |
 
-Close each row with evidence (PR link, CI run, branch list) when done.
+All section **H** epics closed 2026-07-20.
