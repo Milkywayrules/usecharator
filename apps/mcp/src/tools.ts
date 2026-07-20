@@ -7,8 +7,11 @@ import {
   createGenerationResponseSchema,
   createSheetRequestSchema,
   createSheetResponseSchema,
+  galleryDetailResponseSchema,
   galleryListResponseSchema,
+  gallerySortSchema,
   generationJobResponseSchema,
+  providerCapabilitiesResponseSchema,
   providerSchema,
   sheetBatchResponseSchema,
   sheetPresetIdSchema,
@@ -174,19 +177,44 @@ export async function remixCharacter(client: CharatorClient, id: string) {
   return summarizeCharacter(characterResponseSchema.parse(data));
 }
 
+/** Keep gallery detail tool payloads bounded for MCP context windows. */
+const MAX_GALLERY_CHARACTER_RESPONSE_CHARS = 32_000;
+const MAX_GALLERY_CHARACTER_RENDERS = 6;
+
 export async function browseGallery(
   client: CharatorClient,
-  input: { theme?: string; offset?: number; limit?: number }
+  input: {
+    limit?: number;
+    offset?: number;
+    q?: string;
+    sort?: z.infer<typeof gallerySortSchema>;
+    theme?: string;
+  }
 ) {
   const data = await client.request<unknown>("GET", "/gallery", {
     auth: "optional",
     query: {
       limit: input.limit,
       offset: input.offset ?? 0,
+      q: input.q,
+      sort: input.sort,
       theme: input.theme,
     },
   });
   return galleryListResponseSchema.parse(data);
+}
+
+export async function getGalleryCharacter(client: CharatorClient, id: string) {
+  const data = await client.request<unknown>("GET", `/gallery/${id}`, {
+    auth: "optional",
+  });
+  const detail = galleryDetailResponseSchema.parse(data);
+  return summarizeGalleryCharacter(detail);
+}
+
+export async function getProviderCapabilities(client: CharatorClient) {
+  const data = await client.request<unknown>("GET", "/providers/capabilities");
+  return providerCapabilitiesResponseSchema.parse(data);
 }
 
 export async function generateImage(
@@ -297,6 +325,52 @@ export async function getGeneration(client: CharatorClient, jobId: string) {
     auth: "optional",
   });
   return generationJobResponseSchema.parse(data);
+}
+
+function extractSpecMeta(spec: unknown): unknown {
+  if (!spec || typeof spec !== "object" || Array.isArray(spec)) {
+    return null;
+  }
+  return { meta: (spec as Record<string, unknown>).meta ?? null };
+}
+
+function summarizeGalleryCharacter(
+  detail: z.infer<typeof galleryDetailResponseSchema>
+) {
+  const base = {
+    createdAt: detail.createdAt,
+    id: detail.id,
+    isOwner: detail.isOwner,
+    name: detail.name,
+    owner: detail.owner,
+    referenceImageUrl: detail.referenceImageUrl ?? null,
+    remixCount: detail.remixCount,
+    remixedFrom: detail.remixedFrom,
+    renderCount: detail.renders.length,
+    renders: detail.renders.slice(0, MAX_GALLERY_CHARACTER_RENDERS),
+    spec: detail.spec,
+    themeId: detail.themeId,
+    updatedAt: detail.updatedAt,
+  };
+
+  if (JSON.stringify(base).length <= MAX_GALLERY_CHARACTER_RESPONSE_CHARS) {
+    return base;
+  }
+
+  const reduced = {
+    ...base,
+    spec: extractSpecMeta(detail.spec),
+    specTruncated: true as const,
+  };
+  if (JSON.stringify(reduced).length <= MAX_GALLERY_CHARACTER_RESPONSE_CHARS) {
+    return reduced;
+  }
+
+  return {
+    ...reduced,
+    spec: undefined,
+    specOmitted: true as const,
+  };
 }
 
 function summarizeCharacter(character: CharacterResponse) {
@@ -584,7 +658,7 @@ export function registerTools(server: McpServer, client: CharatorClient): void {
     "browse_gallery",
     {
       description:
-        "Browse public gallery characters. Optional theme filter and pagination (offset, limit).",
+        "Browse public gallery characters. Optional name search (q), sort (recent or most_remixed), theme filter, and pagination (offset, limit).",
       inputSchema: {
         limit: z
           .number()
@@ -599,9 +673,38 @@ export function registerTools(server: McpServer, client: CharatorClient): void {
           .min(0)
           .optional()
           .describe("Pagination offset"),
+        q: z
+          .string()
+          .optional()
+          .describe("Case-insensitive name search (max 64 chars)"),
+        sort: gallerySortSchema
+          .optional()
+          .describe("recent (default) or most_remixed"),
         theme: z.string().optional().describe("Filter by theme id"),
       },
     },
     async (input) => runTool(() => browseGallery(client, input))
+  );
+
+  server.registerTool(
+    "get_gallery_character",
+    {
+      description:
+        "Fetch one public gallery character by id. Returns summary fields plus spec (truncated when large). Optional auth adds isOwner context.",
+      inputSchema: {
+        id: z.string().uuid().describe("Gallery character uuid"),
+      },
+    },
+    async ({ id }) => runTool(() => getGalleryCharacter(client, id))
+  );
+
+  server.registerTool(
+    "get_provider_capabilities",
+    {
+      description:
+        "List image providers, models, generation presets, and per-model capabilities including optional BYOK costEstimate ranges. Public — no token required.",
+      inputSchema: {},
+    },
+    async () => runTool(() => getProviderCapabilities(client))
   );
 }
