@@ -228,6 +228,6 @@ Post-harness product epics for v10. Agents own implementation; mark **DONE** whe
 | Epic | Status | Notes |
 |------|--------|-------|
 | Epic 1 — Monthly generation usage | **DONE** | [PR #25](https://github.com/Milkywayrules/usecharator/pull/25) — entitlements monthly generation count; unblocks v9 Epic 4 |
-| Epic 2 — Home gallery discovery | **OPEN** | [PR #27](https://github.com/Milkywayrules/usecharator/pull/27) — mark **DONE** when merged |
+| Epic 2 — Home gallery discovery | **DONE** | [PR #27](https://github.com/Milkywayrules/usecharator/pull/27) — home landing with trending gallery discovery |
 | Epic 3 — MCP parity | **DONE** | [PR #26](https://github.com/Milkywayrules/usecharator/pull/26) — MCP gallery capabilities aligned with API |
 
