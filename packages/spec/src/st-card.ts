@@ -13,6 +13,7 @@ import {
   parseCharacterSpec,
 } from "./schema";
 import type { ThemeId } from "./themes";
+import { utf8ToBase64 } from "./base64";
 import { formatValue, humanize, isEmpty } from "./utils";
 import { SPEC_VERSION } from "./validate";
 
@@ -491,11 +492,11 @@ export function encodeStCardChunks(
   return [
     {
       keyword: "ccv3",
-      text: Buffer.from(JSON.stringify(ccv3), "utf8").toString("base64"),
+      text: utf8ToBase64(JSON.stringify(ccv3)),
     },
     {
       keyword: "chara",
-      text: Buffer.from(JSON.stringify(v2), "utf8").toString("base64"),
+      text: utf8ToBase64(JSON.stringify(v2)),
     },
   ];
 }

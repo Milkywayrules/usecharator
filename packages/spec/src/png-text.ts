@@ -152,7 +152,7 @@ function decodeZtxtKeywordAndText(data: Uint8Array): PngTextChunk {
     );
   }
   const compressed = rest.subarray(1);
-  let inflated: Buffer;
+  let inflated: Uint8Array;
   try {
     inflated = inflateSync(compressed);
   } catch {

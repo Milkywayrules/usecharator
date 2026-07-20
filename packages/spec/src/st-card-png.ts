@@ -6,12 +6,11 @@ import {
   importStCardEnvelope,
   type StCardSourceFormat,
 } from "./st-card";
+import { base64ToUtf8 } from "./base64";
 
 function decodeBase64Json(text: string): unknown {
   const trimmed = text.trim();
-  const jsonText = trimmed.startsWith("{")
-    ? trimmed
-    : Buffer.from(trimmed, "base64").toString("utf8");
+  const jsonText = trimmed.startsWith("{") ? trimmed : base64ToUtf8(trimmed);
   return JSON.parse(jsonText);
 }
 
