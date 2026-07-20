@@ -84,7 +84,10 @@ describe("stdio MCP exchange", () => {
         toolsResponse?.result?.tools?.map((tool) => tool.name) ?? [];
       expect(toolNames).toContain("list_themes");
       expect(toolNames).toContain("generate_image");
-      expect(toolNames.length).toBeGreaterThanOrEqual(12);
+      expect(toolNames).toContain("browse_gallery");
+      expect(toolNames).toContain("get_gallery_character");
+      expect(toolNames).toContain("get_provider_capabilities");
+      expect(toolNames.length).toBeGreaterThanOrEqual(14);
     },
     STDIO_TEST_TIMEOUT_MS
   );

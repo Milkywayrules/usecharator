@@ -76,7 +76,9 @@ For production API with a published package:
 | `remix_character` | bearer | public character `id` |
 | `generate_image` | bearer | `provider`, `characterId` or `spec`, optional `theme`/`model`/`aspectRatio`, exactly one of `providerKeyId` or `apiKey` |
 | `get_generation` | optional | `jobId` |
-| `browse_gallery` | public | optional `theme`, `offset`, `limit` |
+| `browse_gallery` | public | optional `q`, `sort` (`recent` \| `most_remixed`), `theme`, `offset`, `limit` |
+| `get_gallery_character` | public | gallery character `id` (summary + capped spec) |
+| `get_provider_capabilities` | public | — (providers, models, presets, `costEstimate`) |
 
 API errors are returned as MCP tool errors with `{ code, message }` detail from the REST API.
 
