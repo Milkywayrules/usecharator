@@ -1,19 +1,19 @@
 # Verasic GitHub Env
 
 Reproducible GitHub CLI auth for local AI agent harnesses across Verasic
-projects. Fine-grained PAT per repo in gitignored `.env.local`, optional
-`direnv`, and a verify script — separate from CI and production secrets.
-
-Battle-tested pattern before public launch: local agents, CI, and Doppler
-production stay in separate tiers.
+projects. Fine-grained PAT per repo in gitignored `.github-agent.local`,
+optional `direnv`, bootstrap + verify scripts — separate from CI and
+production secrets.
 
 ## Parts
 
 | File | Role |
 | --- | --- |
 | `.cursor/skills/verasic-github-env/references/setup-protocol.md` | Spec — tiers, PAT permissions, bootstrap, agent usage |
-| `.cursor/skills/verasic-github-env/scripts/bootstrap.sh` | Wire repo once — `.envrc`, `.env.example`, `.gitignore` |
+| `.cursor/skills/verasic-github-env/scripts/bootstrap.sh` | Wire repo once — `.envrc`, templates, `.gitignore` |
+| `.cursor/skills/verasic-github-env/scripts/load-gh-env.sh` | Safe GH var loader (no shell execution of env files) |
 | `.cursor/skills/verasic-github-env/scripts/check-gh.sh` | Verify `GH_TOKEN` + `gh auth status` |
+| `.cursor/skills/verasic-github-env/scripts/test-regression.sh` | Disposable regression tests |
 | `.cursor/skills/verasic-github-env/SKILL.md` | Auto-trigger + orchestration |
 | `.cursor/rules/verasic-github-env.mdc` | Always-applied digest for `gh` commands |
 
@@ -29,6 +29,8 @@ Skill-only (any agent):
 npx skills add Milkywayrules/verasic-skills
 ```
 
+If the skill is not under `.cursor/skills/`, copy or symlink it there before bootstrap (see setup-protocol.md).
+
 ## Wire one repo
 
 ```bash
@@ -40,23 +42,25 @@ Or in Cursor: `/verasic-setup-github`
 Then:
 
 1. Create a fine-grained PAT scoped to this repo only (see setup-protocol.md).
-2. Put `GH_TOKEN=...` in `.env.local` (keep existing vars if you already have one).
+2. `cp .github-agent.local.example .github-agent.local` — set `GH_TOKEN`, `chmod 600`.
 3. `direnv allow` (optional).
 4. `bash .cursor/skills/verasic-github-env/scripts/check-gh.sh`
+
+Legacy: `load-gh-env.sh` still reads `GH_*` lines from `.env.local` if present.
 
 ## Secrets tiers
 
 | Tier | Where |
 | --- | --- |
-| Local agents | `.env.local` + `.envrc` |
+| Local agents | `.github-agent.local` + `.envrc` |
 | CI | GitHub Actions secrets |
 | Production | Doppler / Coolify / vault |
 
 ## Usage
 
-- Agents load `.env.local` before `gh` when `GH_TOKEN` is unset — rule applies automatically.
+- Agents run `load-gh-env.sh` before `gh` when `GH_TOKEN` is unset — rule applies automatically.
 - `/verasic-setup-github` — bootstrap current repo
-- Manual verify anytime: `bash .cursor/skills/verasic-github-env/scripts/check-gh.sh`
+- Regression: `bash .cursor/skills/verasic-github-env/scripts/test-regression.sh`
 
 ## Extend per repo
 

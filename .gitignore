@@ -36,3 +36,6 @@ drizzle/meta
 .idea
 *.swp
 *.swo
+
+# agent harness secrets
+.github-agent.local

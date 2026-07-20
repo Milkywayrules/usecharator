@@ -1,5 +1,5 @@
 ---
-description: verasic-github-env — load GH_TOKEN from .env.local for gh; secrets tiers local/CI/production
+description: verasic-github-env — load GH_TOKEN via load-gh-env.sh for gh; secrets tiers local/CI/production
 alwaysApply: true
 ---
 
@@ -10,19 +10,19 @@ Local GitHub CLI auth for AI agent harnesses. Full spec:
 
 ## Secrets tiers (never mix)
 
-- **local agents** → `.env.local` (+ optional `direnv` via repo-root `.envrc`)
+- **local agents** → `.github-agent.local` (+ optional `direnv` via repo-root `.envrc`)
 - **CI** → GitHub Actions secrets / `GITHUB_TOKEN`
-- **production** → Doppler, Vault, Coolify — not `.env.local`
+- **production** → Doppler, Vault, Coolify — not agent credential files
 
 ## Before any `gh` command
 
-If `GH_TOKEN` is unset, load repo-root secrets (do not print values):
+If `GH_TOKEN` is unset, load credentials without executing env files:
 
 ```bash
-set -a && source .env.local && set +a
+source .cursor/skills/verasic-github-env/scripts/load-gh-env.sh
 ```
 
-If `direnv` is active, `.env.local` may already be loaded — run `gh auth status` first.
+Verify with `bash .cursor/skills/verasic-github-env/scripts/check-gh.sh` — not bare `gh auth status` (can leak a token prefix).
 
 ## Usage
 
