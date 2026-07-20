@@ -15,6 +15,7 @@ const MOCK_ENTITLEMENTS = {
     anchorImages: 2,
     apiTokens: 1,
     characters: 4,
+    generationsThisMonth: 7,
     sheetBatchesThisMonth: 1,
     storedGenerations: 12,
     workspaces: 1,
@@ -81,6 +82,8 @@ test.describe("plan and usage settings", () => {
 
     await expect(page.getByText("Plan & usage")).toBeVisible();
     await expect(page.getByText("Free")).toBeVisible();
+    await expect(page.getByText("Generations this month")).toBeVisible();
+    await expect(page.getByText("7", { exact: true })).toBeVisible();
     await expect(page.getByText("4 / 15")).toBeVisible();
     await expect(page.getByText("12 / 100")).toBeVisible();
     await expect(page.getByRole("link", { name: "View pricing" })).toBeVisible();

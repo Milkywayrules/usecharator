@@ -1,11 +1,24 @@
 import { describe, expect, test } from "bun:test";
-import { type Db, subscriptions, user } from "@charator/db";
+import {
+  apiTokens,
+  characters,
+  type Db,
+  generationJobs,
+  member,
+  sheetBatches,
+  subscriptions,
+  user,
+} from "@charator/db";
 import {
   isAtOrOverLimit,
   suggestUpgradeTier,
   tierLimit,
 } from "@charator/shared";
-import { resolveEntitlements, throwTierLimitError } from "./entitlements";
+import {
+  countWorkspaceUsage,
+  resolveEntitlements,
+  throwTierLimitError,
+} from "./entitlements";
 import { HttpError } from "./errors";
 
 interface LazyDowngradeState {
@@ -138,5 +151,78 @@ describe("entitlement checker logic", () => {
     const resolved = await resolveEntitlements(db, "user-1");
     expect(resolved.tier).toBe("plus");
     expect(state.userTier).toBe("plus");
+  });
+});
+
+interface UsageCountState {
+  generationJobsInMonth: number;
+  generationJobsStored: number;
+  ownedWorkspaces: number;
+}
+
+function createUsageCountDb(state: UsageCountState): Db {
+  let generationJobQueryCount = 0;
+
+  const countResult = (count: number) =>
+    Promise.resolve([{ count }] as [{ count: number }]);
+
+  const db = {
+    select(_fields: unknown) {
+      return {
+        from(table: unknown) {
+          return {
+            where() {
+              if (table === generationJobs) {
+                generationJobQueryCount += 1;
+                if (generationJobQueryCount === 1) {
+                  return countResult(state.generationJobsInMonth);
+                }
+                return countResult(state.generationJobsStored);
+              }
+              if (
+                table === characters ||
+                table === sheetBatches ||
+                table === apiTokens
+              ) {
+                return countResult(0);
+              }
+              if (table === member) {
+                return countResult(state.ownedWorkspaces);
+              }
+              return countResult(0);
+            },
+          };
+        },
+      };
+    },
+  };
+
+  return db as unknown as Db;
+}
+
+describe("countWorkspaceUsage", () => {
+  test("counts all generation jobs in the UTC month", async () => {
+    const db = createUsageCountDb({
+      generationJobsInMonth: 5,
+      generationJobsStored: 3,
+      ownedWorkspaces: 1,
+    });
+
+    const usage = await countWorkspaceUsage(db, "ws-1", "owner-1", "2026-07");
+
+    expect(usage.generationsThisMonth).toBe(5);
+    expect(usage.storedGenerations).toBe(3);
+  });
+
+  test("returns zero generationsThisMonth when no jobs exist in month", async () => {
+    const db = createUsageCountDb({
+      generationJobsInMonth: 0,
+      generationJobsStored: 0,
+      ownedWorkspaces: 1,
+    });
+
+    const usage = await countWorkspaceUsage(db, "ws-1", "owner-1", "2026-07");
+
+    expect(usage.generationsThisMonth).toBe(0);
   });
 });

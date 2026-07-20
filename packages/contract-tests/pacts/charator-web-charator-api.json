@@ -763,6 +763,201 @@
       }
     },
     {
+      "description": "an authenticated entitlements request",
+      "providerStates": [
+        {
+          "name": "workspace entitlements are available"
+        }
+      ],
+      "request": {
+        "headers": {
+          "Accept": "application/json",
+          "Cookie": "better-auth.session_token=pact-entitlements-session"
+        },
+        "matchingRules": {
+          "header": {
+            "Cookie": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "method": "GET",
+        "path": "/api/v1/me/entitlements"
+      },
+      "response": {
+        "body": {
+          "limits": {
+            "anchorImagesPerWorkspace": 10,
+            "apiTokensPerWorkspace": 1,
+            "authenticatedGenerationsPerHour": 60,
+            "charactersPerWorkspace": 15,
+            "sheetBatchesPerMonth": 3,
+            "storedGenerationsPerWorkspace": 100,
+            "workspaces": 1
+          },
+          "tier": "free",
+          "usage": {
+            "anchorImages": 0,
+            "apiTokens": 0,
+            "characters": 0,
+            "generationsThisMonth": 0,
+            "sheetBatchesThisMonth": 0,
+            "storedGenerations": 0,
+            "workspaces": 0
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.limits": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.limits.anchorImagesPerWorkspace": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.limits.apiTokensPerWorkspace": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.limits.authenticatedGenerationsPerHour": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.limits.charactersPerWorkspace": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.limits.sheetBatchesPerMonth": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.limits.storedGenerationsPerWorkspace": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.limits.workspaces": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.tier": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.usage": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.usage.anchorImages": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.usage.apiTokens": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.usage.characters": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.usage.generationsThisMonth": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.usage.sheetBatchesThisMonth": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.usage.storedGenerations": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.usage.workspaces": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "an entitlements request without credentials",
       "providerStates": [
         {
