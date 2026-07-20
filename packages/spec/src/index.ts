@@ -10,6 +10,13 @@ export {
 } from "./data/catalog";
 export { ENUM_FIELDS, type EnumPath } from "./data/enums";
 export { CORE_PATHS, FINE_PATHS, SECTION_TITLES } from "./data/paths";
+export {
+  diffSpecs,
+  type SpecDiffChange,
+  type SpecDiffResult,
+  type SpecDiffSection,
+  type SpecDiffValue,
+} from "./diff";
 export { createEmptySpec } from "./empty";
 export {
   enumForPath,
