@@ -14,10 +14,11 @@ implementer only by subagents. chat's agent (main agent) must be an-orchestrator
 
 - the user (King) will append anything you need to follow (update your memory index cache) in [here](HARNESS-ADDITIONAL-INSTRUCTIONS.md).
 - when you to stop? if [AGENTS_STOP_FILE](./AGENTS_STOP_FILE) exist.
+- there are user / human mandatory input / answer? append to [HARNESS-HUMAN-INPUT](./HARNESS-HUMAN-INPUT.md).
 
 ## Need human / user approval?
 
-spawn subagents of fable 5 medium, gpt 5.6 sol, and composer 2.5 fast for decision maker. They are 3 are the hand-right of me (the user).
+spawn subagents of: fable 5 medium, gpt 5.6 sol, and composer 2.5 fast for decision maker (use cheaper variant if there is any unavailable model). They are 3 are the hand-right of me (the user).
 
 verbatim output format for each subagent:
 
@@ -44,6 +45,8 @@ verbatim output format for each subagent:
 
 use e2e test, setup playwright.
 use bun test for unit test.
+use pact js for API contract test.
+use other appropriate test libraries if needed.
 
 ## Personal behavior & coding principles (MUST FOLLOW)
 
@@ -94,10 +97,3 @@ use bun test for unit test.
 ---
 
 _Personal playbook, copied into each project. Add project-specific sections (product, stack, commands) below as the repo matures._
-
-## Project: commit workflow (hard-learned)
-
-- use plain `git commit` so the repo hook strips injected trailers — never `--no-verify`
-- never `git reset --hard`; it destroyed unstaged work twice in this repo
-- `git commit-tree` is only for a confirmed trailer-injection failure (verify prints `TRAILER PRESENT`), not routine commits
-- after every commit: `git log -1 --format=%B | grep -qiE '^co-authored-by:' && echo 'TRAILER PRESENT' || echo 'clean'`
