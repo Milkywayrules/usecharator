@@ -1,6 +1,8 @@
 import path from "node:path";
 import type { NextConfig } from "next";
 
+// Web env: optional NEXT_PUBLIC_* vars with dev defaults only. Server secrets and
+// strict runtime validation live in the API (@t3-oss/env-core in apps/api/src/config.ts).
 const apiOrigin = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 const nextConfig: NextConfig = {

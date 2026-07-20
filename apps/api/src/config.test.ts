@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { DEV_PAYMENT_WEBHOOK_SECRET, parseAppConfig } from "./config";
 
 const paymentWebhookSecretError = /PAYMENT_WEBHOOK_SECRET/;
+const invalidEncryptionKeyError =
+  /must decode to 32 bytes|Invalid environment variables/;
 
 const baseEnv: Record<string, string | undefined> = {
   BETTER_AUTH_SECRET: "01234567890123456789012345678901",
@@ -79,5 +81,34 @@ describe("production config guard", () => {
     });
     expect(cfg.R2_ENDPOINT).toBeUndefined();
     expect(cfg.TELEGRAM_BOT_TOKEN).toBeUndefined();
+  });
+});
+
+describe("KEY_ENCRYPTION_MASTER_KEY validation", () => {
+  test("rejects a key that does not decode to 32 bytes", () => {
+    expect(() =>
+      parseAppConfig({
+        ...baseEnv,
+        KEY_ENCRYPTION_MASTER_KEY: Buffer.alloc(16, 1).toString("base64"),
+      })
+    ).toThrow(invalidEncryptionKeyError);
+  });
+
+  test("rejects invalid base64", () => {
+    expect(() =>
+      parseAppConfig({
+        ...baseEnv,
+        KEY_ENCRYPTION_MASTER_KEY: "not-valid-base64!!!",
+      })
+    ).toThrow(invalidEncryptionKeyError);
+  });
+
+  test("accepts a valid 32-byte base64 key", () => {
+    const key = Buffer.alloc(32, 9).toString("base64");
+    const cfg = parseAppConfig({
+      ...baseEnv,
+      KEY_ENCRYPTION_MASTER_KEY: key,
+    });
+    expect(cfg.KEY_ENCRYPTION_MASTER_KEY).toBe(key);
   });
 });

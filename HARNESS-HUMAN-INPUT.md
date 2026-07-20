@@ -29,7 +29,7 @@ Harness items 1–8 from [HARNESS-ADDITIONAL-INSTRUCTIONS.md](./HARNESS-ADDITION
 | 5 | Elysia setup | **DONE** (merged PR #7) |
 | 6 | Reindex `AGENTS.md` | **ONGOING** discipline |
 | 7 | Force fully setup & configured — stop vs continue on unconfigured deps | **OPEN** |
-| 8 | t3 env for runtime env validations | **OPEN** |
+| 8 | t3 env for runtime env validations | **DONE** (`@t3-oss/env-core` in `apps/api`) |
 
 ### 5 — Elysia setup (detail)
 
