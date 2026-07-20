@@ -56,7 +56,8 @@ async function onSheetMemberFinished(
 export async function resolveApiKey(
   db: Db,
   body: CreateGenerationRequest,
-  userId: string | null
+  userId: string | null,
+  workspaceId: string | null = null
 ): Promise<{ apiKey: string; baseUrl?: string; providerKeyId?: string }> {
   if (body.apiKey) {
     return { apiKey: body.apiKey };
@@ -72,7 +73,11 @@ export async function resolveApiKey(
     .where(eq(providerKeys.id, body.providerKeyId))
     .limit(1);
 
-  if (!row || row.userId !== userId) {
+  if (
+    !row ||
+    row.userId !== userId ||
+    (workspaceId !== null && row.workspaceId !== workspaceId)
+  ) {
     throw new Error("provider key not found");
   }
 

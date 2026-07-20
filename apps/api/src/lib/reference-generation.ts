@@ -235,6 +235,7 @@ export async function setCharacterAnchorFromJob(
       and(
         eq(generationJobs.id, fromJobId),
         eq(generationJobs.userId, userId),
+        eq(generationJobs.workspaceId, character.workspaceId),
         eq(generationJobs.status, "succeeded")
       )
     )
