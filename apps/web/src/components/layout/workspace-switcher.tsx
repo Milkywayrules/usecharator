@@ -5,6 +5,10 @@ import { ChevronDownIcon, PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+import {
+  tierLimitBodyFromError,
+  useTierLimitPrompt,
+} from "@/components/billing/tier-limit-prompt-provider";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -31,6 +35,7 @@ import {
 
 export function WorkspaceSwitcher() {
   const queryClient = useQueryClient();
+  const showTierLimitPrompt = useTierLimitPrompt();
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
 
@@ -58,6 +63,9 @@ export function WorkspaceSwitcher() {
   const createMutation = useMutation({
     mutationFn: (name: string) => createWorkspace(name),
     onError: (error: Error) => {
+      if (showTierLimitPrompt(tierLimitBodyFromError(error))) {
+        return;
+      }
       toast.error(error.message);
     },
     onSuccess: async () => {

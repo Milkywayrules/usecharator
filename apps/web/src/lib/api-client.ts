@@ -1,6 +1,7 @@
 import type { App } from "@charator/api/src/index";
 import {
   type ApiTokenListItem,
+  activateWorkspaceResponseSchema,
   apiTokenListItemSchema,
   type CharacterGenerationsResponse,
   type CharacterResponse,
@@ -15,6 +16,8 @@ import {
   createApiTokenResponseSchema,
   createGenerationResponseSchema,
   createSheetResponseSchema,
+  type EntitlementsResponse,
+  entitlementsResponseSchema,
   type GalleryDetailResponse,
   type GalleryListResponse,
   type GenerationJobResponse,
@@ -37,9 +40,14 @@ import {
   type TelegramLinkStatus,
   telegramLinkCodeResponseSchema,
   telegramLinkStatusSchema,
+  type WorkspaceListResponse,
+  type WorkspaceResponse,
+  workspaceListResponseSchema,
+  workspaceResponseSchema,
 } from "@charator/shared";
 import type { ThemeId } from "@charator/spec";
 import { treaty } from "@elysiajs/eden";
+import type { QueryClient } from "@tanstack/react-query";
 import { themeIdForRequest } from "./theme-id";
 
 function resolveBaseUrl(): string {
@@ -398,4 +406,109 @@ export async function getSheetBatch(
     throw new Error(message);
   }
   return sheetBatchResponseSchema.parse(await response.json());
+}
+
+async function readJsonOrThrow(response: Response): Promise<unknown> {
+  if (!response.ok) {
+    const payload: unknown = await response.json().catch(() => null);
+    const message =
+      typeof payload === "object" &&
+      payload !== null &&
+      "message" in payload &&
+      typeof payload.message === "string"
+        ? payload.message
+        : `Request failed (${response.status})`;
+    const error = new Error(message) as Error & {
+      body?: unknown;
+      status?: number;
+    };
+    error.body = payload;
+    error.status = response.status;
+    throw error;
+  }
+  return response.json();
+}
+
+export async function getEntitlements(): Promise<EntitlementsResponse> {
+  const response = await fetch(`${resolveBaseUrl()}/api/me/entitlements`, {
+    credentials: "include",
+  });
+  const json = await readJsonOrThrow(response);
+  return entitlementsResponseSchema.parse(json);
+}
+
+export async function deleteGeneration(id: string): Promise<void> {
+  const response = await fetch(`${resolveBaseUrl()}/api/generations/${id}`, {
+    credentials: "include",
+    method: "DELETE",
+  });
+  if (!response.ok) {
+    await readJsonOrThrow(response);
+  }
+}
+
+export async function listWorkspaces(): Promise<WorkspaceListResponse> {
+  const response = await fetch(`${resolveBaseUrl()}/api/workspaces`, {
+    credentials: "include",
+  });
+  const json = await readJsonOrThrow(response);
+  return workspaceListResponseSchema.parse(json);
+}
+
+export async function createWorkspace(
+  name: string
+): Promise<WorkspaceResponse> {
+  const response = await fetch(`${resolveBaseUrl()}/api/workspaces`, {
+    body: JSON.stringify({ name }),
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+  const json = await readJsonOrThrow(response);
+  return workspaceResponseSchema.parse(json);
+}
+
+export async function updateWorkspace(
+  id: string,
+  body: { name: string }
+): Promise<WorkspaceResponse> {
+  const response = await fetch(`${resolveBaseUrl()}/api/workspaces/${id}`, {
+    body: JSON.stringify(body),
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    method: "PATCH",
+  });
+  const json = await readJsonOrThrow(response);
+  return workspaceResponseSchema.parse(json);
+}
+
+export async function deleteWorkspace(id: string): Promise<void> {
+  const response = await fetch(`${resolveBaseUrl()}/api/workspaces/${id}`, {
+    credentials: "include",
+    method: "DELETE",
+  });
+  if (!response.ok) {
+    await readJsonOrThrow(response);
+  }
+}
+
+export async function activateWorkspace(id: string): Promise<void> {
+  const response = await fetch(
+    `${resolveBaseUrl()}/api/workspaces/${id}/activate`,
+    {
+      credentials: "include",
+      method: "POST",
+    }
+  );
+  const json = await readJsonOrThrow(response);
+  activateWorkspaceResponseSchema.parse(json);
+}
+
+export function invalidateWorkspaceScopedQueries(
+  queryClient: QueryClient
+): void {
+  queryClient.invalidateQueries({ queryKey: ["characters"] });
+  queryClient.invalidateQueries({ queryKey: ["provider-keys"] });
+  queryClient.invalidateQueries({ queryKey: ["api-tokens"] });
+  queryClient.invalidateQueries({ queryKey: ["entitlements"] });
 }
