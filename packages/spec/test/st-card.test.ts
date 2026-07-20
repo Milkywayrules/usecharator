@@ -184,6 +184,32 @@ describe("st-card import/export", () => {
     expect(composeStCardPostHistoryInstructions(spec)).toContain("Nova");
   });
 
+  test("restores embedded spec when control.st is partially present", () => {
+    const spec = createEmptySpec();
+    spec.meta.name = "Partial ST";
+    spec.meta.id = "partial-st";
+    spec.control.st.system_prompt = "Only prompt saved";
+
+    const exported = exportStCard(spec, null);
+    const ext = exported.ccv3.data.extensions?.charator as {
+      spec: Record<string, unknown>;
+    };
+    const embeddedControl = (ext.spec.control as Record<string, unknown>) ?? {};
+    ext.spec = {
+      ...ext.spec,
+      control: {
+        ...embeddedControl,
+        st: { system_prompt: "Only prompt saved" },
+      },
+    };
+
+    const imported = importStCardFromJson(exported.ccv3);
+    expect(imported.reviewRequired).toBe(false);
+    expect(imported.spec.control.st.system_prompt).toBe("Only prompt saved");
+    expect(imported.spec.control.st.mes_example).toBe("");
+    expect(imported.spec.control.st.post_history_instructions).toBe("");
+  });
+
   test("round-trips control.st fields via charator extension", () => {
     const spec = createEmptySpec();
     spec.meta.name = "ST Depth";

@@ -282,14 +282,15 @@ function withControlStDefaults(input: unknown): unknown {
   if (!(isRecord(input) && isRecord(input.control))) {
     return input;
   }
-  if (isRecord(input.control.st)) {
-    return input;
-  }
+  const stSource = isRecord(input.control.st) ? input.control.st : {};
   return {
     ...input,
     control: {
       ...input.control,
-      st: { ...EMPTY_CONTROL_ST },
+      st: {
+        ...EMPTY_CONTROL_ST,
+        ...stSource,
+      },
     },
   };
 }
