@@ -17,6 +17,7 @@ import { useTheme } from "next-themes";
 import { Suspense, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { SignInButton } from "@/components/auth/sign-in-button";
+import { OnboardingSettingsSection } from "@/components/onboarding/onboarding-panel";
 import { PlanUsageSettingsSection } from "@/components/settings/plan-usage-settings-section";
 import { WorkspacesSettingsSection } from "@/components/settings/workspaces-settings-section";
 import { Button } from "@/components/ui/button";
@@ -235,6 +236,9 @@ export default function SettingsPage() {
 
       {signedIn ? (
         <>
+          <Suspense fallback={null}>
+            <OnboardingSettingsSection />
+          </Suspense>
           <Suspense fallback={null}>
             <PlanUsageSettingsSection />
           </Suspense>
@@ -496,7 +500,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card id="keys">
             <CardHeader>
               <CardTitle>Server provider keys</CardTitle>
               <CardDescription>

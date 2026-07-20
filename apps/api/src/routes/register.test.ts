@@ -37,6 +37,9 @@ describe("route mounts", () => {
         `${route.method.toUpperCase()} ${V1_ROUTE_PREFIX}${route.path}`
       );
     }
+    expect(v1Paths).toContain("GET /v1/me/entitlements");
+    expect(v1Paths).toContain("GET /v1/me/onboarding");
+    expect(v1Paths).toContain("POST /v1/me/onboarding/seed-demo-character");
     expect(v1Paths).toContain("GET /v1/providers/capabilities");
     expect(v1Paths).toContain("POST /v1/characters/:id/anchor");
     expect(v1Paths).toContain("DELETE /v1/characters/:id/anchor");

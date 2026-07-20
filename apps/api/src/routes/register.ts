@@ -33,6 +33,10 @@ import {
   handleKeysList,
   handleKeysPost,
 } from "./handlers";
+import {
+  handleOnboardingGet,
+  handleOnboardingSeedDemoPost,
+} from "./onboarding";
 import { handleProviderCapabilities } from "./providers";
 import { handleCharacterSheetPost, handleSheetBatchGet } from "./sheets";
 import { handleSpecCatalog, handleSpecRender, handleThemesList } from "./spec";
@@ -116,6 +120,16 @@ export const SHARED_PROGRAMMATIC_ROUTES: RouteMount[] = [
     handler: (request) => handleEntitlementsGet(request),
     method: "get",
     path: "/me/entitlements",
+  },
+  {
+    handler: (request) => handleOnboardingGet(request),
+    method: "get",
+    path: "/me/onboarding",
+  },
+  {
+    handler: (request) => handleOnboardingSeedDemoPost(request),
+    method: "post",
+    path: "/me/onboarding/seed-demo-character",
   },
   {
     handler: (request) => handleWorkspacesList(request),
