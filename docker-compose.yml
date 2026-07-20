@@ -38,6 +38,20 @@ services:
       - "traefik.http.routers.charator-web.priority=1"
       - "traefik.http.services.charator-web.loadbalancer.server.port=3000"
 
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: builder
+    working_dir: /app
+    command: ["bun", "run", "--filter=@charator/db", "db:migrate"]
+    restart: "no"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://charator:charator@postgres:5432/charator}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   api:
     build:
       context: .
@@ -73,6 +87,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     healthcheck:
       test:
         [

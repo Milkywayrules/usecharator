@@ -5,11 +5,14 @@ WORKDIR /app
 
 FROM base AS deps
 COPY package.json bun.lock turbo.json ./
-COPY apps/web/package.json ./apps/web/
 COPY apps/api/package.json ./apps/api/
+COPY apps/cli/package.json ./apps/cli/
+COPY apps/mcp/package.json ./apps/mcp/
+COPY apps/web/package.json ./apps/web/
 COPY packages/spec/package.json ./packages/spec/
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/db/package.json ./packages/db/
+COPY packages/payments/package.json ./packages/payments/
 RUN bun install --frozen-lockfile
 
 FROM base AS builder
@@ -23,8 +26,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+RUN groupadd --system --gid 1001 nodejs && \
+    useradd --system --uid 1001 --gid nodejs nextjs
 
 COPY --from=builder /app/apps/web/public ./apps/web/public
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./

@@ -14,7 +14,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { organization as organizationPlugin } from "better-auth/plugins";
 import { and, eq, isNull } from "drizzle-orm";
-import { config } from "./config";
+import { config, githubConfigured } from "./config";
 import {
   hashApiToken,
   isValidApiTokenFormat,
@@ -78,10 +78,14 @@ export const auth = betterAuth({
   ],
   secret: config.BETTER_AUTH_SECRET,
   socialProviders: {
-    github: {
-      clientId: config.GITHUB_CLIENT_ID,
-      clientSecret: config.GITHUB_CLIENT_SECRET,
-    },
+    ...(githubConfigured(config)
+      ? {
+          github: {
+            clientId: config.GITHUB_CLIENT_ID as string,
+            clientSecret: config.GITHUB_CLIENT_SECRET as string,
+          },
+        }
+      : {}),
   },
 });
 

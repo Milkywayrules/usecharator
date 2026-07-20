@@ -129,6 +129,7 @@ GitHub Actions runs on every push to `main` and on pull requests (`.github/workf
 ## Deploy notes
 
 - **Coolify**: deploy the root `docker-compose.yml` as a single resource.
+- **Migrations**: the `migrate` one-shot service runs Drizzle migrations before the API starts (`depends_on: service_completed_successfully`). Re-deploys re-run idempotently.
 - **Secrets**: inject via Doppler in Coolify — do not commit `.env` files.
 - **DNS**: point `charator.dioilham.com` to the VPS through Cloudflare.
 - **Routing**: Traefik labels in `docker-compose.yml` route `/` to web and `/api` to the API service.
