@@ -3,6 +3,46 @@ import { parseTierId, type TierId } from "@charator/shared";
 import { eq } from "drizzle-orm";
 import type { WebhookEvent } from "./types";
 
+async function applySubscriptionCanceledEvent(
+  db: Db,
+  data: WebhookEvent["data"]
+): Promise<void> {
+  const { userId } = data;
+  const cancelAtPeriodEnd = data.cancelAtPeriodEnd ?? false;
+  const currentPeriodEnd = data.currentPeriodEnd
+    ? new Date(data.currentPeriodEnd)
+    : new Date(0);
+  const keepPaidTier =
+    cancelAtPeriodEnd && currentPeriodEnd.getTime() > Date.now();
+  const paidTier = parseTierId(data.tier);
+  const tier: TierId = keepPaidTier ? paidTier : "free";
+
+  if (!keepPaidTier) {
+    await db.update(user).set({ tier }).where(eq(user.id, userId));
+  }
+
+  const subscriptionUpdate = {
+    cancelAtPeriodEnd,
+    currentPeriodEnd,
+    status: "canceled" as const,
+    tier,
+    updatedAt: new Date(),
+  };
+
+  if (data.subscriptionId) {
+    await db
+      .update(subscriptions)
+      .set(subscriptionUpdate)
+      .where(eq(subscriptions.id, data.subscriptionId));
+    return;
+  }
+
+  await db
+    .update(subscriptions)
+    .set(subscriptionUpdate)
+    .where(eq(subscriptions.userId, userId));
+}
+
 export async function applyBillingWebhookEvent(
   db: Db,
   event: WebhookEvent
@@ -46,29 +86,6 @@ export async function applyBillingWebhookEvent(
   }
 
   if (type === "subscription.canceled") {
-    const tier: TierId = "free";
-    await db.update(user).set({ tier }).where(eq(user.id, userId));
-
-    if (data.subscriptionId) {
-      await db
-        .update(subscriptions)
-        .set({
-          cancelAtPeriodEnd: data.cancelAtPeriodEnd ?? false,
-          status: "canceled",
-          tier,
-          updatedAt: new Date(),
-        })
-        .where(eq(subscriptions.id, data.subscriptionId));
-    } else {
-      await db
-        .update(subscriptions)
-        .set({
-          cancelAtPeriodEnd: data.cancelAtPeriodEnd ?? false,
-          status: "canceled",
-          tier,
-          updatedAt: new Date(),
-        })
-        .where(eq(subscriptions.userId, userId));
-    }
+    await applySubscriptionCanceledEvent(db, data);
   }
 }

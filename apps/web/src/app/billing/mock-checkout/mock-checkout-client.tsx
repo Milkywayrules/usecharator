@@ -101,7 +101,7 @@ export default function MockCheckoutClient() {
           </CardTitle>
           <CardDescription>
             {isManage
-              ? "Cancel your mock subscription or return to settings."
+              ? "Cancel at period end — paid access stays active until the current billing period ends."
               : sessionId
                 ? `Session ${sessionId}`
                 : "Missing checkout session."}
