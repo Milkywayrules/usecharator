@@ -215,6 +215,6 @@ Post-harness product epics for v9. Agents own implementation; mark **DONE** when
 | Epic | Status | Notes |
 |------|--------|-------|
 | Epic 1 — Activation onboarding | **DONE** | [PR #20](https://github.com/Milkywayrules/usecharator/pull/20) — `0015_user_activation`, onboarding API + settings checklist/banner, wizard draft promotion, e2e + ci-smoke 401 |
-| Epic 2 — ST round-trip depth | **IN PR** | `feat/v9-st-roundtrip` — `control.st` chat fields, prompt template suffixes, import unmapped review panel |
+| Epic 2 — ST round-trip depth | **DONE** | [PR #23](https://github.com/Milkywayrules/usecharator/pull/23) — `control.st` chat fields, prompt template suffixes, import unmapped review panel; CI run `29738518442` green |
 | Epic 3 — BYOK cost transparency | **DONE** | [PR #21](https://github.com/Milkywayrules/usecharator/pull/21) — static provider pricing table, capabilities `costEstimate`, generate panel + sheet batch UI; CI run `29736153817` green |
 | Epic 4 — Settings generations this month | **BLOCKED** | entitlements API does not expose monthly generation count yet — surface-only when field exists |
