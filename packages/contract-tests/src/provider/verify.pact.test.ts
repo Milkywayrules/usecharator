@@ -8,6 +8,10 @@ import {
   providerBaseUrl,
   shouldRunProviderVerification,
 } from "../pact-config";
+import {
+  pactEntitlementsSessionCookie,
+  seedPactEntitlementsSession,
+} from "./pact-auth";
 
 describe("charator-api provider verification", () => {
   test("honours charator-web consumer contracts", async () => {
@@ -22,6 +26,21 @@ describe("charator-api provider verification", () => {
       pactUrls: [pactPath],
       provider: PACT_PROVIDER,
       providerBaseUrl: providerBaseUrl(),
+      requestFilter: (req) => {
+        if (
+          req.path === "/api/v1/me/entitlements" &&
+          req.method === "GET" &&
+          !req.headers.cookie?.includes("better-auth.session_token")
+        ) {
+          req.headers.cookie = [
+            req.headers.cookie,
+            pactEntitlementsSessionCookie(),
+          ]
+            .filter(Boolean)
+            .join("; ");
+        }
+        return req;
+      },
       stateHandlers: {
         "api is healthy": () => Promise.resolve("api healthy"),
         "gallery listing is available": () =>
@@ -37,6 +56,10 @@ describe("charator-api provider verification", () => {
         "themes catalog is available": () => Promise.resolve("themes ready"),
         "user is not authenticated": () =>
           Promise.resolve("no authenticated user"),
+        "workspace entitlements are available": async () => {
+          await seedPactEntitlementsSession();
+          return "entitlements session ready";
+        },
       },
     });
 

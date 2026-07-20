@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { createEmptySpec } from "@charator/spec";
 import { MatchersV3, PactV3 } from "@pact-foundation/pact";
+import { entitlementsResponsePactBody } from "../fixtures/entitlements";
 import { PACT_CONSUMER, PACT_DIR, PACT_PROVIDER } from "../pact-config";
 
 const { eachLike, like } = MatchersV3;
@@ -259,6 +260,41 @@ describe("charator public v1 API contracts", () => {
       expect(Array.isArray(body.corePaths)).toBe(true);
       expect(Array.isArray(body.fieldCatalog)).toBe(true);
       expect(body.sectionTitles.appearance).toBeTruthy();
+    });
+  });
+
+  test("GET /api/v1/me/entitlements returns usage payload when authenticated", async () => {
+    provider
+      .given("workspace entitlements are available")
+      .uponReceiving("an authenticated entitlements request")
+      .withRequest({
+        headers: {
+          Accept: "application/json",
+          Cookie: like("better-auth.session_token=pact-entitlements-session"),
+        },
+        method: "GET",
+        path: "/api/v1/me/entitlements",
+      })
+      .willRespondWith({
+        body: entitlementsResponsePactBody,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        status: 200,
+      });
+
+    await provider.executeTest(async (mockServer) => {
+      const response = await fetch(`${mockServer.url}/api/v1/me/entitlements`, {
+        headers: {
+          Accept: "application/json",
+          Cookie: "better-auth.session_token=pact-entitlements-session",
+        },
+      });
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as {
+        usage: { generationsThisMonth: number };
+      };
+      expect(typeof body.usage.generationsThisMonth).toBe("number");
     });
   });
 
