@@ -195,7 +195,7 @@ Tracked work after harness items 1–8 landed on `main`. Agents own these; King 
 
 | Epic | Status | Notes |
 |------|--------|-------|
-| Pact API contract tests | **IN PROGRESS** | Parallel agent |
+| Pact API contract tests | **DONE** | [PR #17](https://github.com/Milkywayrules/usecharator/pull/17) — `@charator/contract-tests`; consumer v1 health/themes/capabilities/gallery/404; provider verify in CI integration after smoke |
 | CI prod-boot-check | **IN PROGRESS** | `bun scripts/prod-boot-check.ts --env docs/env.prod-rehearsal.example` in integration job after smoke |
 | Remote branch cleanup | **IN PROGRESS** | Delete merged feature/bugfix/chore branches via `gh` + `git push origin --delete` |
 | Opus right-hand sign-off | **RETRY** | Re-run each epic batch; not a hard blocker for agent work (section **C**) |
