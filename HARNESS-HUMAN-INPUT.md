@@ -28,8 +28,10 @@ Harness items 1–8 from [HARNESS-ADDITIONAL-INSTRUCTIONS.md](./HARNESS-ADDITION
 | 4 | Branch + PR workflow | **DONE** (adopted) |
 | 5 | Elysia setup | **DONE** (merged PR #7) |
 | 6 | Reindex `AGENTS.md` | **ONGOING** discipline |
-| 7 | Force fully setup & configured — stop vs continue on unconfigured deps | **DONE** |
-| 8 | t3 env for runtime env validations | **DONE** (`@t3-oss/env-core` in `apps/api`) |
+| 7 | Force fully setup & configured — stop vs continue on unconfigured deps | **DONE** (merged PR #12 — `assertProductionReady`, prod `/api/health` `missing`) |
+| 8 | t3 env for runtime env validations | **DONE** (merged PR #11 — `@t3-oss/env-core` in `apps/api`) |
+
+**Agent-doable harness items (1–5, 7–8) are complete on `main`** as of PR #11–#13 merge (2026-07-20). Item **6** remains ongoing King discipline — not a code blocker.
 
 ### 7 — Production env gates (stop vs continue)
 
@@ -68,13 +70,14 @@ Right-hand decisions closed without King input:
 
 Orchestrator + right-hand unanimous gate before creating `HARNESS-START-FILE`.
 
-- [x] All agent-doable harness items merged to `main` + CI green (PR #7; PR #12 — CI run 29731143940 green)
+- [x] All agent-doable harness items merged to `main` + CI green (PR #7, #11, #12 — run `29731143940`; PR #13 deploy docs — run pending at merge)
 - [x] Orchestrator sign-off — harness #5 verified locally (turbo + e2e) 2026-07-20
+- [x] Orchestrator CODE prod-confident sign-off — `bunx turbo build lint typecheck test` green; `docs/DEPLOY.md`, `docs/DOPPLER-KEYS.md`, `scripts/prod-boot-check.ts` landed (PR #13); `bun scripts/prod-boot-check.ts --env docs/env.prod-rehearsal.example` passes 2026-07-20
 - [x] Right-hand Grok sign-off — YES_WITH_NOTES on PR #12 (2026-07-20); non-blocking notes on OTEL_SERVICE_NAME matrix wording and aggregated telegram warn
 - [ ] Right-hand Opus sign-off *(pending — API limit)*
 - [x] Right-hand Composer sign-off — implementer verified build/lint/typecheck/test + e2e 2026-07-20
 
-**Do not create `HARNESS-START-FILE` yet** — human deploy blockers remain; Opus sign-off pending.
+**Do not create `HARNESS-START-FILE` yet** — King must close section **A** and section **F** first; see section **G**.
 
 - [x] Branch cleanup PR merged 2026-07-20 — stale harness doc commits landed via `chore/harness-branch-cleanup`; local merged feature branches deleted after merge
 
@@ -86,7 +89,7 @@ Orchestrator checks every box; no King creds required (agent generates secrets v
 
 | # | Check | Status | Evidence (2026-07-20) |
 |---|-------|--------|------------------------|
-| D1 | Harness items **1–8 DONE** on `main` | [x] | Section B table — items 1–8 marked DONE |
+| D1 | Harness items **1–8 DONE** on `main` | [x] | Section B — agent-doable items 1–5, 7–8 DONE (PR #11–#13); item 6 ongoing discipline only |
 | D2 | **CI green** on `main` (fast + integration + e2e) | [x] | `gh run view 29726716175` → fast, integration, e2e all `success`; post PR #12 merge: `gh run view 29731143940` green |
 | D3 | **README quickstart boots** | [x] | `POSTGRES_PORT=5433 docker compose up -d postgres` (5432 occupied) → `cp .env.example .env` → openssl secrets for `BETTER_AUTH_SECRET`, `KEY_ENCRYPTION_MASTER_KEY`, `PAYMENT_WEBHOOK_SECRET` → `source .env && bun run --filter=@charator/db db:migrate` → `bun --env-file=.env run --filter=@charator/api dev` + web on :3000 |
 | D4 | **API health + observability headers** | [x] | `curl -sI http://127.0.0.1:3001/api/health` → `200`, `x-content-type-options: nosniff`, `x-request-id` present |
@@ -168,3 +171,16 @@ Mirrors [docs/DEPLOY.md](./docs/DEPLOY.md). King executes — leave unchecked un
 
 - [ ] **Production deploy:** Coolify + Doppler + DNS + R2 + migrations
 - [ ] **GitHub OAuth production app:** client ID + secret in Doppler
+
+---
+
+## G) Orchestrator stop decision
+
+As of 2026-07-20, all agent-implementable harness work for items **1–5** and **7–8** is merged to `main`. The orchestrator may **pause the implementer loop** — no further code slices are required until King input arrives.
+
+**Live production still requires King:**
+
+- section **A** human-only blockers (Coolify, Doppler, DNS, R2, prod OAuth, etc.)
+- section **F** deploy checklist — King executes and checks each box
+
+**`HARNESS-START-FILE` must not be created** until King confirms section **F** is complete. Until then, agents may research, document, and run right-hand reviews only — not dispatch open-ended implementer loops per section **E**.
