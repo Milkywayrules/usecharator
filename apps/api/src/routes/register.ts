@@ -29,6 +29,7 @@ import {
 import { handleProviderCapabilities } from "./providers";
 import { handleCharacterSheetPost, handleSheetBatchGet } from "./sheets";
 import { handleSpecCatalog, handleSpecRender, handleThemesList } from "./spec";
+import { handleStCardExport, handleStCardImport } from "./st-card";
 import {
   handleTokensDelete,
   handleTokensList,
@@ -165,6 +166,11 @@ export const SHARED_PROGRAMMATIC_ROUTES: RouteMount[] = [
     path: "/characters/:id/sheet",
   },
   {
+    handler: (request, params) => handleStCardExport(request, params.id ?? ""),
+    method: "get",
+    path: "/characters/:id/export/st-card",
+  },
+  {
     handler: (request, params) => handleSheetBatchGet(request, params.id ?? ""),
     method: "get",
     path: "/sheets/:id",
@@ -248,6 +254,11 @@ export const V1_ONLY_ROUTES: RouteMount[] = [
     handler: (request) => handleSpecRender(request),
     method: "post",
     path: "/spec/render",
+  },
+  {
+    handler: (request) => handleStCardImport(request),
+    method: "post",
+    path: "/spec/import/st-card",
   },
 ];
 
