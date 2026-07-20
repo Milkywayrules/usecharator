@@ -28,6 +28,8 @@ const envSchema = z.object({
   NODE_ENV: z
     .enum(["development", "production", "test"])
     .default("development"),
+  OTEL_EXPORTER_OTLP_ENDPOINT: z.string().url().optional(),
+  OTEL_SERVICE_NAME: z.string().default("charator-api"),
   PAYMENT_PROVIDER: z.string().default("mock"),
   PAYMENT_WEBHOOK_SECRET: z.string().default(DEV_PAYMENT_WEBHOOK_SECRET),
   PORT: z.coerce.number().default(3001),

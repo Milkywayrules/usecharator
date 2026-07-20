@@ -17,9 +17,13 @@
     "@charator/shared": "workspace:*",
     "@charator/spec": "workspace:*",
     "@elysiajs/openapi": "^1.4.15",
+    "@elysiajs/opentelemetry": "^1.4.11",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.220.0",
+    "@opentelemetry/sdk-trace-node": "^2.9.0",
     "better-auth": "1.3.4",
     "drizzle-orm": "^0.45.2",
     "elysia": "^1.4.29",
+    "evlog": "^2.22.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
