@@ -1,8 +1,9 @@
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
-
-/** Dev-only default; must not be used when `NODE_ENV` is production. */
-export const DEV_PAYMENT_WEBHOOK_SECRET = "dev-payment-webhook-secret";
+import {
+  assertProductionReady,
+  DEV_PAYMENT_WEBHOOK_SECRET,
+} from "./lib/startup-guards";
 
 const base64KeySchema = z
   .string()
@@ -49,31 +50,13 @@ const server = {
   WEB_APP_URL: z.string().url().default("http://localhost:3000"),
 } as const;
 
-function assertProductionSecrets(cfg: {
-  NODE_ENV: "development" | "production" | "test";
-  PAYMENT_WEBHOOK_SECRET: string;
-}): void {
-  if (cfg.NODE_ENV !== "production") {
-    return;
-  }
-
-  if (
-    !cfg.PAYMENT_WEBHOOK_SECRET ||
-    cfg.PAYMENT_WEBHOOK_SECRET === DEV_PAYMENT_WEBHOOK_SECRET
-  ) {
-    throw new Error(
-      "PAYMENT_WEBHOOK_SECRET must be set to a strong non-default value when NODE_ENV is production"
-    );
-  }
-}
-
 function buildEnv(runtimeEnv: Record<string, string | undefined>) {
   const parsed = createEnv({
     emptyStringAsUndefined: true,
     runtimeEnv,
     server,
   });
-  assertProductionSecrets(parsed);
+  assertProductionReady(parsed);
   return parsed;
 }
 

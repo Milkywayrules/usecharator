@@ -129,6 +129,7 @@ GitHub Actions runs on every push to `main` and on pull requests (`.github/workf
 ## Deploy notes
 
 - **Coolify**: deploy the root `docker-compose.yml` as a single resource.
+- **Production env (required)**: inject via Doppler before deploy — `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `KEY_ENCRYPTION_MASTER_KEY`, `PAYMENT_WEBHOOK_SECRET` (non-dev value), `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, and the full R2 tuple (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_ENDPOINT`). The API fails fast at boot if any are missing. Set `MOCK_BILLING_ENABLED=false` or leave unset — mock billing cannot run in production.
 - **Migrations**: the `migrate` one-shot service runs Drizzle migrations before the API starts (`depends_on: service_completed_successfully`). Re-deploys re-run idempotently.
 - **Secrets**: inject via Doppler in Coolify — do not commit `.env` files.
 - **OpenTelemetry (optional)**: set `OTEL_EXPORTER_OTLP_ENDPOINT` on the API service to export traces over OTLP HTTP; `OTEL_SERVICE_NAME` defaults to `charator-api`. When the endpoint is unset, tracing stays fully disabled with no startup cost.
