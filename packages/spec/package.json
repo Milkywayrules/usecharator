@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./st-card-png": "./src/st-card-png.ts",
+    "./png-text": "./src/png-text.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
