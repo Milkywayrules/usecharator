@@ -94,3 +94,10 @@ use bun test for unit test.
 ---
 
 _Personal playbook, copied into each project. Add project-specific sections (product, stack, commands) below as the repo matures._
+
+## Project: commit workflow (hard-learned)
+
+- use plain `git commit` so the repo hook strips injected trailers — never `--no-verify`
+- never `git reset --hard`; it destroyed unstaged work twice in this repo
+- `git commit-tree` is only for a confirmed trailer-injection failure (verify prints `TRAILER PRESENT`), not routine commits
+- after every commit: `git log -1 --format=%B | grep -qiE '^co-authored-by:' && echo 'TRAILER PRESENT' || echo 'clean'`
