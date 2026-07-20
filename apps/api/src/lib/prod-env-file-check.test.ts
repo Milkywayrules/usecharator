@@ -72,8 +72,8 @@ describe("validateProductionStopKeys", () => {
         .join("\n")
     );
     expect(validateProductionStopKeys(parsed)).toEqual([]);
-    expect(
-      getProductionStopViolations(productionGuardFromEnv(parsed))
-    ).toEqual([]);
+    expect(getProductionStopViolations(productionGuardFromEnv(parsed))).toEqual(
+      []
+    );
   });
 });

@@ -4,11 +4,13 @@ import {
   type ProductionGuardConfig,
 } from "./startup-guards";
 
+const ENV_FILE_LINE_SPLIT = /\r?\n/u;
+
 /** Parse `KEY=value` lines from a dotenv-style file (no variable expansion). */
 export function parseEnvFile(content: string): Record<string, string> {
   const env: Record<string, string> = {};
 
-  for (const rawLine of content.split(/\r?\n/u)) {
+  for (const rawLine of content.split(ENV_FILE_LINE_SPLIT)) {
     const line = rawLine.trim();
     if (!line || line.startsWith("#")) {
       continue;
@@ -50,7 +52,8 @@ export function productionGuardFromEnv(
       | "true"
       | "false"
       | undefined,
-    NODE_ENV: (env.NODE_ENV as ProductionGuardConfig["NODE_ENV"]) ?? "production",
+    NODE_ENV:
+      (env.NODE_ENV as ProductionGuardConfig["NODE_ENV"]) ?? "production",
     OTEL_EXPORTER_OTLP_ENDPOINT: env.OTEL_EXPORTER_OTLP_ENDPOINT,
     PAYMENT_WEBHOOK_SECRET:
       env.PAYMENT_WEBHOOK_SECRET ?? DEV_PAYMENT_WEBHOOK_SECRET,
