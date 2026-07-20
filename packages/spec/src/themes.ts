@@ -1,5 +1,9 @@
 /** Launch theme presets layered on top of base prompt rendering. */
 
+import {
+  applyPromptTemplateSuffix,
+  type PromptTemplateFamily,
+} from "./prompt-templates";
 import { renderPromptBase } from "./render";
 import type { CharacterSpec } from "./schema";
 
@@ -196,6 +200,7 @@ export const THEME_PRESETS: Record<ThemeId, ThemePreset> = {
 };
 
 export interface RenderPromptOptions {
+  template?: PromptTemplateFamily;
   theme?: ThemeId;
 }
 
@@ -228,38 +233,37 @@ export function renderPrompt(
   spec: CharacterSpec,
   options?: RenderPromptOptions
 ): string {
-  const base = renderPromptBase(spec);
+  let base = renderPromptBase(spec);
 
-  if (!options?.theme) {
-    return base;
+  if (options?.theme) {
+    const theme = THEME_PRESETS[options.theme];
+    if (theme) {
+      const themeBlock = formatThemeBlock(theme);
+      const avoidMarker = "Avoid: ";
+      const avoidIdx = base.indexOf(avoidMarker);
+
+      if (avoidIdx >= 0) {
+        const beforeAvoid = base.slice(0, avoidIdx);
+        const avoidRest = base.slice(avoidIdx + avoidMarker.length);
+        const dotIdx = avoidRest.lastIndexOf(".");
+        const avoidContent =
+          dotIdx >= 0 ? avoidRest.slice(0, dotIdx) : avoidRest;
+        const afterAvoid = dotIdx >= 0 ? avoidRest.slice(dotIdx) : "";
+
+        const existingAvoid = avoidContent
+          .split(",")
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0);
+        const merged = mergeAvoidLists(existingAvoid, theme.negativePrompts);
+
+        base = `${beforeAvoid}${themeBlock} ${avoidMarker}${merged.join(", ")}${afterAvoid}`;
+      } else {
+        base = `${base} ${themeBlock}`;
+      }
+    }
   }
 
-  const theme = THEME_PRESETS[options.theme];
-  if (!theme) {
-    return base;
-  }
-
-  const themeBlock = formatThemeBlock(theme);
-  const avoidMarker = "Avoid: ";
-  const avoidIdx = base.indexOf(avoidMarker);
-
-  if (avoidIdx >= 0) {
-    const beforeAvoid = base.slice(0, avoidIdx);
-    const avoidRest = base.slice(avoidIdx + avoidMarker.length);
-    const dotIdx = avoidRest.lastIndexOf(".");
-    const avoidContent = dotIdx >= 0 ? avoidRest.slice(0, dotIdx) : avoidRest;
-    const afterAvoid = dotIdx >= 0 ? avoidRest.slice(dotIdx) : "";
-
-    const existingAvoid = avoidContent
-      .split(",")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-    const merged = mergeAvoidLists(existingAvoid, theme.negativePrompts);
-
-    return `${beforeAvoid}${themeBlock} ${avoidMarker}${merged.join(", ")}${afterAvoid}`;
-  }
-
-  return `${base} ${themeBlock}`;
+  return applyPromptTemplateSuffix(base, options?.template);
 }
 
 export function getTheme(id: ThemeId): ThemePreset {

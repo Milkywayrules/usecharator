@@ -23,6 +23,12 @@ const controlFreeformSchema = z.object({
   setting: z.string(),
 });
 
+const controlStSchema = z.object({
+  mes_example: z.string(),
+  post_history_instructions: z.string(),
+  system_prompt: z.string(),
+});
+
 const controlSchema = z.object({
   freeform: controlFreeformSchema,
   locked: z.array(z.string()),
@@ -40,6 +46,7 @@ const controlSchema = z.object({
     props: enumFromPath("control.section_modes"),
     setting: enumFromPath("control.section_modes"),
   }),
+  st: controlStSchema,
 });
 
 const metaSchema = z.object({
@@ -261,6 +268,40 @@ export const characterSpecSchema = z.object({
 
 export type CharacterSpec = z.infer<typeof characterSpecSchema>;
 
+const EMPTY_CONTROL_ST = {
+  mes_example: "",
+  post_history_instructions: "",
+  system_prompt: "",
+} as const;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function withControlStDefaults(input: unknown): unknown {
+  if (!(isRecord(input) && isRecord(input.control))) {
+    return input;
+  }
+  if (isRecord(input.control.st)) {
+    return input;
+  }
+  return {
+    ...input,
+    control: {
+      ...input.control,
+      st: { ...EMPTY_CONTROL_ST },
+    },
+  };
+}
+
 export function parseCharacterSpec(input: unknown): CharacterSpec {
-  return characterSpecSchema.parse(input);
+  return characterSpecSchema.parse(withControlStDefaults(input));
+}
+
+export function safeParseCharacterSpec(input: unknown): CharacterSpec | null {
+  try {
+    return parseCharacterSpec(input);
+  } catch {
+    return null;
+  }
 }

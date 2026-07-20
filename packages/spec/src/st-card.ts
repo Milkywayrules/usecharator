@@ -8,11 +8,7 @@ import { effectiveMode, shouldIncludeField } from "./control";
 import { FIELD_ORDER } from "./data/field-order";
 import { SECTION_TITLES } from "./data/paths";
 import { createEmptySpec } from "./empty";
-import {
-  type CharacterSpec,
-  characterSpecSchema,
-  parseCharacterSpec,
-} from "./schema";
+import { type CharacterSpec, parseCharacterSpec } from "./schema";
 import type { ThemeId } from "./themes";
 import { formatValue, humanize, isEmpty } from "./utils";
 import { SPEC_VERSION } from "./validate";
@@ -33,6 +29,19 @@ export type StCardSourceFormat =
 export interface LossyField {
   destination: string;
   field: string;
+}
+
+/** Fields that could not be structurally mapped and need human review. */
+export function isUnmappedStField(entry: LossyField): boolean {
+  return (
+    entry.destination === "meta.notes" ||
+    entry.destination.startsWith("not mapped") ||
+    entry.destination.includes("unsupported")
+  );
+}
+
+export function listUnmappedStFields(fields: LossyField[]): LossyField[] {
+  return fields.filter(isUnmappedStField);
 }
 
 export interface ImportStCardResult {
@@ -180,8 +189,10 @@ function tryRestoreFromExtensions(
   if (!isRecord(charator) || charator.spec === undefined) {
     return null;
   }
-  const parsed = characterSpecSchema.safeParse(charator.spec);
-  if (!parsed.success) {
+  let spec: CharacterSpec;
+  try {
+    spec = parseCharacterSpec(charator.spec);
+  } catch {
     recordLossy(
       lossyFields,
       "extensions.charator.spec",
@@ -189,7 +200,6 @@ function tryRestoreFromExtensions(
     );
     return null;
   }
-  const spec = parseCharacterSpec(parsed.data);
   if (typeof data.name === "string" && data.name.trim()) {
     spec.meta.name = data.name.trim();
   }
@@ -249,8 +259,35 @@ function mapCardToSpec(
     recordLossy(lossyFields, "data.creator_notes", "meta.notes");
   }
 
+  mapStCardTextFields(data, spec, lossyFields);
   appendNotesBlock(spec, NOTES_SECTION, buildUnmappedNotes(data, lossyFields));
   return spec;
+}
+
+function mapStCardTextFields(
+  data: StCardData,
+  spec: CharacterSpec,
+  lossyFields: LossyField[]
+): void {
+  const mappings: Array<{
+    field: "mes_example" | "post_history_instructions" | "system_prompt";
+    specKey: keyof CharacterSpec["control"]["st"];
+  }> = [
+    { field: "mes_example", specKey: "mes_example" },
+    { field: "system_prompt", specKey: "system_prompt" },
+    {
+      field: "post_history_instructions",
+      specKey: "post_history_instructions",
+    },
+  ];
+
+  for (const { field, specKey } of mappings) {
+    const value = data[field];
+    if (typeof value === "string" && value.trim()) {
+      spec.control.st[specKey] = value.trim();
+      recordLossy(lossyFields, `data.${field}`, `control.st.${specKey}`);
+    }
+  }
 }
 
 function buildUnmappedNotes(
@@ -268,9 +305,6 @@ function buildUnmappedNotes(
   };
 
   mapTextField("first_mes", "First message");
-  mapTextField("mes_example", "Message example");
-  mapTextField("system_prompt", "System prompt");
-  mapTextField("post_history_instructions", "Post-history instructions");
   mapTextField("nickname", "Nickname");
 
   if (
@@ -302,10 +336,11 @@ function buildUnmappedNotes(
   }
 
   if (data.character_book !== undefined) {
-    lines.push(
-      `Character book:\n${JSON.stringify(data.character_book, null, 2)}`
+    recordLossy(
+      lossyFields,
+      "data.character_book",
+      "not mapped (lorebook unsupported)"
     );
-    recordLossy(lossyFields, "data.character_book", "meta.notes");
   }
 
   if (data.assets !== undefined) {
@@ -421,6 +456,92 @@ export function composeStCardDescription(spec: CharacterSpec): string {
   return parts.join("\n\n");
 }
 
+function displayName(spec: CharacterSpec): string {
+  return spec.meta.name.trim() || spec.meta.id.trim() || "character";
+}
+
+/** Deterministic ST `mes_example` from personality and setting cues. */
+export function composeStCardMesExample(spec: CharacterSpec): string {
+  const stored = spec.control.st.mes_example.trim();
+  if (stored) {
+    return stored;
+  }
+
+  const name = displayName(spec);
+  const setting =
+    spec.control.freeform.setting.trim() ||
+    spec.setting.location.trim() ||
+    "the scene";
+  const demeanor =
+    spec.personality.demeanor_notes.trim() ||
+    spec.personality.speech_impression.trim() ||
+    "warm and attentive";
+  const greeting = spec.personality.primary
+    ? humanize(spec.personality.primary).toLowerCase()
+    : "friendly";
+
+  const blocks = [
+    `<START>\n{{user}}: *approaches ${name} in ${setting}*\n{{char}}: *${greeting} demeanor* ${demeanor}.`,
+    `<START>\n{{user}}: Tell me about yourself.\n{{char}}: I'm ${name}. ${demeanor}.`,
+  ];
+
+  if (spec.archetype.occupation.trim()) {
+    blocks.push(
+      `<START>\n{{user}}: What do you do?\n{{char}}: ${spec.archetype.occupation.trim()}. ${demeanor}.`
+    );
+  }
+
+  return blocks.slice(0, 3).join("\n\n");
+}
+
+/** Deterministic ST `system_prompt` from core spec sections. */
+export function composeStCardSystemPrompt(spec: CharacterSpec): string {
+  const stored = spec.control.st.system_prompt.trim();
+  if (stored) {
+    return stored;
+  }
+
+  const name = displayName(spec);
+  const parts = [`You are ${name}.`];
+
+  if (spec.personality.demeanor_notes.trim()) {
+    parts.push(spec.personality.demeanor_notes.trim());
+  } else if (spec.personality.primary) {
+    parts.push(
+      `Personality: ${humanize(spec.personality.primary).toLowerCase()}.`
+    );
+  }
+
+  if (spec.control.freeform.setting.trim()) {
+    parts.push(`Setting: ${spec.control.freeform.setting.trim()}`);
+  }
+
+  if (spec.personality.speech_impression.trim()) {
+    parts.push(`Speech: ${spec.personality.speech_impression.trim()}`);
+  }
+
+  parts.push("Stay in character. Match the tone implied by the spec.");
+  return parts.join(" ");
+}
+
+/** Deterministic ST `post_history_instructions` reminder. */
+export function composeStCardPostHistoryInstructions(
+  spec: CharacterSpec
+): string {
+  const stored = spec.control.st.post_history_instructions.trim();
+  if (stored) {
+    return stored;
+  }
+
+  const name = displayName(spec);
+  const reminder =
+    spec.personality.demeanor_notes.trim() ||
+    spec.personality.speech_impression.trim() ||
+    "Maintain consistent voice and mannerisms";
+
+  return `[${name}] ${reminder}. Do not break character or mention being an AI.`;
+}
+
 function v2DataFromV3(data: StCardData): StCardData {
   const {
     assets: _assets,
@@ -461,12 +582,12 @@ export function exportStCard(
     },
     first_mes: "",
     group_only_greetings: [],
-    mes_example: "",
+    mes_example: composeStCardMesExample(spec),
     name: spec.meta.name.trim() || "Untitled",
     personality: spec.personality.demeanor_notes.trim(),
-    post_history_instructions: "",
+    post_history_instructions: composeStCardPostHistoryInstructions(spec),
     scenario: spec.control.freeform.setting.trim(),
-    system_prompt: "",
+    system_prompt: composeStCardSystemPrompt(spec),
     tags: [...spec.meta.tags],
   };
 
