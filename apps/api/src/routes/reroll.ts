@@ -4,64 +4,18 @@ import {
   evaluateRerollEligibility,
   type RerollGenerationRequest,
 } from "@charator/shared";
-import { type AuthUser, db } from "../auth";
-import { config } from "../config";
+import type { AuthUser } from "../auth";
 import {
   defaultModelFor,
   processGenerationJob,
   rememberJobCredentials,
   resolveApiKey,
 } from "../jobs/processor";
-import {
-  assertStoredGenerationCreationAllowed,
-  authenticatedRateLimitForTier,
-  getUserTier,
-} from "../lib/entitlements";
+import { withWorkspaceEntitlementLock } from "../lib/entitlement-lock";
+import { assertStoredGenerationCreationAllowed } from "../lib/entitlements";
 import { HttpError } from "../lib/errors";
-import {
-  clientIpFromHeaders,
-  SlidingWindowRateLimiter,
-} from "../lib/rate-limit";
-
-const anonymousLimiter = new SlidingWindowRateLimiter(
-  config.RATE_LIMIT_ANONYMOUS_PER_HOUR,
-  60 * 60 * 1000
-);
-const authenticatedLimiter = new SlidingWindowRateLimiter(
-  config.RATE_LIMIT_AUTHENTICATED_PER_HOUR,
-  60 * 60 * 1000
-);
-
-async function consumeAuthenticatedRerollRateLimit(
-  authUser: AuthUser | null,
-  request: Request
-): Promise<void> {
-  const ip = clientIpFromHeaders(request.headers);
-  if (!authUser) {
-    const limit = anonymousLimiter.consume(`ip:${ip}`);
-    if (!limit.allowed) {
-      throw new HttpError(429, {
-        code: "rate_limited",
-        message: "too many generation requests",
-      });
-    }
-    return;
-  }
-
-  const tier = await getUserTier(db, authUser.id);
-  const hourlyLimit = authenticatedRateLimitForTier(tier);
-  const limit = authenticatedLimiter.consume(
-    `user:${authUser.id}`,
-    Date.now(),
-    hourlyLimit
-  );
-  if (!limit.allowed) {
-    throw new HttpError(429, {
-      code: "rate_limited",
-      message: "too many generation requests",
-    });
-  }
-}
+import { assertWorkspaceScopedJobAccess } from "../lib/generation-access";
+import { consumeGenerationRateLimit } from "../lib/generation-rate-limit";
 
 export async function createRerollJob(
   database: Db,
@@ -71,6 +25,12 @@ export async function createRerollJob(
   request: Request,
   workspaceId: string | null
 ): Promise<{ jobId: string }> {
+  assertWorkspaceScopedJobAccess(
+    source,
+    authUser?.id ?? null,
+    workspaceId && authUser ? { userId: authUser.id, workspaceId } : null
+  );
+
   const providerKeyId = body.providerKeyId ?? source.providerKeyId ?? undefined;
   const hasInlineApiKey = Boolean(body.apiKey);
   const hasProviderKeyId = Boolean(providerKeyId);
@@ -90,11 +50,7 @@ export async function createRerollJob(
     });
   }
 
-  await consumeAuthenticatedRerollRateLimit(authUser, request);
-
-  if (workspaceId) {
-    await assertStoredGenerationCreationAllowed(database, workspaceId);
-  }
+  await consumeGenerationRateLimit(authUser, request);
 
   if (providerKeyId && !authUser) {
     throw new HttpError(401, {
@@ -111,7 +67,8 @@ export async function createRerollJob(
       prompt: source.prompt,
       provider: source.provider,
     },
-    authUser ? authUser.id : null
+    authUser ? authUser.id : null,
+    workspaceId
   ).catch(() => null);
   if (!credentials) {
     throw new HttpError(400, {
@@ -120,24 +77,32 @@ export async function createRerollJob(
     });
   }
 
-  const [job] = await database
-    .insert(generationJobs)
-    .values({
-      aspectRatio: source.aspectRatio,
-      characterId: source.characterId,
-      model: source.model || defaultModelFor(source.provider),
-      negativePrompt: source.negativePrompt,
-      prompt: source.prompt,
-      provider: source.provider,
-      providerKeyId: credentials.providerKeyId ?? null,
-      referenceImageKeys: source.referenceImageKeys,
-      referenceStrength: source.referenceStrength,
-      specSnapshot: source.specSnapshot,
-      status: "queued",
-      userId: authUser ? authUser.id : null,
-      workspaceId,
-    })
-    .returning();
+  const jobValues = {
+    aspectRatio: source.aspectRatio,
+    characterId: source.characterId,
+    model: source.model || defaultModelFor(source.provider),
+    negativePrompt: source.negativePrompt,
+    prompt: source.prompt,
+    provider: source.provider,
+    providerKeyId: credentials.providerKeyId ?? null,
+    referenceImageKeys: source.referenceImageKeys,
+    referenceStrength: source.referenceStrength,
+    specSnapshot: source.specSnapshot,
+    status: "queued" as const,
+    userId: authUser ? authUser.id : null,
+    workspaceId,
+  };
+
+  const job = workspaceId
+    ? await withWorkspaceEntitlementLock(database, workspaceId, async (tx) => {
+        await assertStoredGenerationCreationAllowed(tx, workspaceId);
+        const [inserted] = await tx
+          .insert(generationJobs)
+          .values(jobValues)
+          .returning();
+        return inserted;
+      })
+    : (await database.insert(generationJobs).values(jobValues).returning())[0];
 
   if (!job) {
     throw new HttpError(500, {

@@ -9,7 +9,7 @@ import {
   updateCharacterRequestSchema,
 } from "@charator/shared";
 import { and, desc, eq } from "drizzle-orm";
-import { type AuthUser, db, requireAuthUser, resolveAuthUser } from "../auth";
+import { db, resolveAuthUser } from "../auth";
 import { config } from "../config";
 import {
   completeJobFromUrls,
@@ -25,35 +25,23 @@ import {
 } from "../jobs/processor";
 import { toCharacterResponse } from "../lib/character-response";
 import { decryptSecret, encryptSecret, maskApiKey } from "../lib/crypto";
+import { withWorkspaceEntitlementLock } from "../lib/entitlement-lock";
 import {
   assertStoredGenerationCreationAllowed,
   assertWorkspaceCharacterCreationAllowed,
-  authenticatedRateLimitForTier,
-  getUserTier,
 } from "../lib/entitlements";
 import { HttpError } from "../lib/errors";
+import { assertWorkspaceScopedJobAccess } from "../lib/generation-access";
 import {
   assertReferenceCharacterOwnership,
   attachGenerationReferences,
 } from "../lib/generation-create";
+import { consumeGenerationRateLimit } from "../lib/generation-rate-limit";
 import { validatePublicHttpsUrl } from "../lib/public-url";
-import {
-  clientIpFromHeaders,
-  SlidingWindowRateLimiter,
-} from "../lib/rate-limit";
 import { ReferenceResolutionError } from "../lib/reference-generation";
 import { getProviderAdapter } from "../providers/registry";
 import { createRerollJob } from "./reroll";
 import { requireWorkspaceContext, resolveWorkspaceContext } from "./workspaces";
-
-const anonymousLimiter = new SlidingWindowRateLimiter(
-  config.RATE_LIMIT_ANONYMOUS_PER_HOUR,
-  60 * 60 * 1000
-);
-const authenticatedLimiter = new SlidingWindowRateLimiter(
-  config.RATE_LIMIT_AUTHENTICATED_PER_HOUR,
-  60 * 60 * 1000
-);
 
 function json(data: unknown, status = 200): Response {
   return Response.json(data, { status });
@@ -63,42 +51,11 @@ async function readJson<T>(request: Request): Promise<T> {
   return (await request.json()) as T;
 }
 
-async function consumeGenerationRateLimit(
-  authUser: AuthUser | null,
-  request: Request
-): Promise<void> {
-  const ip = clientIpFromHeaders(request.headers);
-  if (!authUser) {
-    const limit = anonymousLimiter.consume(`ip:${ip}`);
-    if (!limit.allowed) {
-      throw new HttpError(429, {
-        code: "rate_limited",
-        message: "too many generation requests",
-      });
-    }
-    return;
-  }
-
-  const tier = await getUserTier(db, authUser.id);
-  const hourlyLimit = authenticatedRateLimitForTier(tier);
-  const limit = authenticatedLimiter.consume(
-    `user:${authUser.id}`,
-    Date.now(),
-    hourlyLimit
-  );
-  if (!limit.allowed) {
-    throw new HttpError(429, {
-      code: "rate_limited",
-      message: "too many generation requests",
-    });
-  }
-}
-
-async function resolveAuthenticatedWorkspaceId(
-  request: Request
-): Promise<string | null> {
+async function resolveAuthenticatedWorkspaceContext(request: Request) {
   const context = await resolveWorkspaceContext(request);
-  return context ? context.workspaceId : null;
+  return context
+    ? { userId: context.user.id, workspaceId: context.workspaceId }
+    : null;
 }
 
 async function attachJobReferencesOrThrow(
@@ -137,12 +94,10 @@ export async function handleGenerationsPost(
 
   await consumeGenerationRateLimit(authUser, request);
 
-  const workspaceId = authUser
-    ? await resolveAuthenticatedWorkspaceId(request)
+  const workspaceContext = authUser
+    ? await resolveAuthenticatedWorkspaceContext(request)
     : null;
-  if (workspaceId) {
-    await assertStoredGenerationCreationAllowed(db, workspaceId);
-  }
+  const workspaceId = workspaceContext?.workspaceId ?? null;
 
   if (parsed.data.providerKeyId && !authUser) {
     throw new HttpError(401, {
@@ -154,7 +109,8 @@ export async function handleGenerationsPost(
   const credentials = await resolveApiKey(
     db,
     parsed.data,
-    authUser ? authUser.id : null
+    authUser ? authUser.id : null,
+    workspaceId
   ).catch(() => null);
   if (!credentials) {
     throw new HttpError(400, {
@@ -171,22 +127,30 @@ export async function handleGenerationsPost(
     authUser ? authUser.id : null
   );
 
-  const [job] = await db
-    .insert(generationJobs)
-    .values({
-      aspectRatio: parsed.data.aspectRatio ?? null,
-      characterId: parsed.data.characterId ?? null,
-      model,
-      negativePrompt: parsed.data.negativePrompt ?? null,
-      prompt: parsed.data.prompt,
-      provider: parsed.data.provider,
-      providerKeyId: credentials.providerKeyId ?? null,
-      specSnapshot: parsed.data.specSnapshot ?? null,
-      status: "queued",
-      userId: authUser ? authUser.id : null,
-      workspaceId,
-    })
-    .returning();
+  const jobValues = {
+    aspectRatio: parsed.data.aspectRatio ?? null,
+    characterId: parsed.data.characterId ?? null,
+    model,
+    negativePrompt: parsed.data.negativePrompt ?? null,
+    prompt: parsed.data.prompt,
+    provider: parsed.data.provider,
+    providerKeyId: credentials.providerKeyId ?? null,
+    specSnapshot: parsed.data.specSnapshot ?? null,
+    status: "queued" as const,
+    userId: authUser ? authUser.id : null,
+    workspaceId,
+  };
+
+  const job = workspaceId
+    ? await withWorkspaceEntitlementLock(db, workspaceId, async (tx) => {
+        await assertStoredGenerationCreationAllowed(tx, workspaceId);
+        const [inserted] = await tx
+          .insert(generationJobs)
+          .values(jobValues)
+          .returning();
+        return inserted;
+      })
+    : (await db.insert(generationJobs).values(jobValues).returning())[0];
 
   if (!job) {
     throw new HttpError(500, {
@@ -224,12 +188,10 @@ export async function handleGenerationGet(
   }
 
   const authUser = await resolveAuthUser(request);
-  if (job.userId && job.userId !== authUser?.id) {
-    throw new HttpError(403, {
-      code: "forbidden",
-      message: "job not accessible",
-    });
-  }
+  const workspaceContext = authUser
+    ? await resolveAuthenticatedWorkspaceContext(request)
+    : null;
+  assertWorkspaceScopedJobAccess(job, authUser?.id ?? null, workspaceContext);
 
   return json({
     characterId: job.characterId,
@@ -271,16 +233,22 @@ export async function handleGenerationReroll(
     throw new HttpError(404, { code: "not_found", message: "job not found" });
   }
 
-  const workspaceId = authUser
-    ? await resolveAuthenticatedWorkspaceId(request)
+  const workspaceContext = authUser
+    ? await resolveAuthenticatedWorkspaceContext(request)
     : null;
+  assertWorkspaceScopedJobAccess(
+    source,
+    authUser?.id ?? null,
+    workspaceContext
+  );
+
   const result = await createRerollJob(
     db,
     source,
     parsed.data,
     authUser,
     request,
-    workspaceId
+    workspaceContext?.workspaceId ?? null
   );
 
   return json(result, 202);
@@ -293,13 +261,17 @@ export async function handleCharacterGenerations(
   request: Request,
   characterId: string
 ): Promise<Response> {
-  const user = await requireAuthUser(request);
+  const context = await requireWorkspaceContext(request);
 
   const [character] = await db
     .select({ id: characters.id })
     .from(characters)
     .where(
-      and(eq(characters.id, characterId), eq(characters.ownerUserId, user.id))
+      and(
+        eq(characters.id, characterId),
+        eq(characters.ownerUserId, context.user.id),
+        eq(characters.workspaceId, context.workspaceId)
+      )
     )
     .limit(1);
 
@@ -327,7 +299,12 @@ export async function handleCharacterGenerations(
   const rows = await db
     .select()
     .from(generationJobs)
-    .where(eq(generationJobs.characterId, characterId))
+    .where(
+      and(
+        eq(generationJobs.characterId, characterId),
+        eq(generationJobs.workspaceId, context.workspaceId)
+      )
+    )
     .orderBy(desc(generationJobs.createdAt))
     .limit(limit + 1)
     .offset(offset);
@@ -376,7 +353,6 @@ export async function handleCharactersPost(
   request: Request
 ): Promise<Response> {
   const context = await requireWorkspaceContext(request);
-  await assertWorkspaceCharacterCreationAllowed(db, context.workspaceId);
   const parsed = createCharacterRequestSchema.safeParse(
     await readJson(request)
   );
@@ -387,17 +363,25 @@ export async function handleCharactersPost(
     });
   }
 
-  const [row] = await db
-    .insert(characters)
-    .values({
-      name: parsed.data.name,
-      ownerUserId: context.user.id,
-      spec: parsed.data.spec,
-      themeId: parsed.data.themeId ?? null,
-      visibility: parsed.data.visibility,
-      workspaceId: context.workspaceId,
-    })
-    .returning();
+  const row = await withWorkspaceEntitlementLock(
+    db,
+    context.workspaceId,
+    async (tx) => {
+      await assertWorkspaceCharacterCreationAllowed(tx, context.workspaceId);
+      const [inserted] = await tx
+        .insert(characters)
+        .values({
+          name: parsed.data.name,
+          ownerUserId: context.user.id,
+          spec: parsed.data.spec,
+          themeId: parsed.data.themeId ?? null,
+          visibility: parsed.data.visibility,
+          workspaceId: context.workspaceId,
+        })
+        .returning();
+      return inserted;
+    }
+  );
 
   if (!row) {
     throw new HttpError(500, {
@@ -413,7 +397,7 @@ export async function handleCharactersPatch(
   request: Request,
   characterId: string
 ): Promise<Response> {
-  const user = await requireAuthUser(request);
+  const context = await requireWorkspaceContext(request);
   const parsed = updateCharacterRequestSchema.safeParse(
     await readJson(request)
   );
@@ -428,7 +412,11 @@ export async function handleCharactersPatch(
     .select()
     .from(characters)
     .where(
-      and(eq(characters.id, characterId), eq(characters.ownerUserId, user.id))
+      and(
+        eq(characters.id, characterId),
+        eq(characters.ownerUserId, context.user.id),
+        eq(characters.workspaceId, context.workspaceId)
+      )
     )
     .limit(1);
 
@@ -469,11 +457,15 @@ export async function handleCharactersDelete(
   request: Request,
   characterId: string
 ): Promise<Response> {
-  const user = await requireAuthUser(request);
+  const context = await requireWorkspaceContext(request);
   const deleted = await db
     .delete(characters)
     .where(
-      and(eq(characters.id, characterId), eq(characters.ownerUserId, user.id))
+      and(
+        eq(characters.id, characterId),
+        eq(characters.ownerUserId, context.user.id),
+        eq(characters.workspaceId, context.workspaceId)
+      )
     )
     .returning({ id: characters.id });
 
@@ -492,7 +484,6 @@ export async function handleCharactersRemix(
   characterId: string
 ): Promise<Response> {
   const context = await requireWorkspaceContext(request);
-  await assertWorkspaceCharacterCreationAllowed(db, context.workspaceId);
 
   const [source] = await db
     .select()
@@ -521,18 +512,26 @@ export async function handleCharactersRemix(
     });
   }
 
-  const [row] = await db
-    .insert(characters)
-    .values({
-      name: deriveRemixName(source.name),
-      ownerUserId: context.user.id,
-      remixedFromCharacterId: source.id,
-      spec: source.spec,
-      themeId: source.themeId,
-      visibility: "private",
-      workspaceId: context.workspaceId,
-    })
-    .returning();
+  const row = await withWorkspaceEntitlementLock(
+    db,
+    context.workspaceId,
+    async (tx) => {
+      await assertWorkspaceCharacterCreationAllowed(tx, context.workspaceId);
+      const [inserted] = await tx
+        .insert(characters)
+        .values({
+          name: deriveRemixName(source.name),
+          ownerUserId: context.user.id,
+          remixedFromCharacterId: source.id,
+          spec: source.spec,
+          themeId: source.themeId,
+          visibility: "private",
+          workspaceId: context.workspaceId,
+        })
+        .returning();
+      return inserted;
+    }
+  );
 
   if (!row) {
     throw new HttpError(500, {
@@ -643,10 +642,16 @@ export async function handleKeysDelete(
   request: Request,
   keyId: string
 ): Promise<Response> {
-  const user = await requireAuthUser(request);
+  const context = await requireWorkspaceContext(request);
   const deleted = await db
     .delete(providerKeys)
-    .where(and(eq(providerKeys.id, keyId), eq(providerKeys.userId, user.id)))
+    .where(
+      and(
+        eq(providerKeys.id, keyId),
+        eq(providerKeys.userId, context.user.id),
+        eq(providerKeys.workspaceId, context.workspaceId)
+      )
+    )
     .returning({ id: providerKeys.id });
 
   if (deleted.length === 0) {

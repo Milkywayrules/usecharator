@@ -28,6 +28,7 @@ import {
   findActiveSheetBatch,
   seedSheetJobCredentials,
 } from "../jobs/sheet-batch";
+import { withWorkspaceEntitlementLock } from "../lib/entitlement-lock";
 import { assertSheetBatchCreationAllowed } from "../lib/entitlements";
 import { HttpError } from "../lib/errors";
 import { requireWorkspaceContext } from "./workspaces";
@@ -103,20 +104,6 @@ export async function handleCharacterSheetPost(
     });
   }
 
-  await assertSheetBatchCreationAllowed(db, context.workspaceId);
-
-  const active = await findActiveSheetBatch(
-    db,
-    characterId,
-    parsed.data.preset
-  );
-  if (active) {
-    throw new HttpError(409, {
-      code: "conflict",
-      message: "a sheet batch for this character and preset is already running",
-    });
-  }
-
   const credentials = await resolveApiKey(
     db,
     {
@@ -127,7 +114,8 @@ export async function handleCharacterSheetPost(
       prompt: "sheet-batch",
       provider: parsed.data.provider,
     } satisfies CreateGenerationRequest,
-    context.user.id
+    context.user.id,
+    context.workspaceId
   ).catch(() => null);
   if (!credentials) {
     throw new HttpError(400, {
@@ -151,58 +139,82 @@ export async function handleCharacterSheetPost(
   );
   const estimatedCalls = sheetVariantCount(parsed.data.preset as SheetPresetId);
 
-  const inserted = await db
-    .insert(sheetBatches)
-    .values({
-      characterId,
-      model,
-      preset: parsed.data.preset,
-      provider: parsed.data.provider,
-      status: "running",
-      totalCount: estimatedCalls,
-      userId: context.user.id,
-      workspaceId: context.workspaceId,
-    })
-    .returning()
-    .catch(() => null);
+  const { batch, insertedJobs } = await withWorkspaceEntitlementLock(
+    db,
+    context.workspaceId,
+    async (tx) => {
+      await assertSheetBatchCreationAllowed(tx, context.workspaceId);
 
-  const batch = inserted?.[0];
-  if (!batch) {
-    throw new HttpError(409, {
-      code: "conflict",
-      message: "a sheet batch for this character and preset is already running",
-    });
-  }
-
-  const insertedJobs = await Promise.all(
-    variants.map(async (variant) => {
-      const [job] = await db
-        .insert(generationJobs)
-        .values({
-          characterId,
-          model,
-          negativePrompt: variant.negativePrompt ?? null,
-          prompt: variant.prompt,
-          provider: parsed.data.provider,
-          providerKeyId: credentials.providerKeyId ?? null,
-          sheetBatchId: batch.id,
-          sheetVariant: variant.variantId,
-          specSnapshot: variant.spec,
-          status: "queued",
-          userId: context.user.id,
-          workspaceId: context.workspaceId,
-        })
-        .returning();
-
-      if (!job) {
-        throw new HttpError(500, {
-          code: "internal_error",
-          message: "failed to create sheet job",
+      const active = await findActiveSheetBatch(
+        tx,
+        characterId,
+        parsed.data.preset
+      );
+      if (active) {
+        throw new HttpError(409, {
+          code: "conflict",
+          message:
+            "a sheet batch for this character and preset is already running",
         });
       }
 
-      return job;
-    })
+      const inserted = await tx
+        .insert(sheetBatches)
+        .values({
+          characterId,
+          model,
+          preset: parsed.data.preset,
+          provider: parsed.data.provider,
+          status: "running",
+          totalCount: estimatedCalls,
+          userId: context.user.id,
+          workspaceId: context.workspaceId,
+        })
+        .returning()
+        .catch(() => null);
+
+      const createdBatch = inserted?.[0];
+      if (!createdBatch) {
+        throw new HttpError(409, {
+          code: "conflict",
+          message:
+            "a sheet batch for this character and preset is already running",
+        });
+      }
+
+      const jobs = await Promise.all(
+        variants.map(async (variant) => {
+          const [job] = await tx
+            .insert(generationJobs)
+            .values({
+              characterId,
+              model,
+              negativePrompt: variant.negativePrompt ?? null,
+              prompt: variant.prompt,
+              provider: parsed.data.provider,
+              providerKeyId: credentials.providerKeyId ?? null,
+              sheetBatchId: createdBatch.id,
+              sheetVariant: variant.variantId,
+              specSnapshot: variant.spec,
+              status: "queued",
+              userId: context.user.id,
+              workspaceId: context.workspaceId,
+            })
+            .returning();
+
+          if (!job) {
+            throw new HttpError(500, {
+              code: "internal_error",
+              message: "failed to create sheet job",
+            });
+          }
+
+          return job;
+        })
+      );
+
+      return { batch: createdBatch, insertedJobs: jobs };
+    }
   );
 
   const jobIds = insertedJobs.map((job) => job.id);

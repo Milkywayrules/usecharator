@@ -9,6 +9,7 @@ import {
 import { and, eq } from "drizzle-orm";
 import { db } from "../auth";
 import { toCharacterResponse } from "../lib/character-response";
+import { withWorkspaceEntitlementLock } from "../lib/entitlement-lock";
 import { assertAnchorCreationAllowed } from "../lib/entitlements";
 import { HttpError } from "../lib/errors";
 import {
@@ -85,15 +86,34 @@ async function assertNewAnchorAllowed(
   characterId: string,
   userId: string,
   workspaceId: string
-): Promise<void> {
+): Promise<boolean> {
   const character = await loadOwnedCharacterRow(
     characterId,
     userId,
     workspaceId
   );
-  if (!character.referenceImageKey) {
-    await assertAnchorCreationAllowed(db, workspaceId);
+  return !character.referenceImageKey;
+}
+
+async function withNewAnchorEntitlementLock<T>(
+  characterId: string,
+  userId: string,
+  workspaceId: string,
+  fn: () => Promise<T>
+): Promise<T> {
+  const needsEntitlementCheck = await assertNewAnchorAllowed(
+    characterId,
+    userId,
+    workspaceId
+  );
+  if (!needsEntitlementCheck) {
+    return fn();
   }
+
+  return withWorkspaceEntitlementLock(db, workspaceId, async (tx) => {
+    await assertAnchorCreationAllowed(tx, workspaceId);
+    return fn();
+  });
 }
 
 export async function handleCharacterAnchorPost(
@@ -101,11 +121,6 @@ export async function handleCharacterAnchorPost(
   characterId: string
 ): Promise<Response> {
   const context = await requireWorkspaceContext(request);
-  await assertNewAnchorAllowed(
-    characterId,
-    context.user.id,
-    context.workspaceId
-  );
   const contentType = request.headers.get("content-type") ?? "";
 
   if (contentType.includes("multipart/form-data")) {
@@ -136,13 +151,19 @@ export async function handleCharacterAnchorPost(
       });
     }
 
-    await setCharacterAnchorFromBytes(
-      db,
-      context.user.id,
+    await withNewAnchorEntitlementLock(
       characterId,
-      validated.value.bytes,
-      validated.value.mimeType,
-      validated.value.ext
+      context.user.id,
+      context.workspaceId,
+      () =>
+        setCharacterAnchorFromBytes(
+          db,
+          context.user.id,
+          characterId,
+          validated.value.bytes,
+          validated.value.mimeType,
+          validated.value.ext
+        )
     ).catch(mapReferenceError);
 
     return json(
@@ -158,12 +179,18 @@ export async function handleCharacterAnchorPost(
 
   const fromJob = setCharacterAnchorFromJobSchema.safeParse(body);
   if (fromJob.success) {
-    await setCharacterAnchorFromJob(
-      db,
-      context.user.id,
+    await withNewAnchorEntitlementLock(
       characterId,
-      fromJob.data.fromJobId,
-      fromJob.data.imageIndex ?? 0
+      context.user.id,
+      context.workspaceId,
+      () =>
+        setCharacterAnchorFromJob(
+          db,
+          context.user.id,
+          characterId,
+          fromJob.data.fromJobId,
+          fromJob.data.imageIndex ?? 0
+        )
     ).catch(mapReferenceError);
 
     return json(
@@ -185,13 +212,19 @@ export async function handleCharacterAnchorPost(
       });
     }
 
-    await setCharacterAnchorFromBytes(
-      db,
-      context.user.id,
+    await withNewAnchorEntitlementLock(
       characterId,
-      parsed.value.bytes,
-      parsed.value.mimeType,
-      parsed.value.ext
+      context.user.id,
+      context.workspaceId,
+      () =>
+        setCharacterAnchorFromBytes(
+          db,
+          context.user.id,
+          characterId,
+          parsed.value.bytes,
+          parsed.value.mimeType,
+          parsed.value.ext
+        )
     ).catch(mapReferenceError);
 
     return json(

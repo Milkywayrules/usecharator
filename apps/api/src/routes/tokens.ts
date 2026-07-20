@@ -3,6 +3,7 @@ import { createApiTokenRequestSchema } from "@charator/shared";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, requireSessionUser } from "../auth";
 import { generateApiTokenSecret } from "../lib/api-token";
+import { withWorkspaceEntitlementLock } from "../lib/entitlement-lock";
 import { assertApiTokenCreationAllowed } from "../lib/entitlements";
 import { HttpError } from "../lib/errors";
 import { requireWorkspaceContext } from "./workspaces";
@@ -63,19 +64,25 @@ export async function handleTokensPost(request: Request): Promise<Response> {
     });
   }
 
-  await assertApiTokenCreationAllowed(db, context.workspaceId);
-
   const secret = generateApiTokenSecret();
-  const [row] = await db
-    .insert(apiTokens)
-    .values({
-      name: parsed.data.name,
-      prefix: secret.prefix,
-      tokenHash: secret.tokenHash,
-      userId: context.user.id,
-      workspaceId: context.workspaceId,
-    })
-    .returning();
+  const row = await withWorkspaceEntitlementLock(
+    db,
+    context.workspaceId,
+    async (tx) => {
+      await assertApiTokenCreationAllowed(tx, context.workspaceId);
+      const [inserted] = await tx
+        .insert(apiTokens)
+        .values({
+          name: parsed.data.name,
+          prefix: secret.prefix,
+          tokenHash: secret.tokenHash,
+          userId: context.user.id,
+          workspaceId: context.workspaceId,
+        })
+        .returning();
+      return inserted;
+    }
+  );
 
   if (!row) {
     throw new HttpError(500, {

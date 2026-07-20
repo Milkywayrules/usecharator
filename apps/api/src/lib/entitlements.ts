@@ -1,7 +1,6 @@
 import {
   apiTokens,
   characters,
-  type Db,
   generationJobs,
   member,
   sheetBatches,
@@ -20,6 +19,7 @@ import {
   tierLimit,
 } from "@charator/shared";
 import { and, eq, gte, isNotNull, isNull, lt, sql } from "drizzle-orm";
+import type { DbExecutor } from "./entitlement-lock";
 import { HttpError } from "./errors";
 import { countOwnedWorkspaces } from "./workspace";
 
@@ -28,7 +28,10 @@ export interface ResolvedEntitlements {
   tier: TierId;
 }
 
-export async function getUserTier(db: Db, userId: string): Promise<TierId> {
+export async function getUserTier(
+  db: DbExecutor,
+  userId: string
+): Promise<TierId> {
   const [row] = await db
     .select({ tier: user.tier })
     .from(user)
@@ -38,7 +41,7 @@ export async function getUserTier(db: Db, userId: string): Promise<TierId> {
 }
 
 export async function resolveEntitlements(
-  db: Db,
+  db: DbExecutor,
   userId: string
 ): Promise<ResolvedEntitlements> {
   const tier = await getUserTier(db, userId);
@@ -46,7 +49,7 @@ export async function resolveEntitlements(
 }
 
 export async function getWorkspaceOwnerId(
-  db: Db,
+  db: DbExecutor,
   workspaceId: string
 ): Promise<string | null> {
   const [row] = await db
@@ -69,7 +72,7 @@ function monthBoundsUtc(period: string): { end: Date; start: Date } {
 }
 
 export async function countWorkspaceUsage(
-  db: Db,
+  db: DbExecutor,
   workspaceId: string,
   ownerUserId: string,
   period = currentUtcPeriod()
@@ -175,7 +178,7 @@ export function throwTierLimitError(input: {
 }
 
 export async function assertEntitlementForOwner(
-  db: Db,
+  db: DbExecutor,
   input: EntitlementCheckInput
 ): Promise<void> {
   const { limits, tier } = await resolveEntitlements(db, input.ownerUserId);
@@ -190,7 +193,7 @@ export async function assertEntitlementForOwner(
 }
 
 export async function assertWorkspaceCharacterCreationAllowed(
-  db: Db,
+  db: DbExecutor,
   workspaceId: string
 ): Promise<void> {
   const ownerUserId = await getWorkspaceOwnerId(db, workspaceId);
@@ -206,7 +209,7 @@ export async function assertWorkspaceCharacterCreationAllowed(
 }
 
 export async function assertSheetBatchCreationAllowed(
-  db: Db,
+  db: DbExecutor,
   workspaceId: string
 ): Promise<void> {
   const ownerUserId = await getWorkspaceOwnerId(db, workspaceId);
@@ -222,7 +225,7 @@ export async function assertSheetBatchCreationAllowed(
 }
 
 export async function assertStoredGenerationCreationAllowed(
-  db: Db,
+  db: DbExecutor,
   workspaceId: string
 ): Promise<void> {
   const ownerUserId = await getWorkspaceOwnerId(db, workspaceId);
@@ -238,7 +241,7 @@ export async function assertStoredGenerationCreationAllowed(
 }
 
 export async function assertAnchorCreationAllowed(
-  db: Db,
+  db: DbExecutor,
   workspaceId: string
 ): Promise<void> {
   const ownerUserId = await getWorkspaceOwnerId(db, workspaceId);
@@ -254,7 +257,7 @@ export async function assertAnchorCreationAllowed(
 }
 
 export async function assertApiTokenCreationAllowed(
-  db: Db,
+  db: DbExecutor,
   workspaceId: string
 ): Promise<void> {
   const ownerUserId = await getWorkspaceOwnerId(db, workspaceId);
@@ -270,7 +273,7 @@ export async function assertApiTokenCreationAllowed(
 }
 
 export async function buildEntitlementsResponse(
-  db: Db,
+  db: DbExecutor,
   userId: string,
   workspaceId: string
 ): Promise<{
