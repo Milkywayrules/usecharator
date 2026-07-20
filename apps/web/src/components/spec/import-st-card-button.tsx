@@ -1,7 +1,7 @@
 "use client";
 
 import type { StCardImportResponse, StCardLossyField } from "@charator/shared";
-import { MAX_ST_CARD_PNG_BYTES } from "@charator/spec";
+import { listUnmappedStFields, MAX_ST_CARD_PNG_BYTES } from "@charator/spec";
 import { UploadIcon } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -118,7 +118,9 @@ export function ImportStCardButton({
                 <span className="font-medium">{pending.sourceFormat}</span>
               </p>
               {pending.reviewRequired ? (
-                <LossyFieldsList fields={pending.lossyFields} />
+                <LossyFieldsList
+                  fields={listUnmappedStFields(pending.lossyFields)}
+                />
               ) : (
                 <p className="text-muted-foreground">
                   Lossless round-trip via embedded Chara Tor spec — minimal
@@ -155,7 +157,7 @@ function LossyFieldsList({ fields }: { fields: StCardLossyField[] }) {
 
   return (
     <div className="space-y-2">
-      <p className="font-medium">Review required — mapped fields</p>
+      <p className="font-medium">Review required — unmapped fields</p>
       <ul
         className="max-h-60 space-y-2 overflow-y-auto rounded-md border p-3 text-muted-foreground"
         data-testid="st-card-lossy-fields"
@@ -163,8 +165,12 @@ function LossyFieldsList({ fields }: { fields: StCardLossyField[] }) {
         {fields.map((entry) => (
           <li key={`${entry.field}-${entry.destination}`}>
             <span className="font-medium text-foreground">{entry.field}</span>
-            {" → "}
-            {entry.destination}
+            {entry.destination ? (
+              <>
+                {" → "}
+                {entry.destination}
+              </>
+            ) : null}
           </li>
         ))}
       </ul>

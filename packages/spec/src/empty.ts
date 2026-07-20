@@ -97,6 +97,11 @@ export function createEmptySpec(
         props: "inherit",
         setting: "inherit",
       },
+      st: {
+        mes_example: "",
+        post_history_instructions: "",
+        system_prompt: "",
+      },
     },
     framing: {
       camera_angle: "",

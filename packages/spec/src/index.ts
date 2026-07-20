@@ -20,6 +20,11 @@ export {
 export { createEmptySpec } from "./empty";
 export { MAX_ST_CARD_PNG_BYTES } from "./limits";
 export {
+  applyPromptTemplateSuffix,
+  PROMPT_TEMPLATE_FAMILIES,
+  type PromptTemplateFamily,
+} from "./prompt-templates";
+export {
   enumForPath,
   isBoolField,
   isFreeList,
@@ -57,11 +62,16 @@ export {
 export {
   CHARATOR_EXTENSION_KEY,
   composeStCardDescription,
+  composeStCardMesExample,
+  composeStCardPostHistoryInstructions,
+  composeStCardSystemPrompt,
   encodeStCardChunks,
   exportStCard,
   type ImportStCardResult,
   importStCardFromJson,
+  isUnmappedStField,
   type LossyField,
+  listUnmappedStFields,
   ST_CARD_SPEC,
   ST_CARD_SPEC_VERSION,
   ST_CARD_V2_SPEC,

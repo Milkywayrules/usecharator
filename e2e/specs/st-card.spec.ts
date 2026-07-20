@@ -31,7 +31,7 @@ const FIXTURE_CARD = {
 const MOCK_IMPORT_RESPONSE = {
   lossyFields: [
     { destination: "meta.notes", field: "data.first_mes" },
-    { destination: "meta.notes", field: "data.system_prompt" },
+    { destination: "control.st.system_prompt", field: "data.system_prompt" },
   ],
   reviewRequired: true,
   sourceFormat: "ccv3-json",
@@ -66,7 +66,7 @@ test.describe("sillytavern card import/export", () => {
     await expect(page.getByTestId("st-card-lossy-fields")).toContainText(
       "data.first_mes"
     );
-    await expect(page.getByTestId("st-card-lossy-fields")).toContainText(
+    await expect(page.getByTestId("st-card-lossy-fields")).not.toContainText(
       "data.system_prompt"
     );
   });
