@@ -1,6 +1,20 @@
 # Chara Tor
 
-Wizard-driven character image generator. Users bring their own API keys (BYOK) for image providers (OpenRouter, OpenAI `gpt-image-1`, Google Gemini, fal.ai, Replicate, custom OpenAI-compatible endpoints). Characters are defined by a structured spec with theme presets (anime, manga, marvel comic, western cartoon, pixel, watercolor, 3D, chibi, semi-realistic).
+Wizard-driven character image generator. Users bring their own API keys (BYOK) for image providers. Characters are defined by a structured 13-section spec with 11 visual theme presets.
+
+## Features
+
+- **Spec wizard** — 13-section character spec with import/export, 11 theme presets, and deterministic prompt rendering
+- **BYOK generation** — six providers (OpenRouter, OpenAI, Google Gemini, fal.ai, Replicate, custom OpenAI-compatible); reference-image anchors, aspect ratios, and per-model capability presets
+- **Character sheets** — batch multi-pose sheet generation from library characters
+- **Workspaces** — multi-tenant workspaces with shared characters, keys, and entitlements
+- **Pricing tiers** — Free, Plus, Pro, Studio (entitlements-first; payments coming)
+- **Public gallery** — browse, search, remix, and moderation for public characters
+- **Public API v1** — bearer tokens, OpenAPI docs at `/api/v1/docs`, legacy web routes under `/api/*`
+- **MCP server** — stdio MCP for themes, spec render, characters, generations, and gallery (`apps/mcp`)
+- **CLI** — Bun CLI wrapping `/api/v1` (`apps/cli`)
+- **Telegram** — notify-only bot when generation jobs finish (link from Settings)
+- **Testing & CI** — Playwright e2e suite; GitHub Actions fast, integration, and e2e jobs on every push/PR
 
 Deployed as one Coolify docker-compose resource on a VPS at [charator.dioilham.com](https://charator.dioilham.com) — Cloudflare DNS, `/` → Next.js, `/api/*` → Elysia (same-origin). Postgres for data, Cloudflare R2 for images, Doppler for secrets, Umami for analytics.
 
@@ -10,10 +24,12 @@ Deployed as one Coolify docker-compose resource on a VPS at [charator.dioilham.c
 apps/
   web/          Next.js App Router + Tailwind v4 + shadcn/ui
   api/          Elysia on Bun (/api prefix)
+  cli/          REST API CLI (`charator`)
+  mcp/          MCP server (stdio)
 packages/
-  spec/         Character spec types (Epic 1.2)
-  shared/       Shared utilities
-  db/           Drizzle ORM + Postgres schema (Epic 1.3)
+  spec/         Character spec types, themes, render engine
+  shared/       Shared Zod schemas and utilities
+  db/           Drizzle ORM + Postgres schema
 ```
 
 ## Prerequisites
@@ -27,14 +43,23 @@ packages/
 # install dependencies
 bun install
 
-# start Postgres (optional for Epic 1.1 — schema comes in 1.3)
+# start Postgres
 docker compose up -d postgres
 
 # copy env template and adjust if needed
 cp .env.example .env
 
+# apply database migrations
+bun run --filter=@charator/db db:migrate
+
 # run web + api in dev mode
 bun dev
+```
+
+Optional — assign a pricing tier manually (no payment provider yet):
+
+```bash
+bun scripts/tier-set.ts --user <email-or-id> --tier pro
 ```
 
 `docker-compose.override.yml` maps Postgres to `${POSTGRES_PORT:-5432}` on the host for local dev. Production deploys (Coolify) use only the root compose file, so Postgres stays on the internal network.
@@ -76,6 +101,7 @@ GitHub Actions runs on every push to `main` and on pull requests (`.github/workf
 
 - **fast** — `bun install --frozen-lockfile`, then `bunx turbo build lint typecheck test` (Bun + Turbo caches).
 - **integration** — Postgres 17 service, Drizzle migrations via `packages/db`, API boot with CI-only dummy auth/env secrets, then `scripts/ci-smoke.ts` (health, empty gallery, seeded read/write path).
+- **e2e** — production web build, Playwright Chromium install, then `bun run e2e` (HTML report artifact on failure).
 
 **Release gate:** deploy only from green `main`. Do not promote builds from failing or skipped CI runs.
 
@@ -115,7 +141,3 @@ curl -sS -X POST "https://charator.dioilham.com/api/v1/generations" \
 ```
 
 Public metadata (no auth): `GET /api/v1/themes`, `GET /api/v1/spec/catalog`, `POST /api/v1/spec/render`.
-
-## Epic 1.1 scope
-
-This foundation epic sets up the monorepo, skeleton apps, Drizzle placeholder, and deploy artifacts. Spec engine, provider adapters, auth, and wizard UI land in later epics.
