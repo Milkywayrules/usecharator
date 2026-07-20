@@ -117,6 +117,8 @@ export {
   buildProviderCapabilitiesResponse,
   type ExecutionMode,
   executionModeSchema,
+  type GenerationCostEstimateResponse,
+  generationCostEstimateSchema,
   getModelCapabilityDescriptor,
   getProviderCapabilityDescriptor,
   type ModelCapabilityDescriptor,
@@ -130,6 +132,13 @@ export {
   type ReferenceImageCapability,
   referenceImageCapabilitySchema,
 } from "./provider-capabilities";
+export {
+  formatCostEstimateBatchTotal,
+  formatCostEstimatePerImage,
+  type GenerationCostEstimate,
+  getGenerationCostEstimate,
+  scaleCostEstimate,
+} from "./provider-pricing";
 export {
   type AspectRatio,
   aspectRatioSchema,

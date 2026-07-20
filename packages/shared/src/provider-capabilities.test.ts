@@ -1,8 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import {
+  buildProviderCapabilitiesResponse,
   getModelCapabilityDescriptor,
   PROVIDER_CAPABILITY_DESCRIPTORS,
 } from "./provider-capabilities";
+import { getGenerationCostEstimate } from "./provider-pricing";
 import { providerSchema } from "./providers";
 
 describe("provider capability descriptors", () => {
@@ -37,5 +39,16 @@ describe("provider capability descriptors", () => {
         "google/gemini-2.5-flash-image"
       )?.openRouterImageApi
     ).toBe(true);
+  });
+
+  test("buildProviderCapabilitiesResponse attaches costEstimate when priced", () => {
+    const response = buildProviderCapabilitiesResponse();
+    const openai = response.providers.find(
+      (entry) => entry.provider === "openai"
+    );
+    const gptImage = openai?.models.find((entry) => entry.id === "gpt-image-1");
+    expect(gptImage?.costEstimate).toEqual(
+      getGenerationCostEstimate("openai", "gpt-image-1")
+    );
   });
 });

@@ -3,6 +3,7 @@ import {
   GENERATION_PRESETS,
   generationPresetSchema,
 } from "./generation-presets";
+import { getGenerationCostEstimate } from "./provider-pricing";
 import {
   type AspectRatio,
   aspectRatioSchema,
@@ -41,7 +42,19 @@ export const executionModeSchema = z.enum(["sync", "async"]);
 
 export type ExecutionMode = z.infer<typeof executionModeSchema>;
 
+export const generationCostEstimateSchema = z.object({
+  label: z.string(),
+  usdMax: z.number(),
+  usdMin: z.number(),
+});
+
+export type GenerationCostEstimateResponse = z.infer<
+  typeof generationCostEstimateSchema
+>;
+
 export const modelCapabilityDescriptorSchema = z.object({
+  /** Present when a manual BYOK cost estimate exists for this model. */
+  costEstimate: generationCostEstimateSchema.optional(),
   execution: executionModeSchema,
   id: z.string(),
   label: z.string(),
@@ -210,10 +223,26 @@ export function getModelCapabilityDescriptor(
   );
 }
 
+function attachCostEstimate(
+  provider: Provider,
+  model: ModelCapabilityDescriptor
+): ModelCapabilityDescriptor {
+  const costEstimate = getGenerationCostEstimate(provider, model.id);
+  if (!costEstimate) {
+    return model;
+  }
+  return { ...model, costEstimate };
+}
+
 export function buildProviderCapabilitiesResponse(): ProviderCapabilitiesResponse {
   return {
     presets: GENERATION_PRESETS,
-    providers: PROVIDER_CAPABILITY_DESCRIPTORS,
+    providers: PROVIDER_CAPABILITY_DESCRIPTORS.map((descriptor) => ({
+      ...descriptor,
+      models: descriptor.models.map((model) =>
+        attachCostEstimate(descriptor.provider, model)
+      ),
+    })),
   };
 }
 

@@ -2,7 +2,9 @@
 
 import {
   type CreateGenerationRequest,
+  formatCostEstimatePerImage,
   GENERATION_PRESETS,
+  getGenerationCostEstimate,
   getModelCapabilityDescriptor,
   type Provider,
   presetsForTheme,
@@ -86,6 +88,11 @@ export function GeneratePanel({
 
   const modelDescriptor = useMemo(
     () => getModelCapabilityDescriptor(provider, model),
+    [provider, model]
+  );
+
+  const costEstimate = useMemo(
+    () => getGenerationCostEstimate(provider, model),
     [provider, model]
   );
 
@@ -439,6 +446,15 @@ export function GeneratePanel({
           </p>
         </div>
       )}
+
+      {costEstimate ? (
+        <p
+          className="rounded-md border bg-muted/40 p-3 text-muted-foreground text-sm"
+          data-testid="generate-cost-estimate"
+        >
+          {formatCostEstimatePerImage(costEstimate)}
+        </p>
+      ) : null}
 
       <Button
         disabled={mutation.isPending || refBlocked}
