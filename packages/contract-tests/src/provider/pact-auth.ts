@@ -1,10 +1,10 @@
 import { createDb, member, organization, session, user } from "@charator/db";
+import { PACT_ENTITLEMENTS_SESSION_TOKEN } from "./pact-auth.constants";
 
 export const PACT_ENTITLEMENTS_USER_ID = "pact-entitlements-user";
 export const PACT_ENTITLEMENTS_WORKSPACE_ID = "ws_pact-entitlements-user";
 export const PACT_ENTITLEMENTS_MEMBER_ID = "mbr_pact-entitlements-user";
 export const PACT_ENTITLEMENTS_SESSION_ID = "sess_pact-entitlements-user";
-export const PACT_ENTITLEMENTS_SESSION_TOKEN = "pact-entitlements-session";
 
 export async function seedPactEntitlementsSession(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
@@ -71,8 +71,4 @@ export async function seedPactEntitlementsSession(): Promise<void> {
   } finally {
     await client.end();
   }
-}
-
-export function pactEntitlementsSessionCookie(): string {
-  return `better-auth.session_token=${PACT_ENTITLEMENTS_SESSION_TOKEN}`;
 }
