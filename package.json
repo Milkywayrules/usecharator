@@ -14,6 +14,7 @@
     "typecheck": "turbo typecheck",
     "test": "turbo test",
     "ci:smoke": "bun scripts/ci-smoke.ts",
+    "prod:boot-check": "bun scripts/prod-boot-check.ts",
     "e2e": "playwright test --config e2e/playwright.config.ts"
   },
   "devDependencies": {

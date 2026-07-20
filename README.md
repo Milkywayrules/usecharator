@@ -97,6 +97,7 @@ Env vars: `PAYMENT_PROVIDER`, `PAYMENT_WEBHOOK_SECRET`, `WEB_APP_URL`. See `.env
 | `bun run lint` | Biome + Ultracite check |
 | `bun run typecheck` | TypeScript `--noEmit` across workspaces |
 | `bun run ci:smoke` | API + Postgres smoke checks (requires running API and `DATABASE_URL`) |
+| `bun run prod:boot-check -- --env .env.production` | Validate production STOP env keys before deploy |
 | `bun run e2e` | Playwright end-to-end tests (Chromium; see Testing below) |
 
 ## Testing
@@ -126,22 +127,24 @@ GitHub Actions runs on every push to `main` and on pull requests (`.github/workf
 
 **Release gate:** deploy only from green `main`. Do not promote builds from failing or skipped CI runs.
 
-## Deploy notes
+## Deploy
 
-- **Coolify**: deploy the root `docker-compose.yml` as a single resource.
-- **Production env (required)**: inject via Doppler before deploy — `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `KEY_ENCRYPTION_MASTER_KEY`, `PAYMENT_WEBHOOK_SECRET` (non-dev value), `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, and the full R2 tuple (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_ENDPOINT`). The API fails fast at boot if any are missing. Set `MOCK_BILLING_ENABLED=false` or leave unset — mock billing cannot run in production.
-- **Migrations**: the `migrate` one-shot service runs Drizzle migrations before the API starts (`depends_on: service_completed_successfully`). Re-deploys re-run idempotently.
-- **Secrets**: inject via Doppler in Coolify — do not commit `.env` files.
-- **OpenTelemetry (optional)**: set `OTEL_EXPORTER_OTLP_ENDPOINT` on the API service to export traces over OTLP HTTP; `OTEL_SERVICE_NAME` defaults to `charator-api`. When the endpoint is unset, tracing stays fully disabled with no startup cost.
-- **DNS**: point `charator.dioilham.com` to the VPS through Cloudflare.
-- **Routing**: Traefik labels in `docker-compose.yml` route `/` to web and `/api` to the API service.
-- **Telegram notifications**: set `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, and optionally `TELEGRAM_BOT_USERNAME` on the API service, then register the webhook once (replace `<token>` and `<secret>`):
+Full step-by-step runbook: **[docs/DEPLOY.md](./docs/DEPLOY.md)** (Coolify, Doppler, DNS, R2, migrations, smoke checks).
+
+Env key reference: **[docs/DOPPLER-KEYS.md](./docs/DOPPLER-KEYS.md)**.
+
+Pre-deploy validation:
 
 ```bash
-curl -sS "https://api.telegram.org/bot<token>/setWebhook?url=https://charator.dioilham.com/api/webhooks/telegram&secret_token=<secret>"
+bun scripts/prod-boot-check.ts --env .env.production
 ```
 
-The bot is notify-only — users link their account from Settings via a one-time code and get a DM when generation jobs finish.
+Quick facts:
+
+- **Coolify**: deploy root `docker-compose.yml` as one resource (`/` → web, `/api` → API).
+- **Secrets**: Doppler → Coolify; API **STOP** keys listed in `docs/DOPPLER-KEYS.md`.
+- **Migrations**: compose `migrate` service runs `db:migrate` before API starts.
+- **Telegram** (optional): webhook registration command in `docs/DEPLOY.md`.
 
 ## Programmatic API
 

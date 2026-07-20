@@ -116,3 +116,55 @@ King-authored rules live in `AGENTS.md`; agents mirror operational discipline he
 - do not dispatch implementer subagents for the infinite loop until `HARNESS-START-FILE` exists **and** section B checklist shows all agent-doable items done with evidence
 - orchestrator may still research, propose, and run right-hand reviews without `HARNESS-START-FILE`
 - `AGENTS_STOP_FILE` always wins — delete it to allow work; create it to force stop
+
+---
+
+## F) King deploy checklist
+
+Mirrors [docs/DEPLOY.md](./docs/DEPLOY.md). King executes — leave unchecked until done.
+
+### Pre-flight
+
+- [ ] Export Doppler production config to a local file (never commit)
+- [ ] `bun scripts/prod-boot-check.ts --env .env.production` passes (all STOP keys)
+- [ ] Review [docs/DOPPLER-KEYS.md](./docs/DOPPLER-KEYS.md) — optional keys decided
+
+### Infrastructure
+
+- [ ] Cloudflare DNS: `charator.dioilham.com` → VPS (proxied)
+- [ ] Cloudflare R2 bucket created + API token → Doppler (`R2_*` tuple)
+- [ ] Doppler production config complete → synced to Coolify
+
+### GitHub OAuth
+
+- [ ] Production OAuth app created
+- [ ] Callback URL: `https://charator.dioilham.com/api/auth/callback/github`
+- [ ] `GITHUB_CLIENT_ID` + `GITHUB_CLIENT_SECRET` in Doppler
+
+### Coolify deploy
+
+- [ ] Coolify app from root `docker-compose.yml` (not override)
+- [ ] `MOCK_BILLING_ENABLED=false` (or unset)
+- [ ] Deploy succeeded — `migrate` completed, `api` + `web` healthy
+
+### Database
+
+- [ ] Migrations `0000`–`0013` applied on prod Postgres (via compose `migrate` or manual `db:migrate`)
+
+### Optional integrations
+
+- [ ] _(Optional)_ `FAL_WEBHOOK_SECRET`, `REPLICATE_WEBHOOK_SECRET`
+- [ ] _(Optional)_ Telegram bot + webhook registration (see DEPLOY.md)
+- [ ] _(Optional)_ `OTEL_EXPORTER_OTLP_ENDPOINT`
+
+### Post-deploy smoke
+
+- [ ] `curl -sS https://charator.dioilham.com/api/health` → `200`, `ready: true`
+- [ ] `curl -sI https://charator.dioilham.com/api/v1/docs` → `200`, `x-robots-tag: noindex`
+- [ ] `curl -sI https://charator.dioilham.com/` → `200`
+- [ ] Manual GitHub sign-in flow completes
+
+### Section A blockers (close when above done)
+
+- [ ] **Production deploy:** Coolify + Doppler + DNS + R2 + migrations
+- [ ] **GitHub OAuth production app:** client ID + secret in Doppler
