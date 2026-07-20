@@ -7,6 +7,7 @@ import {
   sheetDispatchSlots,
 } from "@charator/shared";
 import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
+import type { DbExecutor } from "../lib/entitlement-lock";
 import {
   markJobFailed,
   processGenerationJob,
@@ -52,7 +53,30 @@ export async function recomputeSheetBatchStatus(
     .where(eq(generationJobs.sheetBatchId, batchId));
 
   if (members.length === 0) {
-    return null;
+    const [batch] = await db
+      .select()
+      .from(sheetBatches)
+      .where(eq(sheetBatches.id, batchId))
+      .limit(1);
+
+    if (!batch || batch.status === "failed") {
+      return batch?.status ?? null;
+    }
+
+    const [updated] = await db
+      .update(sheetBatches)
+      .set({
+        finishedAt: new Date(),
+        status: "failed",
+      })
+      .where(eq(sheetBatches.id, batchId))
+      .returning();
+
+    if (updated) {
+      dispatchTelegramBatchNotify(db, updated);
+    }
+
+    return "failed";
   }
 
   const nextStatus = deriveSheetBatchStatus(members);
@@ -202,7 +226,7 @@ export function seedSheetJobCredentials(
 }
 
 export async function findActiveSheetBatch(
-  db: Db,
+  db: DbExecutor,
   characterId: string,
   preset: string
 ): Promise<typeof sheetBatches.$inferSelect | null> {

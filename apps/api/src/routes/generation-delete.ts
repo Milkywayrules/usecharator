@@ -2,6 +2,7 @@ import { generationJobs } from "@charator/db";
 import { and, eq } from "drizzle-orm";
 import { db } from "../auth";
 import { config, r2Configured } from "../config";
+import { recomputeSheetBatchStatus } from "../jobs/sheet-batch";
 import { HttpError } from "../lib/errors";
 import { deleteObject } from "../lib/r2";
 import { requireWorkspaceContext } from "./workspaces";
@@ -49,6 +50,8 @@ export async function handleGenerationDelete(
     });
   }
 
+  const { sheetBatchId } = job;
+
   await deleteJobObjectsBestEffort(job.imageKeys, job.referenceImageKeys);
 
   const deleted = await db
@@ -64,6 +67,10 @@ export async function handleGenerationDelete(
 
   if (deleted.length === 0) {
     throw new HttpError(404, { code: "not_found", message: "job not found" });
+  }
+
+  if (sheetBatchId) {
+    await recomputeSheetBatchStatus(db, sheetBatchId);
   }
 
   return new Response(null, { status: 204 });
