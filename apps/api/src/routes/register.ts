@@ -12,6 +12,10 @@ import {
 } from "./billing";
 import { handleEntitlementsGet } from "./entitlements";
 import {
+  handleOnboardingGet,
+  handleOnboardingSeedDemoPost,
+} from "./onboarding";
+import {
   handleGalleryDetail,
   handleGalleryLineage,
   handleGalleryList,
@@ -116,6 +120,16 @@ export const SHARED_PROGRAMMATIC_ROUTES: RouteMount[] = [
     handler: (request) => handleEntitlementsGet(request),
     method: "get",
     path: "/me/entitlements",
+  },
+  {
+    handler: (request) => handleOnboardingGet(request),
+    method: "get",
+    path: "/me/onboarding",
+  },
+  {
+    handler: (request) => handleOnboardingSeedDemoPost(request),
+    method: "post",
+    path: "/me/onboarding/seed-demo-character",
   },
   {
     handler: (request) => handleWorkspacesList(request),

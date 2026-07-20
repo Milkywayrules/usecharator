@@ -29,6 +29,8 @@ import {
   galleryListResponseSchema,
   gallerySpecDiffResponseSchema,
   generationJobResponseSchema,
+  type OnboardingResponse,
+  onboardingResponseSchema,
   type ProviderCapabilitiesResponse,
   type ProviderKeyResponse,
   providerCapabilitiesResponseSchema,
@@ -39,6 +41,8 @@ import {
   type RerollGenerationResponse,
   reportCharacterResponseSchema,
   rerollGenerationResponseSchema,
+  type SeedDemoCharacterResponse,
+  seedDemoCharacterResponseSchema,
   type SheetBatchResponse,
   type StCardExportJsonResponse,
   type StCardImportResponse,
@@ -476,6 +480,26 @@ export async function getEntitlements(): Promise<EntitlementsResponse> {
   });
   const json = await readJsonOrThrow(response);
   return entitlementsResponseSchema.parse(json);
+}
+
+export async function getOnboarding(): Promise<OnboardingResponse> {
+  const response = await fetch(`${resolveBaseUrl()}/api/me/onboarding`, {
+    credentials: "include",
+  });
+  const json = await readJsonOrThrow(response);
+  return onboardingResponseSchema.parse(json);
+}
+
+export async function seedDemoCharacter(): Promise<SeedDemoCharacterResponse> {
+  const response = await fetch(
+    `${resolveBaseUrl()}/api/me/onboarding/seed-demo-character`,
+    {
+      credentials: "include",
+      method: "POST",
+    }
+  );
+  const json = await readJsonOrThrow(response);
+  return seedDemoCharacterResponseSchema.parse(json);
 }
 
 export async function createBillingCheckout(body: {

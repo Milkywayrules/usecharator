@@ -152,6 +152,16 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  const onboardingUnauth = await fetch(`${API_URL}/api/v1/me/onboarding`);
+  if (onboardingUnauth.status !== 401) {
+    const body = await onboardingUnauth.text().catch(() => "");
+    console.error(
+      `FAIL GET /api/v1/me/onboarding without auth: expected 401, got ${onboardingUnauth.status}${body ? `\n${body}` : ""}`
+    );
+    process.exit(1);
+  }
+  console.log("OK GET /api/v1/me/onboarding returns 401 without auth");
+
   const listBefore = await fetchJson<GalleryListResponse>(
     "/api/gallery",
     "GET /api/gallery (before seed)"

@@ -34,6 +34,16 @@ export {
   tierLimitErrorSchema,
 } from "./entitlements";
 export {
+  type OnboardingResponse,
+  type OnboardingStep,
+  type OnboardingStepId,
+  onboardingResponseSchema,
+  onboardingStepIdSchema,
+  onboardingStepSchema,
+  type SeedDemoCharacterResponse,
+  seedDemoCharacterResponseSchema,
+} from "./onboarding";
+export {
   type ApiError,
   apiError,
   apiErrorSchema,

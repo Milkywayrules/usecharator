@@ -205,3 +205,11 @@ Tracked work after harness items 1–8 landed on `main`. Agents own these; King 
 | Opus right-hand sign-off | **RETRY** | Optional re-run each epic batch; not blocking agent work or harness closure (section **C**) |
 
 All section **H** epics closed 2026-07-20.
+
+---
+
+## I) v9 agent epics
+
+| Epic | Status | Notes |
+|------|--------|-------|
+| Epic 1 — Activation onboarding | **DONE** | PR pending — `0015_user_activation`, onboarding API + settings checklist/banner, wizard draft promotion, e2e + ci-smoke 401 |
