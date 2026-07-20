@@ -18,7 +18,7 @@ King must provide — agents cannot resolve these.
 
 ## B) Agreed plan checklist
 
-Harness items 1–6 from [HARNESS-ADDITIONAL-INSTRUCTIONS.md](./HARNESS-ADDITIONAL-INSTRUCTIONS.md). Honest status as of 2026-07-20.
+Harness items 1–8 from [HARNESS-ADDITIONAL-INSTRUCTIONS.md](./HARNESS-ADDITIONAL-INSTRUCTIONS.md). Honest status as of 2026-07-20.
 
 | # | Item | Status |
 |---|------|--------|
@@ -28,6 +28,8 @@ Harness items 1–6 from [HARNESS-ADDITIONAL-INSTRUCTIONS.md](./HARNESS-ADDITION
 | 4 | Branch + PR workflow | **DONE** (adopted) |
 | 5 | Elysia setup | **DONE** (merged PR #7) |
 | 6 | Reindex `AGENTS.md` | **ONGOING** discipline |
+| 7 | Force fully setup & configured — stop vs continue on unconfigured deps | **OPEN** |
+| 8 | t3 env for runtime env validations | **OPEN** |
 
 ### 5 — Elysia setup (detail)
 
@@ -82,3 +84,15 @@ Orchestrator checks every box; no King creds required (agent generates secrets v
 - **GitHub OAuth** optional at boot; login requires a dev OAuth app or API bearer tokens — King's prod OAuth app remains section A.
 - **Image generation persistence** requires **R2** + **BYOK provider key** — without R2, jobs fail with `"R2 is not configured"`. Smoke beta covers wizard, spec render, mock billing, gallery read paths; full generation is **beta+** (user supplies R2 + BYOK, still no King creds).
 - **Prod deploy, real payments, Telegram webhooks** remain section **A** King blockers.
+
+---
+
+## E) Harness discipline (agents must not edit `AGENTS.md`)
+
+King-authored rules live in `AGENTS.md`; agents mirror operational discipline here because agents must not edit that file.
+
+- append human blockers and open decisions to this file immediately when discovered — never leave it empty while blockers exist
+- orchestrator decides when to stop; target 100% done & 100% confident for production deployment before creating `HARNESS-START-FILE`
+- do not dispatch implementer subagents for the infinite loop until `HARNESS-START-FILE` exists **and** section B checklist shows all agent-doable items done with evidence
+- orchestrator may still research, propose, and run right-hand reviews without `HARNESS-START-FILE`
+- `AGENTS_STOP_FILE` always wins — delete it to allow work; create it to force stop
