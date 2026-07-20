@@ -194,7 +194,7 @@ describe("st-card import/export", () => {
     const ext = exported.ccv3.data.extensions?.charator as {
       spec: Record<string, unknown>;
     };
-    const embeddedControl = (ext.spec.control as Record<string, unknown>) ?? {};
+    const embeddedControl = ext.spec.control as Record<string, unknown>;
     ext.spec = {
       ...ext.spec,
       control: {
