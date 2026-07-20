@@ -1,8 +1,36 @@
 import { openapi } from "@elysiajs/openapi";
 
+const tierIdEnum = ["free", "plus", "pro", "studio"] as const;
+
 export const v1OpenApi = openapi({
   documentation: {
     components: {
+      schemas: {
+        ApiError: {
+          properties: {
+            code: { type: "string" },
+            message: { type: "string" },
+          },
+          required: ["code", "message"],
+          type: "object",
+        },
+        TierLimitError: {
+          properties: {
+            code: { enum: ["tier_limit"], type: "string" },
+            current: { minimum: 0, type: "integer" },
+            limit: { type: "string" },
+            message: { type: "string" },
+            tier: { enum: [...tierIdEnum], type: "string" },
+            upgradeTier: {
+              enum: [...tierIdEnum],
+              nullable: true,
+              type: "string",
+            },
+          },
+          required: ["code", "message", "limit", "tier", "current", "upgradeTier"],
+          type: "object",
+        },
+      },
       securitySchemes: {
         bearerAuth: {
           bearerFormat: "ct_live_…",
