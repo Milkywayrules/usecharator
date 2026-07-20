@@ -8,6 +8,7 @@ import { and, eq, gt, isNull } from "drizzle-orm";
 import { db, requireSessionUser } from "../auth";
 import { config, telegramConfigured } from "../config";
 import { HttpError } from "../lib/errors";
+import { logApiError } from "../lib/logger";
 import {
   buildDeepLink,
   generateLinkCode,
@@ -190,7 +191,7 @@ export async function handleTelegramWebhook(
       await sendTelegramMessage(
         chatId,
         "That link code is invalid or expired. Generate a new one from Chara Tor settings."
-      ).catch((error) => console.error("telegram reply failed", error));
+      ).catch((error) => logApiError("telegram.reply", error));
       return json({ ok: true });
     }
 
@@ -214,7 +215,7 @@ export async function handleTelegramWebhook(
     await sendTelegramMessage(
       chatId,
       "Linked! You will receive a DM here when your generation jobs finish."
-    ).catch((error) => console.error("telegram reply failed", error));
+    ).catch((error) => logApiError("telegram.reply", error));
 
     return json({ ok: true });
   }
@@ -223,12 +224,12 @@ export async function handleTelegramWebhook(
     await sendTelegramMessage(
       chatId,
       "This bot only sends generation notifications. Manage your link in Chara Tor settings."
-    ).catch((error) => console.error("telegram reply failed", error));
+    ).catch((error) => logApiError("telegram.reply", error));
   } else if (text) {
     await sendTelegramMessage(
       chatId,
       "This bot only sends generation notifications — no chat commands here."
-    ).catch((error) => console.error("telegram reply failed", error));
+    ).catch((error) => logApiError("telegram.reply", error));
   }
 
   return json({ ok: true });

@@ -15,13 +15,14 @@ import {
   getEphemeralCredentials,
   setEphemeralCredentials,
 } from "../lib/ephemeral-credentials";
-import { redactSecrets } from "../lib/errors";
+import { logApiError } from "../lib/logger";
 import { assertPublicHttpsUrl } from "../lib/public-url";
 import {
   fetchImageFromUrl,
   presignedGetUrl,
   uploadGenerationImage,
 } from "../lib/r2";
+import { redactSecrets } from "../lib/redact-secrets";
 import { loadReferenceImagesForJob } from "../lib/reference-generation";
 import { getProviderAdapter } from "../providers/registry";
 import type { ProviderAdapter } from "../providers/types";
@@ -37,9 +38,7 @@ function dispatchTelegramNotify(
   }
   import("../lib/telegram")
     .then(({ notifyJobFinished }) => notifyJobFinished(db, job))
-    .catch((error) =>
-      console.error(`telegram notify dispatch failed for job ${job.id}`, error)
-    );
+    .catch((error) => logApiError("telegram.notify", error, { jobId: job.id }));
 }
 
 async function onSheetMemberFinished(
@@ -403,7 +402,7 @@ export async function pollStaleRunningJobs(db: Db): Promise<void> {
     try {
       await pollRunningJob(db, job, credentials, adapter);
     } catch (error) {
-      console.error(`poll failed for job ${job.id}`, error);
+      logApiError("jobs.poll", error, { jobId: job.id });
     }
   }
 }
@@ -442,7 +441,7 @@ export async function requeueStaleQueuedJobs(db: Db): Promise<void> {
     }
 
     processGenerationJob(db, job.id, credentials).catch((error) =>
-      console.error(error)
+      logApiError("jobs.dispatch", error, { jobId: job.id })
     );
   }
 

@@ -37,6 +37,7 @@ import {
   attachGenerationReferences,
 } from "../lib/generation-create";
 import { consumeGenerationRateLimit } from "../lib/generation-rate-limit";
+import { logApiError } from "../lib/logger";
 import { validatePublicHttpsUrl } from "../lib/public-url";
 import { ReferenceResolutionError } from "../lib/reference-generation";
 import { getProviderAdapter } from "../providers/registry";
@@ -167,7 +168,7 @@ export async function handleGenerationsPost(
     model
   );
   processGenerationJob(db, job.id, credentials).catch((error) =>
-    console.error(error)
+    logApiError("generations.dispatch", error, { jobId: job.id })
   );
 
   return json({ jobId: job.id }, 202);
@@ -756,8 +757,14 @@ export async function handleReplicateWebhook(
 
 export function startJobMaintenanceLoop(): void {
   setInterval(() => {
-    failTimedOutJobs(db).catch((error) => console.error(error));
-    pollStaleRunningJobs(db).catch((error) => console.error(error));
-    requeueStaleQueuedJobs(db).catch((error) => console.error(error));
+    failTimedOutJobs(db).catch((error) =>
+      logApiError("jobs.maintenance", error, { task: "failTimedOutJobs" })
+    );
+    pollStaleRunningJobs(db).catch((error) =>
+      logApiError("jobs.maintenance", error, { task: "pollStaleRunningJobs" })
+    );
+    requeueStaleQueuedJobs(db).catch((error) =>
+      logApiError("jobs.maintenance", error, { task: "requeueStaleQueuedJobs" })
+    );
   }, config.GENERATION_POLL_INTERVAL_MS);
 }

@@ -1,4 +1,5 @@
 import type { ApiError, TierLimitError } from "@charator/shared";
+import { logApiError } from "./logger";
 
 export class HttpError extends Error {
   readonly status: number;
@@ -16,17 +17,9 @@ export function errorResponse(error: unknown): Response {
   if (error instanceof HttpError) {
     return Response.json(error.body, { status: error.status });
   }
-  console.error(error);
+  logApiError("api.error", error);
   return Response.json(
     { code: "internal_error", message: "unexpected server error" },
     { status: 500 }
   );
-}
-
-export function redactSecrets(message: string): string {
-  return message
-    .replace(/Bearer\s+\S+/gi, "Bearer [redacted]")
-    .replace(/Key\s+\S+/gi, "Key [redacted]")
-    .replace(/sk-[A-Za-z0-9_-]+/g, "[redacted]")
-    .replace(/r8_[A-Za-z0-9]+/g, "[redacted]");
 }

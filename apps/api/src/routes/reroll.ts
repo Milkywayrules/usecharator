@@ -16,6 +16,7 @@ import { assertStoredGenerationCreationAllowed } from "../lib/entitlements";
 import { HttpError } from "../lib/errors";
 import { assertWorkspaceScopedJobAccess } from "../lib/generation-access";
 import { consumeGenerationRateLimit } from "../lib/generation-rate-limit";
+import { logApiError } from "../lib/logger";
 
 export async function createRerollJob(
   database: Db,
@@ -113,7 +114,7 @@ export async function createRerollJob(
 
   rememberJobCredentials(job.id, credentials, authUser ? authUser.id : null);
   processGenerationJob(database, job.id, credentials).catch((error) =>
-    console.error(error)
+    logApiError("generations.reroll", error, { jobId: job.id })
   );
 
   return { jobId: job.id };

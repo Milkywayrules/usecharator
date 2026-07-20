@@ -2,6 +2,7 @@ import type { Db, sheetBatches, telegramLinkCodes } from "@charator/db";
 import { characters, generationJobs, telegramLinks } from "@charator/db";
 import { eq } from "drizzle-orm";
 import { config, r2Configured, telegramConfigured } from "../config";
+import { logApiError } from "./logger";
 import { presignedGetUrl } from "./r2";
 
 const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
@@ -122,7 +123,7 @@ async function fetchBotUsername(): Promise<string | null> {
       return cachedBotUsername;
     }
   } catch (error) {
-    console.error("telegram getMe failed", error);
+    logApiError("telegram.getMe", error);
   }
   return null;
 }
@@ -260,7 +261,7 @@ export async function notifyJobFinished(
     const characterName = await characterNameForJob(db, job.characterId);
     await sendTelegramPhoto(chatId, photoUrl, jobCaption(job, characterName));
   } catch (error) {
-    console.error(`telegram notify failed for job ${job.id}`, error);
+    logApiError("telegram.notify", error, { jobId: job.id });
   }
 }
 
@@ -353,7 +354,7 @@ export async function notifySheetBatchFinished(
 
     await sendTelegramPhoto(chatId, presignedGetUrl(firstKey), caption);
   } catch (error) {
-    console.error(`telegram batch notify failed for ${batch.id}`, error);
+    logApiError("telegram.batch", error, { batchId: batch.id });
   }
 }
 

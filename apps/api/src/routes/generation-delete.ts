@@ -4,6 +4,7 @@ import { db } from "../auth";
 import { config, r2Configured } from "../config";
 import { recomputeSheetBatchStatus } from "../jobs/sheet-batch";
 import { HttpError } from "../lib/errors";
+import { logApiWarn } from "../lib/logger";
 import { deleteObject } from "../lib/r2";
 import { requireWorkspaceContext } from "./workspaces";
 
@@ -18,7 +19,9 @@ async function deleteJobObjectsBestEffort(
   await Promise.all(
     keys.map((key) =>
       deleteObject(key).catch((error) => {
-        console.warn(`failed to delete R2 object ${key}:`, error);
+        logApiWarn("r2.delete", `failed to delete R2 object ${key}`, {
+          error: String(error),
+        });
       })
     )
   );

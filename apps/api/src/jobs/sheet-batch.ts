@@ -8,6 +8,7 @@ import {
 } from "@charator/shared";
 import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
 import type { DbExecutor } from "../lib/entitlement-lock";
+import { logApiError } from "../lib/logger";
 import {
   markJobFailed,
   processGenerationJob,
@@ -22,7 +23,7 @@ function dispatchTelegramBatchNotify(
   import("../lib/telegram")
     .then(({ notifySheetBatchFinished }) => notifySheetBatchFinished(db, batch))
     .catch((error) =>
-      console.error(`telegram batch notify failed for ${batch.id}`, error)
+      logApiError("telegram.batch", error, { batchId: batch.id })
     );
 }
 
@@ -142,7 +143,7 @@ export async function dispatchQueuedSheetJobsForUser(
         return;
       }
       processGenerationJob(db, job.id, credentials).catch((error) =>
-        console.error(error)
+        logApiError("sheet-batch.dispatch", error)
       );
     })
   );
