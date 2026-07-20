@@ -55,4 +55,29 @@ describe("production config guard", () => {
       "prod-webhook-secret-with-enough-entropy"
     );
   });
+
+  test("allows missing github oauth credentials in production", () => {
+    const {
+      GITHUB_CLIENT_ID: _id,
+      GITHUB_CLIENT_SECRET: _secret,
+      ...env
+    } = baseEnv;
+    const cfg = parseAppConfig({
+      ...env,
+      NODE_ENV: "production",
+      PAYMENT_WEBHOOK_SECRET: "prod-webhook-secret-with-enough-entropy",
+    });
+    expect(cfg.GITHUB_CLIENT_ID).toBeUndefined();
+    expect(cfg.GITHUB_CLIENT_SECRET).toBeUndefined();
+  });
+
+  test("treats empty optional env vars as unset", () => {
+    const cfg = parseAppConfig({
+      ...baseEnv,
+      R2_ENDPOINT: "",
+      TELEGRAM_BOT_TOKEN: "",
+    });
+    expect(cfg.R2_ENDPOINT).toBeUndefined();
+    expect(cfg.TELEGRAM_BOT_TOKEN).toBeUndefined();
+  });
 });

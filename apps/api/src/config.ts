@@ -21,8 +21,8 @@ const envSchema = z.object({
   FAL_WEBHOOK_SECRET: z.string().optional(),
   GENERATION_JOB_TIMEOUT_MS: z.coerce.number().default(300_000),
   GENERATION_POLL_INTERVAL_MS: z.coerce.number().default(15_000),
-  GITHUB_CLIENT_ID: z.string().min(1),
-  GITHUB_CLIENT_SECRET: z.string().min(1),
+  GITHUB_CLIENT_ID: z.string().optional(),
+  GITHUB_CLIENT_SECRET: z.string().optional(),
   KEY_ENCRYPTION_MASTER_KEY: base64KeySchema,
   MOCK_BILLING_ENABLED: z.enum(["true", "false"]).optional(),
   NODE_ENV: z
@@ -63,15 +63,30 @@ function assertProductionSecrets(cfg: AppConfig): void {
   }
 }
 
+function normalizeEnv(
+  env: Record<string, string | undefined>
+): Record<string, string | undefined> {
+  return Object.fromEntries(
+    Object.entries(env).map(([key, value]) => [
+      key,
+      value === "" ? undefined : value,
+    ])
+  );
+}
+
 export function parseAppConfig(
   env: Record<string, string | undefined> = process.env
 ): AppConfig {
-  const parsed = envSchema.parse(env);
+  const parsed = envSchema.parse(normalizeEnv(env));
   assertProductionSecrets(parsed);
   return parsed;
 }
 
 export const config: AppConfig = parseAppConfig();
+
+export function githubConfigured(cfg: AppConfig): boolean {
+  return Boolean(cfg.GITHUB_CLIENT_ID && cfg.GITHUB_CLIENT_SECRET);
+}
 
 export function r2Configured(cfg: AppConfig): boolean {
   return Boolean(

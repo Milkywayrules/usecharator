@@ -1,0 +1,38 @@
+# dependencies and build outputs
+node_modules
+**/node_modules
+.next
+**/.next
+dist
+**/dist
+.turbo
+**/.turbo
+out
+**/out
+*.tsbuildinfo
+
+# env and secrets
+.env
+.env.*
+!.env.example
+.github-agent.local
+
+# git and IDE
+.git
+.cursor
+.idea
+*.swp
+*.swo
+
+# test and coverage artifacts
+coverage
+test-results
+playwright-report
+blob-report
+
+# harness files (never bake into images)
+AGENTS_STOP_FILE
+HARNESS-*.md
+
+# logs
+*.log
