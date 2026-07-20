@@ -31,7 +31,7 @@ import {
 
 const USAGE_ROWS: {
   label: string;
-  limitKey: LimitKey;
+  limitKey?: LimitKey;
   usageKey: keyof EntitlementsResponse["usage"];
 }[] = [
   { label: "Workspaces", limitKey: "workspaces", usageKey: "workspaces" },
@@ -44,6 +44,10 @@ const USAGE_ROWS: {
     label: "Sheet batches this month",
     limitKey: "sheetBatchesPerMonth",
     usageKey: "sheetBatchesThisMonth",
+  },
+  {
+    label: "Generations this month",
+    usageKey: "generationsThisMonth",
   },
   {
     label: "Stored generations",
@@ -151,15 +155,23 @@ export function PlanUsageSettingsSection() {
           <ul className="space-y-4">
             {USAGE_ROWS.map((row) => {
               const current = data.usage[row.usageKey];
-              const limit = data.limits[row.limitKey];
-              const percent = usagePercent(current, limit);
+              const limit = row.limitKey
+                ? data.limits[row.limitKey]
+                : undefined;
+              const percent =
+                row.limitKey && limit !== undefined
+                  ? usagePercent(current, limit)
+                  : null;
               return (
-                <li className="space-y-2" key={row.limitKey}>
+                <li className="space-y-2" key={row.usageKey}>
                   <div className="flex items-center justify-between gap-4 text-sm">
                     <span>{row.label}</span>
                     <span className="text-muted-foreground">
-                      {current}
-                      {limit === null ? " / Unlimited" : ` / ${limit}`}
+                      {row.limitKey === undefined
+                        ? current
+                        : `${current}${
+                            limit === null ? " / Unlimited" : ` / ${limit}`
+                          }`}
                     </span>
                   </div>
                   {percent === null ? (

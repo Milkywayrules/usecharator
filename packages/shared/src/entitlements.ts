@@ -15,6 +15,7 @@ export const entitlementsUsageSchema = z.object({
   anchorImages: z.number().int().nonnegative(),
   apiTokens: z.number().int().nonnegative(),
   characters: z.number().int().nonnegative(),
+  generationsThisMonth: z.number().int().nonnegative(),
   sheetBatchesThisMonth: z.number().int().nonnegative(),
   storedGenerations: z.number().int().nonnegative(),
   workspaces: z.number().int().nonnegative(),

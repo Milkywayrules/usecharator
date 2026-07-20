@@ -118,6 +118,17 @@ export async function countWorkspaceUsage(
       )
     );
 
+  const [generationCountThisMonth] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(generationJobs)
+    .where(
+      and(
+        eq(generationJobs.workspaceId, workspaceId),
+        gte(generationJobs.createdAt, start),
+        lt(generationJobs.createdAt, end)
+      )
+    );
+
   const [storedCount] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(generationJobs)
@@ -151,6 +162,7 @@ export async function countWorkspaceUsage(
     anchorImages: anchorCount?.count ?? 0,
     apiTokens: tokenCount?.count ?? 0,
     characters: characterCount?.count ?? 0,
+    generationsThisMonth: generationCountThisMonth?.count ?? 0,
     sheetBatchesThisMonth: batchCount?.count ?? 0,
     storedGenerations: storedCount?.count ?? 0,
     workspaces,
