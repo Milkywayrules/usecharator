@@ -76,10 +76,11 @@ export async function handleSpecRender(request: Request): Promise<Response> {
   try {
     parsedSpec = parseCharacterSpec(parsed.data.spec);
   } catch (error) {
+    const detail =
+      error instanceof Error ? error.message : "spec could not be parsed";
     throw new HttpError(400, {
-      cause: error,
       code: "validation_error",
-      message: "spec could not be parsed",
+      message: detail,
     });
   }
   const spec = parsedSpec;
