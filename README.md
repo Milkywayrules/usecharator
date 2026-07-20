@@ -168,3 +168,7 @@ curl -sS -X POST "https://charator.dioilham.com/api/v1/generations" \
 ```
 
 Public metadata (no auth): `GET /api/v1/themes`, `GET /api/v1/spec/catalog`, `POST /api/v1/spec/render`.
+
+## Agent harness
+
+Operational status and King-only blockers live in [`HARNESS-HUMAN-INPUT.md`](./HARNESS-HUMAN-INPUT.md). `HARNESS-START-FILE` is intentionally absent until King completes the live deploy checklist (section F) — agent epics continue without it.

@@ -176,3 +176,6 @@ jobs:
           API_URL: http://127.0.0.1:3001
           CI: "true"
         run: bun scripts/ci-smoke.ts
+
+      - name: Prod boot check (rehearsal env)
+        run: bun scripts/prod-boot-check.ts --env docs/env.prod-rehearsal.example

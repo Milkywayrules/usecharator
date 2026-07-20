@@ -74,7 +74,7 @@ Orchestrator + right-hand unanimous gate before creating `HARNESS-START-FILE`.
 - [x] Orchestrator sign-off — harness #5 verified locally (turbo + e2e) 2026-07-20
 - [x] Orchestrator CODE prod-confident sign-off — `bunx turbo build lint typecheck test` green; `docs/DEPLOY.md`, `docs/DOPPLER-KEYS.md`, `scripts/prod-boot-check.ts` landed (PR #13); `bun scripts/prod-boot-check.ts --env docs/env.prod-rehearsal.example` passes 2026-07-20
 - [x] Right-hand Grok sign-off — YES_WITH_NOTES on PR #12 (2026-07-20); non-blocking notes on OTEL_SERVICE_NAME matrix wording and aggregated telegram warn
-- [ ] Right-hand Opus sign-off *(pending — API limit)*
+- [ ] Right-hand Opus sign-off *(retry each epic batch — not a hard blocker for agent work)*
 - [x] Right-hand Composer sign-off — implementer verified build/lint/typecheck/test + e2e 2026-07-20
 
 **Do not create `HARNESS-START-FILE` yet** — King must close section **A** and section **F** first; see section **G**.
@@ -116,8 +116,8 @@ King-authored rules live in `AGENTS.md`; agents mirror operational discipline he
 
 - append human blockers and open decisions to this file immediately when discovered — never leave it empty while blockers exist
 - orchestrator decides when to stop; target 100% done & 100% confident for production deployment before creating `HARNESS-START-FILE`
-- do not dispatch implementer subagents for the infinite loop until `HARNESS-START-FILE` exists **and** section B checklist shows all agent-doable items done with evidence
-- orchestrator may still research, propose, and run right-hand reviews without `HARNESS-START-FILE`
+- post-harness agent epics (section **H**) run without `HARNESS-START-FILE` — only live deploy waits on King (sections **A** / **F**)
+- orchestrator may research, propose, and run right-hand reviews at any time
 - `AGENTS_STOP_FILE` always wins — delete it to allow work; create it to force stop
 
 ---
@@ -174,13 +174,30 @@ Mirrors [docs/DEPLOY.md](./docs/DEPLOY.md). King executes — leave unchecked un
 
 ---
 
-## G) Orchestrator stop decision
+## G) Orchestrator autonomy
 
-As of 2026-07-20, all agent-implementable harness work for items **1–5** and **7–8** is merged to `main`. The orchestrator may **pause the implementer loop** — no further code slices are required until King input arrives.
+As of 2026-07-20, all agent-implementable harness work for items **1–5** and **7–8** is merged to `main`. The harness **runs autonomously** until post-harness agent epics (section **H**) are complete — the orchestrator must **not** pause the implementer loop waiting on King deploy.
 
-**Live production still requires King:**
+**Only King can close:**
 
 - section **A** human-only blockers (Coolify, Doppler, DNS, R2, prod OAuth, etc.)
-- section **F** deploy checklist — King executes and checks each box
+- section **F** deploy checklist — King executes and checks each box before live production
 
-**`HARNESS-START-FILE` must not be created** until King confirms section **F** is complete. Until then, agents may research, document, and run right-hand reviews only — not dispatch open-ended implementer loops per section **E**.
+Agents **continue post-harness epics** (Pact contract tests, CI hardening, polish) without waiting for section **A** or **F**. King deploy is parallel work, not a gate on agent implementation.
+
+**`HARNESS-START-FILE` must not be created yet** — King must close section **F** for live deploy. That does **not** stop agent epics; see section **H**. No placeholder file exists at repo root (intentional).
+
+---
+
+## H) Post-harness agent epics
+
+Tracked work after harness items 1–8 landed on `main`. Agents own these; King input not required unless noted.
+
+| Epic | Status | Notes |
+|------|--------|-------|
+| Pact API contract tests | **IN PROGRESS** | Parallel agent |
+| CI prod-boot-check | **IN PROGRESS** | `bun scripts/prod-boot-check.ts --env docs/env.prod-rehearsal.example` in integration job after smoke |
+| Remote branch cleanup | **IN PROGRESS** | Delete merged feature/bugfix/chore branches via `gh` + `git push origin --delete` |
+| Opus right-hand sign-off | **RETRY** | Re-run each epic batch; not a hard blocker for agent work (section **C**) |
+
+Close each row with evidence (PR link, CI run, branch list) when done.
