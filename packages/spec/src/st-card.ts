@@ -3,6 +3,7 @@
  * @see https://github.com/kwaroran/character-card-spec-v3/blob/main/SPEC_V3.md
  */
 
+import { utf8ToBase64 } from "./base64";
 import { effectiveMode, shouldIncludeField } from "./control";
 import { FIELD_ORDER } from "./data/field-order";
 import { SECTION_TITLES } from "./data/paths";
@@ -13,7 +14,6 @@ import {
   parseCharacterSpec,
 } from "./schema";
 import type { ThemeId } from "./themes";
-import { utf8ToBase64 } from "./base64";
 import { formatValue, humanize, isEmpty } from "./utils";
 import { SPEC_VERSION } from "./validate";
 

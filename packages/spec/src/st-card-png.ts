@@ -1,12 +1,12 @@
 /** PNG-backed SillyTavern card import (Node/Bun only — not in client bundle). */
 
+import { base64ToUtf8 } from "./base64";
 import { PNG_SIGNATURE, readPngTextChunk } from "./png-text";
 import {
   type ImportStCardResult,
   importStCardEnvelope,
   type StCardSourceFormat,
 } from "./st-card";
-import { base64ToUtf8 } from "./base64";
 
 function decodeBase64Json(text: string): unknown {
   const trimmed = text.trim();
