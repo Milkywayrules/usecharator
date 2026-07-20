@@ -8,7 +8,7 @@ Wizard-driven character image generator. Users bring their own API keys (BYOK) f
 - **BYOK generation** — six providers (OpenRouter, OpenAI, Google Gemini, fal.ai, Replicate, custom OpenAI-compatible); reference-image anchors, aspect ratios, and per-model capability presets
 - **Character sheets** — batch multi-pose sheet generation from library characters
 - **Workspaces** — multi-tenant workspaces with shared characters, keys, and entitlements
-- **Pricing tiers** — Free, Plus, Pro, Studio (entitlements-first; payments coming)
+- **Pricing tiers** — Free, Plus, Pro, Studio with mock billing adapter (Stripe/Polar-ready seam)
 - **Public gallery** — browse, search, remix, and moderation for public characters
 - **Public API v1** — bearer tokens, OpenAPI docs at `/api/v1/docs`, legacy web routes under `/api/*`
 - **MCP server** — stdio MCP for themes, spec render, characters, generations, and gallery (`apps/mcp`)
@@ -30,6 +30,7 @@ packages/
   spec/         Character spec types, themes, render engine
   shared/       Shared Zod schemas and utilities
   db/           Drizzle ORM + Postgres schema
+  payments/     PaymentProvider interface + mock adapter
 ```
 
 ## Prerequisites
@@ -56,11 +57,31 @@ bun run --filter=@charator/db db:migrate
 bun dev
 ```
 
-Optional — assign a pricing tier manually (no payment provider yet):
+Optional — assign a pricing tier manually (bypasses billing webhooks):
 
 ```bash
 bun scripts/tier-set.ts --user <email-or-id> --tier pro
 ```
+
+## Billing (mock provider)
+
+Platform tiers (Free, Plus, Pro, Studio) are enforced via entitlements. The default **`PAYMENT_PROVIDER=mock`** implements real gateway-shaped interfaces (`PaymentProvider` in `@charator/payments`) without collecting money:
+
+- `POST /api/billing/checkout` — start checkout; returns a URL to `/billing/mock-checkout`
+- `POST /api/billing/portal` — customer portal (mock manage page)
+- `GET /api/billing/subscription` — subscription row + current tier
+- `POST /api/billing/webhook` — provider-agnostic webhook receiver (`Payment-Signature` HMAC)
+- `POST /api/billing/mock/complete` — dev/e2e helper that signs and dispatches `checkout.completed` through the webhook path
+
+**Tier writes** (besides `tier:set`) happen only after a verified webhook event.
+
+### Swapping in Stripe or Polar later
+
+1. Implement `PaymentProvider` (`createCheckoutSession`, `createBillingPortalSession`, `getSubscription`, `cancelSubscription`, `verifyWebhook`).
+2. Register the adapter in `getPaymentProvider()` and set `PAYMENT_PROVIDER`.
+3. Point the provider webhook URL at `POST /api/billing/webhook` — the route and tier-write handler stay provider-agnostic.
+
+Env vars: `PAYMENT_PROVIDER`, `PAYMENT_WEBHOOK_SECRET`, `WEB_APP_URL`. See `.env.example`.
 
 `docker-compose.override.yml` maps Postgres to `${POSTGRES_PORT:-5432}` on the host for local dev. Production deploys (Coolify) use only the root compose file, so Postgres stays on the internal network.
 

@@ -54,8 +54,9 @@ async function seedGalleryFixture(): Promise<string> {
     process.exit(1);
   }
 
-  const { characters, createDb, member, organization, user } =
-    await import("@charator/db");
+  const { characters, createDb, member, organization, user } = await import(
+    "@charator/db"
+  );
   const { createEmptySpec } = await import("@charator/spec");
   const { client, db } = createDb(DATABASE_URL);
   const now = new Date();
@@ -289,7 +290,10 @@ async function main(): Promise<void> {
     reviewRequired?: boolean;
     sourceFormat?: string;
   };
-  if (imported.sourceFormat !== "ccv3-json" || imported.reviewRequired !== true) {
+  if (
+    imported.sourceFormat !== "ccv3-json" ||
+    imported.reviewRequired !== true
+  ) {
     console.error(
       `FAIL POST /api/v1/spec/import/st-card: unexpected body ${JSON.stringify(imported)}`
     );
@@ -297,7 +301,133 @@ async function main(): Promise<void> {
   }
   console.log("OK POST /api/v1/spec/import/st-card");
 
+  await runBillingSmoke();
+
   console.log("ci smoke passed");
+}
+
+async function runBillingSmoke(): Promise<void> {
+  const { createDb, subscriptions, user } = await import("@charator/db");
+  const { MockPaymentProvider, applyBillingWebhookEvent, signWebhookPayload } =
+    await import("@charator/payments");
+  const { eq } = await import("drizzle-orm");
+  const { client, db } = createDb(DATABASE_URL!);
+  const webhookSecret =
+    process.env.PAYMENT_WEBHOOK_SECRET ?? "ci-test-payment-webhook-secret";
+  const provider = new MockPaymentProvider(db, {
+    paymentProvider: "mock",
+    paymentWebhookSecret: webhookSecret,
+    webAppUrl: process.env.WEB_APP_URL ?? "http://127.0.0.1:3000",
+  });
+
+  try {
+    await db
+      .update(user)
+      .set({ tier: "free" })
+      .where(eq(user.id, CI_SMOKE_USER_ID));
+
+    await db
+      .delete(subscriptions)
+      .where(eq(subscriptions.userId, CI_SMOKE_USER_ID));
+
+    const checkout = await provider.createCheckoutSession({
+      cancelUrl: "http://127.0.0.1:3000/pricing",
+      successUrl: "http://127.0.0.1:3000/settings#plan",
+      tier: "plus",
+      userId: CI_SMOKE_USER_ID,
+    });
+    console.log("OK mock checkout session created");
+
+    const { rawBody, signature } = await provider.completeCheckoutSession(
+      checkout.id
+    );
+    const verified = provider.verifyWebhook(rawBody, signature);
+    await applyBillingWebhookEvent(db, verified);
+    console.log("OK mock checkout completed via webhook path");
+
+    const subscription = await provider.getSubscription(CI_SMOKE_USER_ID);
+    const [userRow] = await db
+      .select({ tier: user.tier })
+      .from(user)
+      .where(eq(user.id, CI_SMOKE_USER_ID))
+      .limit(1);
+
+    if (subscription?.status !== "active" || userRow?.tier !== "plus") {
+      console.error(
+        `FAIL billing activation: subscription=${JSON.stringify(subscription)} tier=${userRow?.tier}`
+      );
+      process.exit(1);
+    }
+    console.log("OK subscription active and user tier is plus");
+
+    const cancelEvent = await provider.cancelSubscription(CI_SMOKE_USER_ID, {
+      atPeriodEnd: true,
+    });
+    await applyBillingWebhookEvent(db, cancelEvent);
+
+    const [afterCancel] = await db
+      .select({ tier: user.tier })
+      .from(user)
+      .where(eq(user.id, CI_SMOKE_USER_ID))
+      .limit(1);
+    if (afterCancel?.tier !== "free") {
+      console.error(
+        `FAIL billing cancel: expected free tier, got ${afterCancel?.tier}`
+      );
+      process.exit(1);
+    }
+    console.log("OK billing loop canceled back to free");
+
+    const tamperedPayload = JSON.stringify({
+      data: { tier: "studio", userId: CI_SMOKE_USER_ID },
+      id: "evt_tampered",
+      type: "checkout.completed",
+    });
+    const webhookReject = await fetch(`${API_URL}/api/billing/webhook`, {
+      body: tamperedPayload,
+      headers: {
+        "Content-Type": "application/json",
+        "Payment-Signature": "t=1,v1=deadbeef",
+      },
+      method: "POST",
+    });
+    if (webhookReject.status !== 400) {
+      console.error(
+        `FAIL POST /api/billing/webhook bad signature: expected 400, got ${webhookReject.status}`
+      );
+      process.exit(1);
+    }
+    console.log("OK POST /api/billing/webhook rejects bad signature");
+
+    const goodPayload = JSON.stringify({
+      data: {
+        currentPeriodEnd: new Date(Date.now() + 86_400_000).toISOString(),
+        subscriptionId: "sub_ci_smoke_webhook",
+        tier: "pro",
+        userId: CI_SMOKE_USER_ID,
+      },
+      id: "evt_ci_smoke",
+      type: "checkout.completed",
+    });
+    const webhookOk = await fetch(`${API_URL}/api/billing/webhook`, {
+      body: goodPayload,
+      headers: {
+        "Content-Type": "application/json",
+        "Payment-Signature": signWebhookPayload(webhookSecret, goodPayload),
+      },
+      method: "POST",
+    });
+    if (!webhookOk.ok) {
+      const body = await webhookOk.text().catch(() => "");
+      console.error(
+        `FAIL POST /api/billing/webhook: ${webhookOk.status}${body ? `\n${body}` : ""}`
+      );
+      process.exit(1);
+    }
+    console.log("OK POST /api/billing/webhook verified event");
+  } finally {
+    await client.end();
+  }
 }
 
 main().catch((error) => {

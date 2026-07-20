@@ -21,9 +21,12 @@ const envSchema = z.object({
   GITHUB_CLIENT_ID: z.string().min(1),
   GITHUB_CLIENT_SECRET: z.string().min(1),
   KEY_ENCRYPTION_MASTER_KEY: base64KeySchema,
+  MOCK_BILLING_ENABLED: z.enum(["true", "false"]).optional(),
   NODE_ENV: z
     .enum(["development", "production", "test"])
     .default("development"),
+  PAYMENT_PROVIDER: z.string().default("mock"),
+  PAYMENT_WEBHOOK_SECRET: z.string().default("dev-payment-webhook-secret"),
   PORT: z.coerce.number().default(3001),
   PRESIGNED_URL_TTL_SECONDS: z.coerce.number().default(900),
   R2_ACCESS_KEY_ID: z.string().optional(),
@@ -37,6 +40,7 @@ const envSchema = z.object({
   TELEGRAM_BOT_TOKEN: z.string().optional(),
   TELEGRAM_BOT_USERNAME: z.string().optional(),
   TELEGRAM_WEBHOOK_SECRET: z.string().optional(),
+  WEB_APP_URL: z.string().url().default("http://localhost:3000"),
 });
 
 export type AppConfig = z.infer<typeof envSchema>;
@@ -64,4 +68,14 @@ export function r2Endpoint(cfg: AppConfig): string {
 
 export function telegramConfigured(cfg: AppConfig): boolean {
   return Boolean(cfg.TELEGRAM_BOT_TOKEN && cfg.TELEGRAM_WEBHOOK_SECRET);
+}
+
+export function mockBillingEnabled(cfg: AppConfig): boolean {
+  if (cfg.MOCK_BILLING_ENABLED === "true") {
+    return true;
+  }
+  if (cfg.MOCK_BILLING_ENABLED === "false") {
+    return false;
+  }
+  return cfg.NODE_ENV !== "production";
 }

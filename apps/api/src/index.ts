@@ -3,6 +3,7 @@ import { auth } from "./auth";
 import { config, telegramConfigured } from "./config";
 import { errorResponse, HttpError } from "./lib/errors";
 import { v1OpenApi } from "./openapi";
+import { handleBillingWebhookPost } from "./routes/billing";
 import {
   handleFalWebhook,
   handleReplicateWebhook,
@@ -62,6 +63,9 @@ const app = new Elysia({ prefix: "/api" })
   )
   .post("/webhooks/telegram", ({ request }) =>
     dispatch(() => handleTelegramWebhook(request))
+  )
+  .post("/billing/webhook", ({ request }) =>
+    dispatch(() => handleBillingWebhookPost(request))
   )
   .post("/telegram/link-code", ({ request }) =>
     dispatch(() => handleTelegramLinkCodePost(request))

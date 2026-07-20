@@ -13,8 +13,12 @@ const apiEnv: Record<string, string> = {
   GITHUB_CLIENT_ID: "ci-dummy-github-client-id",
   GITHUB_CLIENT_SECRET: "ci-dummy-github-client-secret",
   KEY_ENCRYPTION_MASTER_KEY: "AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM=",
+  MOCK_BILLING_ENABLED: "true",
   NODE_ENV: "test",
+  PAYMENT_PROVIDER: "mock",
+  PAYMENT_WEBHOOK_SECRET: "ci-test-payment-webhook-secret",
   PORT: String(API_PORT),
+  WEB_APP_URL: WEB_ORIGIN,
 };
 
 export default defineConfig({

@@ -99,6 +99,13 @@
       "when": 1784481760849,
       "tag": "0013_user_tier",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1784481760850,
+      "tag": "0014_subscriptions",
+      "breakpoints": true
     }
   ]
 }

@@ -6,8 +6,12 @@ import {
   TIER_IDS,
   TIER_LIMITS,
   TIER_PRICES_USD_MONTHLY,
+  type TierId,
 } from "@charator/shared";
 import Link from "next/link";
+import { useState } from "react";
+import { toast } from "sonner";
+import { SignInButton } from "@/components/auth/sign-in-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +21,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { createBillingCheckout } from "@/lib/api-client";
+import { authClient } from "@/lib/auth-client";
 
 const FEATURE_ROWS: { key: (typeof LIMIT_KEYS)[number]; label: string }[] = [
   { key: "workspaces", label: "Workspaces" },
@@ -35,7 +41,34 @@ function formatLimit(value: number | null): string {
   return value === null ? "Unlimited" : String(value);
 }
 
+function tierButtonLabel(tier: TierId): string {
+  if (tier === "free") {
+    return "Current base tier";
+  }
+  return `Choose ${TIER_DISPLAY_NAMES[tier]}`;
+}
+
 export default function PricingPage() {
+  const { data: session } = authClient.useSession();
+  const [loadingTier, setLoadingTier] = useState<TierId | null>(null);
+
+  async function handleCheckout(tier: TierId) {
+    if (tier === "free") {
+      return;
+    }
+    setLoadingTier(tier);
+    try {
+      const { url } = await createBillingCheckout({ tier });
+      window.location.assign(url);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Checkout failed";
+      toast.error(message);
+    } finally {
+      setLoadingTier(null);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-12 px-4 py-10 sm:px-6">
       <div className="space-y-3 text-center">
@@ -47,8 +80,9 @@ export default function PricingPage() {
           are paid to your provider directly on every tier (BYOK).
         </p>
         <p className="text-muted-foreground text-sm">
-          Checkout is coming soon. Tiers are manually assignable during early
-          access.
+          {session?.user
+            ? "Mock checkout is enabled in development — no real payment is collected."
+            : "Sign in to start mock checkout during early access."}
         </p>
       </div>
 
@@ -80,14 +114,33 @@ export default function PricingPage() {
               ))}
             </CardContent>
             <CardContent className="pt-0">
-              <Button
-                className="w-full"
-                disabled
-                type="button"
-                variant="outline"
-              >
-                Coming soon
-              </Button>
+              {session?.user ? (
+                <Button
+                  className="w-full"
+                  disabled={tier === "free" || loadingTier === tier}
+                  onClick={() => handleCheckout(tier)}
+                  type="button"
+                  variant={tier === "free" ? "outline" : "default"}
+                >
+                  {loadingTier === tier
+                    ? "Starting checkout…"
+                    : tierButtonLabel(tier)}
+                </Button>
+              ) : tier === "free" ? (
+                <Button
+                  className="w-full"
+                  disabled
+                  type="button"
+                  variant="outline"
+                >
+                  {tierButtonLabel(tier)}
+                </Button>
+              ) : (
+                <SignInButton
+                  className="w-full"
+                  label={`Sign in for ${TIER_DISPLAY_NAMES[tier]}`}
+                />
+              )}
             </CardContent>
           </Card>
         ))}

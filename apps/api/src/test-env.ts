@@ -7,3 +7,7 @@ process.env.GITHUB_CLIENT_SECRET ??= "test-client-secret";
 process.env.KEY_ENCRYPTION_MASTER_KEY ??= Buffer.alloc(32, 3).toString(
   "base64"
 );
+process.env.PAYMENT_PROVIDER ??= "mock";
+process.env.PAYMENT_WEBHOOK_SECRET ??= "test-payment-webhook-secret";
+process.env.WEB_APP_URL ??= "http://localhost:3000";
+process.env.MOCK_BILLING_ENABLED ??= "true";

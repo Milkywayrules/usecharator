@@ -1,12 +1,23 @@
 "use client";
 
 import { GithubIcon } from "lucide-react";
+import type { ComponentProps } from "react";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 
-export function SignInButton() {
+interface SignInButtonProps extends ComponentProps<typeof Button> {
+  label?: string;
+}
+
+export function SignInButton({
+  className,
+  label = "Sign in",
+  variant = "outline",
+  ...props
+}: SignInButtonProps) {
   return (
     <Button
+      className={className}
       onClick={() =>
         authClient.signIn.social({
           callbackURL: window.location.pathname,
@@ -15,10 +26,11 @@ export function SignInButton() {
       }
       size="default"
       type="button"
-      variant="outline"
+      variant={variant}
+      {...props}
     >
       <GithubIcon />
-      Sign in
+      {label}
     </Button>
   );
 }

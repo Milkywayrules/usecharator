@@ -125,8 +125,12 @@ jobs:
       GITHUB_CLIENT_ID: ci-dummy-github-client-id
       GITHUB_CLIENT_SECRET: ci-dummy-github-client-secret
       KEY_ENCRYPTION_MASTER_KEY: AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM=
+      MOCK_BILLING_ENABLED: "true"
       NODE_ENV: test
+      PAYMENT_PROVIDER: mock
+      PAYMENT_WEBHOOK_SECRET: ci-test-payment-webhook-secret
       PORT: 3001
+      WEB_APP_URL: http://127.0.0.1:3000
     steps:
       - name: Checkout
         uses: actions/checkout@v4
