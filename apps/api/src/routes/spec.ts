@@ -1,12 +1,11 @@
 import { specRenderRequestSchema } from "@charator/shared";
 import {
-  type CharacterSpec,
   CORE_PATHS,
   FIELD_CATALOG,
   listThemes,
-  parseCharacterSpec,
   renderPrompt,
   SECTION_TITLES,
+  safeParseCharacterSpec,
   THEME_IDS,
   type ThemeId,
   validateSpec,
@@ -72,18 +71,13 @@ export async function handleSpecRender(request: Request): Promise<Response> {
     });
   }
 
-  let parsedSpec: CharacterSpec;
-  try {
-    parsedSpec = parseCharacterSpec(parsed.data.spec);
-  } catch (error) {
-    const detail =
-      error instanceof Error ? error.message : "spec could not be parsed";
+  const spec = safeParseCharacterSpec(parsed.data.spec);
+  if (!spec) {
     throw new HttpError(400, {
       code: "validation_error",
-      message: detail,
+      message: "spec could not be parsed",
     });
   }
-  const spec = parsedSpec;
 
   const validation = validateSpec(spec);
   const theme =

@@ -297,3 +297,11 @@ function withControlStDefaults(input: unknown): unknown {
 export function parseCharacterSpec(input: unknown): CharacterSpec {
   return characterSpecSchema.parse(withControlStDefaults(input));
 }
+
+export function safeParseCharacterSpec(input: unknown): CharacterSpec | null {
+  try {
+    return parseCharacterSpec(input);
+  } catch {
+    return null;
+  }
+}

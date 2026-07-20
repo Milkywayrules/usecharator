@@ -5,8 +5,12 @@ export class HttpError extends Error {
   readonly status: number;
   readonly body: ApiError | TierLimitError;
 
-  constructor(status: number, body: ApiError | TierLimitError) {
-    super(body.message);
+  constructor(
+    status: number,
+    body: ApiError | TierLimitError,
+    options?: ErrorOptions
+  ) {
+    super(body.message, options);
     this.name = "HttpError";
     this.status = status;
     this.body = body;

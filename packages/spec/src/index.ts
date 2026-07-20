@@ -35,6 +35,7 @@ export {
   type CharacterSpec,
   characterSpecSchema,
   parseCharacterSpec,
+  safeParseCharacterSpec,
 } from "./schema";
 export {
   buildSheetVariants,
