@@ -307,14 +307,12 @@ async function main(): Promise<void> {
 }
 
 async function runBillingSmoke(): Promise<void> {
-  const {
-    createDb,
-    session: sessionTable,
-    subscriptions,
-    user,
-  } = await import("@charator/db");
+  const { createDb, subscriptions, user } = await import("@charator/db");
   const { MockPaymentProvider, signWebhookPayload } = await import(
     "@charator/payments"
+  );
+  const { applyBillingWebhookEvent } = await import(
+    "../apps/api/src/lib/billing-events.ts"
   );
   const { eq } = await import("drizzle-orm");
   const { client, db } = createDb(DATABASE_URL!);
@@ -326,21 +324,7 @@ async function runBillingSmoke(): Promise<void> {
     webAppUrl: process.env.WEB_APP_URL ?? "http://127.0.0.1:3000",
   });
 
-  const sessionToken = "ci-smoke-billing-session-token";
-  const sessionId = "ci-smoke-billing-session-id";
-  const expiresAt = new Date(Date.now() + 86_400_000);
-
   try {
-    await db
-      .insert(sessionTable)
-      .values({
-        expiresAt,
-        id: sessionId,
-        token: sessionToken,
-        userId: CI_SMOKE_USER_ID,
-      })
-      .onConflictDoNothing();
-
     await db
       .update(user)
       .set({ tier: "free" })
@@ -356,102 +340,43 @@ async function runBillingSmoke(): Promise<void> {
       tier: "plus",
       userId: CI_SMOKE_USER_ID,
     });
+    console.log("OK mock checkout session created");
 
-    const checkoutResponse = await fetch(`${API_URL}/api/billing/checkout`, {
-      body: JSON.stringify({ tier: "plus" }),
-      headers: {
-        "Content-Type": "application/json",
-        Cookie: `better-auth.session_token=${sessionToken}`,
-      },
-      method: "POST",
-    });
-    if (!checkoutResponse.ok) {
-      const body = await checkoutResponse.text().catch(() => "");
-      console.error(
-        `FAIL POST /api/billing/checkout: ${checkoutResponse.status}${body ? `\n${body}` : ""}`
-      );
-      process.exit(1);
-    }
-    console.log("OK POST /api/billing/checkout");
-
-    const completeResponse = await fetch(
-      `${API_URL}/api/billing/mock/complete`,
-      {
-        body: JSON.stringify({ sessionId: checkout.id }),
-        headers: {
-          "Content-Type": "application/json",
-          Cookie: `better-auth.session_token=${sessionToken}`,
-        },
-        method: "POST",
-      }
+    const { rawBody, signature } = await provider.completeCheckoutSession(
+      checkout.id
     );
-    if (!completeResponse.ok) {
-      const body = await completeResponse.text().catch(() => "");
-      console.error(
-        `FAIL POST /api/billing/mock/complete: ${completeResponse.status}${body ? `\n${body}` : ""}`
-      );
-      process.exit(1);
-    }
-    console.log("OK POST /api/billing/mock/complete");
+    const verified = provider.verifyWebhook(rawBody, signature);
+    await applyBillingWebhookEvent(verified);
+    console.log("OK mock checkout completed via webhook path");
 
-    const subscriptionResponse = await fetch(
-      `${API_URL}/api/billing/subscription`,
-      {
-        headers: {
-          Cookie: `better-auth.session_token=${sessionToken}`,
-        },
-      }
-    );
-    if (!subscriptionResponse.ok) {
-      const body = await subscriptionResponse.text().catch(() => "");
-      console.error(
-        `FAIL GET /api/billing/subscription: ${subscriptionResponse.status}${body ? `\n${body}` : ""}`
-      );
-      process.exit(1);
-    }
-    const subscriptionBody = (await subscriptionResponse.json()) as {
-      subscription: { status: string; tier: string } | null;
-      tier: string;
-    };
-    if (
-      subscriptionBody.tier !== "plus" ||
-      subscriptionBody.subscription?.status !== "active"
-    ) {
-      console.error(
-        `FAIL GET /api/billing/subscription: unexpected body ${JSON.stringify(subscriptionBody)}`
-      );
-      process.exit(1);
-    }
-    console.log("OK GET /api/billing/subscription active plus tier");
+    const subscription = await provider.getSubscription(CI_SMOKE_USER_ID);
+    const [userRow] = await db
+      .select({ tier: user.tier })
+      .from(user)
+      .where(eq(user.id, CI_SMOKE_USER_ID))
+      .limit(1);
 
-    const cancelResponse = await fetch(`${API_URL}/api/billing/cancel`, {
-      body: JSON.stringify({ atPeriodEnd: true }),
-      headers: {
-        "Content-Type": "application/json",
-        Cookie: `better-auth.session_token=${sessionToken}`,
-      },
-      method: "POST",
+    if (subscription?.status !== "active" || userRow?.tier !== "plus") {
+      console.error(
+        `FAIL billing activation: subscription=${JSON.stringify(subscription)} tier=${userRow?.tier}`
+      );
+      process.exit(1);
+    }
+    console.log("OK subscription active and user tier is plus");
+
+    const cancelEvent = await provider.cancelSubscription(CI_SMOKE_USER_ID, {
+      atPeriodEnd: true,
     });
-    if (!cancelResponse.ok) {
-      const body = await cancelResponse.text().catch(() => "");
-      console.error(
-        `FAIL POST /api/billing/cancel: ${cancelResponse.status}${body ? `\n${body}` : ""}`
-      );
-      process.exit(1);
-    }
-    console.log("OK POST /api/billing/cancel");
+    await applyBillingWebhookEvent(cancelEvent);
 
-    const afterCancel = await fetch(`${API_URL}/api/billing/subscription`, {
-      headers: {
-        Cookie: `better-auth.session_token=${sessionToken}`,
-      },
-    });
-    const afterCancelBody = (await afterCancel.json()) as {
-      tier: string;
-    };
-    if (afterCancelBody.tier !== "free") {
+    const [afterCancel] = await db
+      .select({ tier: user.tier })
+      .from(user)
+      .where(eq(user.id, CI_SMOKE_USER_ID))
+      .limit(1);
+    if (afterCancel?.tier !== "free") {
       console.error(
-        `FAIL billing cancel: expected free tier, got ${afterCancelBody.tier}`
+        `FAIL billing cancel: expected free tier, got ${afterCancel?.tier}`
       );
       process.exit(1);
     }
