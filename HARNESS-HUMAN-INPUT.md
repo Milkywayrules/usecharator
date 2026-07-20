@@ -215,6 +215,19 @@ Post-harness product epics for v9. Agents own implementation; mark **DONE** when
 | Epic | Status | Notes |
 |------|--------|-------|
 | Epic 1 — Activation onboarding | **DONE** | [PR #20](https://github.com/Milkywayrules/usecharator/pull/20) — `0015_user_activation`, onboarding API + settings checklist/banner, wizard draft promotion, e2e + ci-smoke 401 |
-| Epic 2 — ST round-trip depth | **DONE** | [PR #23](https://github.com/Milkywayrules/usecharator/pull/23) — `control.st` chat fields, prompt template suffixes, import unmapped review panel; CI run `29738518442` green |
+| Epic 2 — ST round-trip depth | **DONE** | [PR #23](https://github.com/Milkywayrules/usecharator/pull/23) — `control.st` chat fields, prompt template suffixes, import unmapped review panel; CI run `29738518442` green; partial bugbot follow-up [PR #24](https://github.com/Milkywayrules/usecharator/pull/24) (`control.st` fixes) |
 | Epic 3 — BYOK cost transparency | **DONE** | [PR #21](https://github.com/Milkywayrules/usecharator/pull/21) — static provider pricing table, capabilities `costEstimate`, generate panel + sheet batch UI; CI run `29736153817` green |
-| Epic 4 — Settings generations this month | **BLOCKED** | entitlements API does not expose monthly generation count yet — surface-only when field exists |
+| Epic 4 — Settings generations this month | **DONE** | unblocked by v10 Epic 1 — [PR #25](https://github.com/Milkywayrules/usecharator/pull/25) monthly generation usage on entitlements + settings |
+
+---
+
+## J) v10 agent epics
+
+Post-harness product epics for v10. Agents own implementation; mark **DONE** when merged to `main`.
+
+| Epic | Status | Notes |
+|------|--------|-------|
+| Epic 1 — Monthly generation usage | **DONE** | [PR #25](https://github.com/Milkywayrules/usecharator/pull/25) — entitlements monthly generation count; unblocks v9 Epic 4 |
+| Epic 2 — Home gallery discovery | **OPEN** | [PR #27](https://github.com/Milkywayrules/usecharator/pull/27) — mark **DONE** when merged |
+| Epic 3 — MCP parity | **DONE** | [PR #26](https://github.com/Milkywayrules/usecharator/pull/26) — MCP gallery capabilities aligned with API |
+
