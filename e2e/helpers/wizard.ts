@@ -41,21 +41,12 @@ export async function setWizardStep(
   await page.goto("/create");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
-  const hasDraft = await page.evaluate(
-    (key) => Boolean(localStorage.getItem(key)),
-    WIZARD_STORAGE_KEY
-  );
-  if (!hasDraft) {
-    const nameInput = page.getByLabel("name", { exact: true });
-    const currentName = await nameInput.inputValue();
-    if (!currentName.trim()) {
-      await nameInput.fill("_e2e");
-    }
+  const draftName = await readWizardDraftName(page);
+  if (!draftName?.trim()) {
+    await fillBasicsFields(page, { name: "_e2e" });
     await expect
-      .poll(async () =>
-        page.evaluate((key) => localStorage.getItem(key), WIZARD_STORAGE_KEY)
-      )
-      .not.toBeNull();
+      .poll(async () => readWizardDraftName(page), { timeout: 15_000 })
+      .toBe("_e2e");
   }
 
   await page.evaluate(
