@@ -38,3 +38,9 @@ export {
   userRelations,
   verification,
 } from "./auth-schema";
+export {
+  billingCheckoutSessions,
+  billingCheckoutSessionsRelations,
+  subscriptions,
+  subscriptionsRelations,
+} from "./billing-schema";

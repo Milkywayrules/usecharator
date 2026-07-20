@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@charator/db": "workspace:*",
+    "@charator/payments": "workspace:*",
     "@charator/shared": "workspace:*",
     "@charator/spec": "workspace:*",
     "@elysiajs/openapi": "^1.4.15",

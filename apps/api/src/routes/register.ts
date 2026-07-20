@@ -3,6 +3,13 @@ import {
   handleCharacterAnchorDelete,
   handleCharacterAnchorPost,
 } from "./anchor";
+import {
+  handleBillingCancelPost,
+  handleBillingCheckoutPost,
+  handleBillingMockCompletePost,
+  handleBillingPortalPost,
+  handleBillingSubscriptionGet,
+} from "./billing";
 import { handleEntitlementsGet } from "./entitlements";
 import {
   handleGalleryDetail,
@@ -58,6 +65,31 @@ export const LEGACY_ROUTE_PREFIX = "";
 export const V1_ROUTE_PREFIX = "/v1";
 
 export const SHARED_PROGRAMMATIC_ROUTES: RouteMount[] = [
+  {
+    handler: (request) => handleBillingCheckoutPost(request),
+    method: "post",
+    path: "/billing/checkout",
+  },
+  {
+    handler: (request) => handleBillingPortalPost(request),
+    method: "post",
+    path: "/billing/portal",
+  },
+  {
+    handler: (request) => handleBillingSubscriptionGet(request),
+    method: "get",
+    path: "/billing/subscription",
+  },
+  {
+    handler: (request) => handleBillingCancelPost(request),
+    method: "post",
+    path: "/billing/cancel",
+  },
+  {
+    handler: (request) => handleBillingMockCompletePost(request),
+    method: "post",
+    path: "/billing/mock/complete",
+  },
   {
     handler: (request) => handleGenerationsPost(request),
     method: "post",
@@ -341,7 +373,8 @@ function openApiDetailForRoute(
     route.path.startsWith("/tokens") ||
     route.path.includes("/tokens/") ||
     route.path.startsWith("/workspaces") ||
-    route.path.startsWith("/me/");
+    route.path.startsWith("/me/") ||
+    route.path.startsWith("/billing");
   const optionalAuth = route.path.startsWith("/gallery");
   let authDescription =
     "Bearer token (`Authorization: Bearer ct_live_...`) or session cookie.";
@@ -381,6 +414,9 @@ function routeTag(path: string): string {
   }
   if (path.startsWith("/me/")) {
     return "me";
+  }
+  if (path.startsWith("/billing")) {
+    return "billing";
   }
   if (path.startsWith("/workspaces")) {
     return "workspaces";
