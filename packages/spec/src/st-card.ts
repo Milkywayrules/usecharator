@@ -10,7 +10,6 @@ import { SECTION_TITLES } from "./data/paths";
 import { createEmptySpec } from "./empty";
 import {
   type CharacterSpec,
-  characterSpecSchema,
   parseCharacterSpec,
 } from "./schema";
 import type { ThemeId } from "./themes";
@@ -193,8 +192,10 @@ function tryRestoreFromExtensions(
   if (!isRecord(charator) || charator.spec === undefined) {
     return null;
   }
-  const parsed = characterSpecSchema.safeParse(charator.spec);
-  if (!parsed.success) {
+  let spec: CharacterSpec;
+  try {
+    spec = parseCharacterSpec(charator.spec);
+  } catch {
     recordLossy(
       lossyFields,
       "extensions.charator.spec",
@@ -202,7 +203,6 @@ function tryRestoreFromExtensions(
     );
     return null;
   }
-  const spec = parseCharacterSpec(parsed.data);
   if (typeof data.name === "string" && data.name.trim()) {
     spec.meta.name = data.name.trim();
   }

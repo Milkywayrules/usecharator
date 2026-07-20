@@ -59,7 +59,7 @@ import {
   workspaceResponseSchema,
 } from "@charator/shared";
 import type { ThemeId } from "@charator/spec";
-import { characterSpecSchema } from "@charator/spec";
+import { parseCharacterSpec } from "@charator/spec";
 import { treaty } from "@elysiajs/eden";
 import type { QueryClient } from "@tanstack/react-query";
 import { themeIdForRequest } from "./theme-id";
@@ -666,7 +666,7 @@ export async function importStCard(file: File): Promise<StCardImportResponse> {
   );
   const json = await readJsonOrThrow(response);
   const parsed = stCardImportResponseSchema.parse(json);
-  characterSpecSchema.parse(parsed.spec);
+  parseCharacterSpec(parsed.spec);
   return parsed;
 }
 

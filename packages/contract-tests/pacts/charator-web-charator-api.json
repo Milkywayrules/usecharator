@@ -541,6 +541,11 @@
                 "pose": "inherit",
                 "props": "inherit",
                 "setting": "inherit"
+              },
+              "st": {
+                "mes_example": "",
+                "post_history_instructions": "",
+                "system_prompt": ""
               }
             },
             "framing": {
