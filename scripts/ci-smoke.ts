@@ -8,6 +8,8 @@
 const { API_URL: apiUrlEnv, CI, DATABASE_URL } = process.env;
 const API_URL = (apiUrlEnv ?? "http://127.0.0.1:3001").replace(/\/$/, "");
 const CI_SMOKE_USER_ID = "ci-smoke-user";
+const CI_SMOKE_WORKSPACE_ID = `ws_${CI_SMOKE_USER_ID}`;
+const CI_SMOKE_MEMBER_ID = `mbr_${CI_SMOKE_USER_ID}`;
 const CI_SMOKE_CHARACTER_ID = "00000000-0000-4000-8000-000000000001";
 
 interface GalleryListResponse {
@@ -42,8 +44,10 @@ async function seedGalleryFixture(): Promise<string> {
     process.exit(1);
   }
 
-  const { characters, createDb, user } = await import("@charator/db");
+  const { characters, createDb, member, organization, user } =
+    await import("@charator/db");
   const { client, db } = createDb(DATABASE_URL);
+  const now = new Date();
 
   try {
     await db
@@ -53,6 +57,27 @@ async function seedGalleryFixture(): Promise<string> {
         emailVerified: false,
         id: CI_SMOKE_USER_ID,
         name: "CI Smoke",
+      })
+      .onConflictDoNothing();
+
+    await db
+      .insert(organization)
+      .values({
+        createdAt: now,
+        id: CI_SMOKE_WORKSPACE_ID,
+        name: "CI Smoke Workspace",
+        slug: "ci-smoke",
+      })
+      .onConflictDoNothing();
+
+    await db
+      .insert(member)
+      .values({
+        createdAt: now,
+        id: CI_SMOKE_MEMBER_ID,
+        organizationId: CI_SMOKE_WORKSPACE_ID,
+        role: "owner",
+        userId: CI_SMOKE_USER_ID,
       })
       .onConflictDoNothing();
 
@@ -69,6 +94,7 @@ async function seedGalleryFixture(): Promise<string> {
         },
         themeId: "anime",
         visibility: "public",
+        workspaceId: CI_SMOKE_WORKSPACE_ID,
       })
       .onConflictDoNothing();
   } finally {

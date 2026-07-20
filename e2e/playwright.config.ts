@@ -56,15 +56,17 @@ export default defineConfig({
     },
     {
       command: process.env.CI
-        ? "bun run start"
-        : "E2E=1 bun run build && E2E=1 bun run start",
+        ? "bun run start:e2e"
+        : "E2E=1 bun run build && E2E=1 bun run start:e2e",
       cwd: "../apps/web",
       env: {
         ...process.env,
         API_URL: API_ORIGIN,
         E2E: "1",
+        HOSTNAME: "127.0.0.1",
         NEXT_PUBLIC_API_URL: API_ORIGIN,
         NODE_ENV: "production",
+        PORT: String(WEB_PORT),
       },
       reuseExistingServer: false,
       stderr: "pipe",

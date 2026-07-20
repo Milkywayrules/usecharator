@@ -9,7 +9,11 @@ export const test = base.extend({
 
     page.on("console", (message) => {
       if (message.type() === "error") {
-        consoleErrors.push({ text: message.text(), type: message.type() });
+        const location = message.location();
+        const locatedText = location.url
+          ? `${message.text()} ${location.url}`
+          : message.text();
+        consoleErrors.push({ text: locatedText, type: message.type() });
       }
     });
 

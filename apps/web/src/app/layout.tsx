@@ -19,6 +19,9 @@ export const metadata: Metadata = {
   applicationName: "Chara Tor",
   description:
     "Wizard-driven character image generator. Bring your own API keys.",
+  icons: {
+    icon: [{ type: "image/svg+xml", url: "/icons/icon.svg" }],
+  },
   title: {
     default: "Chara Tor",
     template: "%s · Chara Tor",
