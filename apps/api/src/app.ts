@@ -9,6 +9,7 @@ import {
 } from "./lib/logger";
 import { otelPlugin } from "./lib/otel";
 import { securityHeaders } from "./lib/security-headers";
+import { getHealthPayload } from "./lib/startup-guards";
 import { v1OpenApi } from "./openapi";
 import { handleBillingWebhookPost } from "./routes/billing";
 import { handleFalWebhook, handleReplicateWebhook } from "./routes/handlers";
@@ -47,7 +48,7 @@ export function createApp(config: AppConfig) {
     .use(apiEvlogPlugin())
     .use(requestIdResponseHeader())
     .use(otelPlugin(config))
-    .get("/health", () => ({ status: "ok" }))
+    .get("/health", () => getHealthPayload(config))
     .all("/auth/*", ({ request }) => auth.handler(request))
     .use((router) =>
       mountProgrammaticRoutes(

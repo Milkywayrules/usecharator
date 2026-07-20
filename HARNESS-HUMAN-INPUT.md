@@ -28,8 +28,29 @@ Harness items 1–8 from [HARNESS-ADDITIONAL-INSTRUCTIONS.md](./HARNESS-ADDITION
 | 4 | Branch + PR workflow | **DONE** (adopted) |
 | 5 | Elysia setup | **DONE** (merged PR #7) |
 | 6 | Reindex `AGENTS.md` | **ONGOING** discipline |
-| 7 | Force fully setup & configured — stop vs continue on unconfigured deps | **OPEN** |
+| 7 | Force fully setup & configured — stop vs continue on unconfigured deps | **DONE** |
 | 8 | t3 env for runtime env validations | **DONE** (`@t3-oss/env-core` in `apps/api`) |
+
+### 7 — Production env gates (stop vs continue)
+
+Right-hand approved matrix (`NODE_ENV=production`). Implemented in `apps/api/src/lib/startup-guards.ts`; `assertProductionReady` runs after t3 parse and before listen.
+
+| Env / integration | Boot behavior | Notes |
+|---|---|---|
+| `DATABASE_URL` | **STOP** | Required for auth, billing, jobs |
+| `BETTER_AUTH_SECRET` | **STOP** | Session signing |
+| `BETTER_AUTH_URL` | **STOP** | OAuth + cookie domain |
+| `KEY_ENCRYPTION_MASTER_KEY` | **STOP** | BYOK key encryption (32-byte base64) |
+| `PAYMENT_WEBHOOK_SECRET` | **STOP** | Rejects dev default |
+| `GITHUB_CLIENT_ID` + `GITHUB_CLIENT_SECRET` | **STOP** | Both required — prod login |
+| `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_ENDPOINT` | **STOP** | Full tuple — gallery + generation persistence |
+| `MOCK_BILLING_ENABLED` | **STOP** if `"true"` | Must be false/unset in prod |
+| `FAL_WEBHOOK_SECRET` | **CONTINUE** (warn) | Poll fallback |
+| `REPLICATE_WEBHOOK_SECRET` | **CONTINUE** (warn) | Poll fallback |
+| `TELEGRAM_BOT_TOKEN` + `TELEGRAM_WEBHOOK_SECRET` | **CONTINUE** (warn) | Notify-only feature off |
+| `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_SERVICE_NAME` | **CONTINUE** (warn) | Tracing disabled when endpoint unset |
+
+`/api/health` in production adds `{ ready: true, missing?: string[] }` listing unset **CONTINUE** integrations (boot already passed **STOP** checks).
 
 ### 5 — Elysia setup (detail)
 
