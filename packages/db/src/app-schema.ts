@@ -157,6 +157,10 @@ export const sheetBatches = pgTable(
     index("sheet_batches_workspace_id_idx").on(table.workspaceId),
     index("sheet_batches_character_id_idx").on(table.characterId),
     index("sheet_batches_status_idx").on(table.status),
+    index("sheet_batches_workspace_created_idx").on(
+      table.workspaceId,
+      table.createdAt
+    ),
   ]
 );
 
