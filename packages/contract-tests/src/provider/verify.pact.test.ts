@@ -8,8 +8,8 @@ import {
   providerBaseUrl,
   shouldRunProviderVerification,
 } from "../pact-config";
-import { pactEntitlementsSessionCookie } from "./pact-auth.constants";
 import { seedPactEntitlementsSession } from "./pact-auth";
+import { pactEntitlementsSessionCookie } from "./pact-auth.constants";
 
 describe("charator-api provider verification", () => {
   test(
@@ -61,6 +61,6 @@ describe("charator-api provider verification", () => {
 
       await verifier.verifyProvider();
     },
-    { timeout: 30_000 },
+    { timeout: 30_000 }
   );
 });
