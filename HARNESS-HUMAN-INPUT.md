@@ -52,3 +52,33 @@ Orchestrator + right-hand unanimous gate before creating `HARNESS-START-FILE`.
 - [x] Right-hand Composer sign-off — implementer verified build/lint/typecheck/test + e2e 2026-07-20
 
 **Do not create `HARNESS-START-FILE` yet** — human deploy blockers remain; Opus sign-off pending.
+
+- [x] Branch cleanup PR merged 2026-07-20 — stale harness doc commits landed via `chore/harness-branch-cleanup`; local merged feature branches deleted after merge
+- [ ] Right-hand Grok sign-off *(still open — section D verified by implementer; Grok review not run this session)*
+
+---
+
+## D) Code-only usable beta bar
+
+Orchestrator checks every box; no King creds required (agent generates secrets via `openssl rand`).
+
+| # | Check | Status | Evidence (2026-07-20) |
+|---|-------|--------|------------------------|
+| D1 | Harness items **1–5 DONE** on `main` | [x] | Section B table — items 1–5 marked DONE |
+| D2 | **CI green** on `main` (fast + integration + e2e) | [x] | `gh run view 29726716175` → fast, integration, e2e all `success` |
+| D3 | **README quickstart boots** | [x] | `POSTGRES_PORT=5433 docker compose up -d postgres` (5432 occupied) → `cp .env.example .env` → openssl secrets for `BETTER_AUTH_SECRET`, `KEY_ENCRYPTION_MASTER_KEY`, `PAYMENT_WEBHOOK_SECRET` → `source .env && bun run --filter=@charator/db db:migrate` → `bun --env-file=.env run --filter=@charator/api dev` + web on :3000 |
+| D4 | **API health + observability headers** | [x] | `curl -sI http://127.0.0.1:3001/api/health` → `200`, `x-content-type-options: nosniff`, `x-request-id` present |
+| D5 | **OpenAPI docs public + noindex** | [x] | `curl -sI http://127.0.0.1:3001/api/v1/docs` → `200`, `x-robots-tag: noindex` |
+| D6 | **Web serves** | [x] | `curl -sI http://127.0.0.1:3000` → `200` |
+| D7 | **Unit + lint + typecheck pass** | [x] | `bunx turbo build lint typecheck test` → exit 0 (28/28 tasks) |
+| D8 | **Integration smoke pass** | [x] | `bun run ci:smoke` → `ci smoke passed`; CI integration job success on run `29726716175` |
+| D9 | **E2e pass** | [x] | CI e2e job success on run `29726716175` (local e2e skipped — port 5432 occupied by unrelated Postgres) |
+| D10 | **Mock billing path works** | [x] | `bun run ci:smoke` → `mock checkout completed via webhook path` + `subscription active and user tier is plus` |
+| D11 | **Workspace gate enforced** | [x] | `bun test --filter=@charator/api` → `workspace-context.test.ts` + `generation-access.test.ts` pass (96/96 API tests) |
+| D12 | **No agent-doable harness gaps** | [x] | Re-read `HARNESS-ADDITIONAL-INSTRUCTIONS.md` items 1–5 — none open |
+
+**Scope limits** (not failures):
+
+- **GitHub OAuth** optional at boot; login requires a dev OAuth app or API bearer tokens — King's prod OAuth app remains section A.
+- **Image generation persistence** requires **R2** + **BYOK provider key** — without R2, jobs fail with `"R2 is not configured"`. Smoke beta covers wizard, spec render, mock billing, gallery read paths; full generation is **beta+** (user supplies R2 + BYOK, still no King creds).
+- **Prod deploy, real payments, Telegram webhooks** remain section **A** King blockers.

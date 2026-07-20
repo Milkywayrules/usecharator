@@ -20,7 +20,12 @@ dumb / dead-ass simple task (like commit, push, github-related, wording, explore
 
 ## Need human / user approval? Raise to [right-hand] of user
 
-spawn subagents of: `cursor-grok-4.5-medium`, `claude-4.6-opus-medium`, and `composer-2.5-fast` for decision maker.
+spawn decision maker subagents of:
+
+- `claude-4.6-opus-medium`
+- `cursor-grok-4.5-medium`
+- `composer-2.5-fast`.
+- unavail? fallback to `auto` and skip that model retry if `auto` already used.
 
 verbatim output format for [right-hand]:
 
@@ -97,3 +102,10 @@ use other appropriate test libraries if needed.
 ---
 
 _Personal playbook, copied into each project. Add project-specific sections (product, stack, commands) below as the repo matures._
+
+## Project: harness start gate
+
+- append human blockers and open decisions to [HARNESS-HUMAN-INPUT](./HARNESS-HUMAN-INPUT.md) immediately when discovered — never leave it empty while blockers exist
+- do not dispatch implementer subagents for the infinite loop until `HARNESS-START-FILE` exists **and** [HARNESS-HUMAN-INPUT](./HARNESS-HUMAN-INPUT.md) checklist shows all agent-doable items done with evidence
+- orchestrator may still research, propose, and run right-hand reviews without `HARNESS-START-FILE`
+- `HARNESS-STOP-FILE` (`AGENTS_STOP_FILE`) always wins — delete it to allow work; create it to force stop
