@@ -6,8 +6,10 @@ import {
 import { handleEntitlementsGet } from "./entitlements";
 import {
   handleGalleryDetail,
+  handleGalleryLineage,
   handleGalleryList,
   handleGalleryReport,
+  handleGallerySpecDiff,
 } from "./gallery";
 import { handleGenerationDelete } from "./generation-delete";
 import {
@@ -171,6 +173,18 @@ export const SHARED_PROGRAMMATIC_ROUTES: RouteMount[] = [
     handler: (request) => handleGalleryList(request),
     method: "get",
     path: "/gallery",
+  },
+  {
+    handler: (request, params) =>
+      handleGalleryLineage(request, params.id ?? ""),
+    method: "get",
+    path: "/gallery/:id/lineage",
+  },
+  {
+    handler: (request, params) =>
+      handleGallerySpecDiff(request, params.id ?? ""),
+    method: "get",
+    path: "/gallery/:id/spec-diff",
   },
   {
     handler: (request, params) => handleGalleryDetail(request, params.id ?? ""),

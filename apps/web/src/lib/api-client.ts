@@ -19,10 +19,15 @@ import {
   type EntitlementsResponse,
   entitlementsResponseSchema,
   type GalleryDetailResponse,
+  type GalleryLineageResponse,
   type GalleryListResponse,
+  type GallerySort,
+  type GallerySpecDiffResponse,
   type GenerationJobResponse,
   galleryDetailResponseSchema,
+  galleryLineageResponseSchema,
   galleryListResponseSchema,
+  gallerySpecDiffResponseSchema,
   generationJobResponseSchema,
   type ProviderCapabilitiesResponse,
   type ProviderKeyResponse,
@@ -172,6 +177,7 @@ export async function listGallery(params?: {
   limit?: number;
   offset?: number;
   q?: string | null;
+  sort?: GallerySort | null;
   theme?: string | null;
 }): Promise<GalleryListResponse> {
   const query: Record<string, string> = {};
@@ -187,6 +193,9 @@ export async function listGallery(params?: {
   if (params?.q) {
     query.q = params.q;
   }
+  if (params?.sort && params.sort !== "recent") {
+    query.sort = params.sort;
+  }
   return readTreatyData(
     await api.gallery.get({ query }),
     galleryListResponseSchema
@@ -196,10 +205,37 @@ export async function listGallery(params?: {
 export async function getGalleryCharacter(
   id: string
 ): Promise<GalleryDetailResponse> {
-  return readTreatyData(
-    await api.gallery({ id }).get(),
-    galleryDetailResponseSchema
+  const response = await fetch(`${resolveBaseUrl()}/api/gallery/${id}`);
+  if (!response.ok) {
+    throw new Error(`gallery detail request failed (${response.status})`);
+  }
+  return galleryDetailResponseSchema.parse(await response.json());
+}
+
+export async function getGalleryLineage(
+  id: string,
+  page = 1
+): Promise<GalleryLineageResponse> {
+  const response = await fetch(
+    `${resolveBaseUrl()}/api/gallery/${id}/lineage?page=${page}`
   );
+  if (!response.ok) {
+    throw new Error(`lineage request failed (${response.status})`);
+  }
+  return galleryLineageResponseSchema.parse(await response.json());
+}
+
+export async function getGallerySpecDiff(
+  id: string,
+  otherId: string
+): Promise<GallerySpecDiffResponse> {
+  const response = await fetch(
+    `${resolveBaseUrl()}/api/gallery/${id}/spec-diff?other=${encodeURIComponent(otherId)}`
+  );
+  if (!response.ok) {
+    throw new Error(`spec-diff request failed (${response.status})`);
+  }
+  return gallerySpecDiffResponseSchema.parse(await response.json());
 }
 
 export async function remixCharacter(id: string): Promise<CharacterResponse> {

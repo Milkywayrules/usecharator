@@ -1,6 +1,6 @@
 "use client";
 
-import type { GalleryListItem } from "@charator/shared";
+import type { GalleryListItem, GallerySort } from "@charator/shared";
 import { getTheme, THEME_IDS } from "@charator/spec";
 import { SearchIcon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 
 interface GalleryGridProps {
   activeQuery: string | null;
+  activeSort: GallerySort;
   activeTheme: string | null;
   degraded: boolean;
   initialHasMore: boolean;
@@ -22,6 +23,7 @@ interface GalleryGridProps {
 
 export function GalleryGrid({
   activeQuery,
+  activeSort,
   activeTheme,
   degraded,
   initialHasMore,
@@ -45,6 +47,7 @@ export function GalleryGrid({
       const page = await listGallery({
         offset: nextOffset,
         q: activeQuery,
+        sort: activeSort,
         theme: activeTheme,
       });
       setItems((current) => [...current, ...page.items]);
