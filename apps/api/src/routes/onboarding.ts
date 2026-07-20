@@ -1,19 +1,11 @@
-import {
-  characters,
-  generationJobs,
-  providerKeys,
-  user,
-} from "@charator/db";
+import { characters, generationJobs, providerKeys, user } from "@charator/db";
 import { createEmptySpec } from "@charator/spec";
 import { and, eq, sql } from "drizzle-orm";
 import { db, requireSessionUser } from "../auth";
 import { withWorkspaceEntitlementLock } from "../lib/entitlement-lock";
 import { assertWorkspaceCharacterCreationAllowed } from "../lib/entitlements";
 import { HttpError } from "../lib/errors";
-import {
-  requireWorkspaceContext,
-  resolveWorkspaceContext,
-} from "./workspaces";
+import { requireWorkspaceContext, resolveWorkspaceContext } from "./workspaces";
 
 const ONBOARDING_STEPS = [
   { id: "has_provider_key" as const, label: "Add a provider API key" },

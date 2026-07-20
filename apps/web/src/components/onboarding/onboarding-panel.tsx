@@ -23,12 +23,11 @@ import { getOnboarding, seedDemoCharacter } from "@/lib/api-client";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
-const STEP_LINKS: Record<OnboardingStepId, { href: string; label: string }> =
-  {
-    has_provider_key: { href: "/settings#keys", label: "Add key" },
-    has_character: { href: "/create", label: "Create character" },
-    has_generation: { href: "/library", label: "Open library" },
-  };
+const STEP_LINKS: Record<OnboardingStepId, { href: string; label: string }> = {
+  has_character: { href: "/create", label: "Create character" },
+  has_generation: { href: "/library", label: "Open library" },
+  has_provider_key: { href: "/settings#keys", label: "Add key" },
+};
 
 const BANNER_DISMISS_KEY = "charator-onboarding-banner-dismissed";
 
@@ -100,7 +99,7 @@ function OnboardingChecklist({
                   {step.label}
                 </span>
               </div>
-              {!step.done ? (
+              {step.done ? null : (
                 <Button
                   asChild
                   className="h-8 px-3 text-xs"
@@ -109,7 +108,7 @@ function OnboardingChecklist({
                 >
                   <Link href={link.href}>{link.label}</Link>
                 </Button>
-              ) : null}
+              )}
             </li>
           );
         })}
@@ -138,7 +137,7 @@ export function OnboardingSettingsSection() {
     return null;
   }
 
-  const data = onboardingQuery.data;
+  const { data } = onboardingQuery;
   const showSection =
     data &&
     !data.activatedAt &&
@@ -156,7 +155,7 @@ export function OnboardingSettingsSection() {
     );
   }
 
-  if (!showSection || !data) {
+  if (!(showSection && data)) {
     return null;
   }
 
@@ -186,15 +185,11 @@ export function OnboardingBanner() {
     setDismissed(sessionStorage.getItem(BANNER_DISMISS_KEY) === "1");
   }, []);
 
-  const data = onboardingQuery.data;
+  const { data } = onboardingQuery;
   const visible =
-    signedIn &&
-    !dismissed &&
-    data &&
-    !data.activatedAt &&
-    data.progress < 100;
+    signedIn && !dismissed && data && !data.activatedAt && data.progress < 100;
 
-  if (!visible || !data) {
+  if (!(visible && data)) {
     return null;
   }
 

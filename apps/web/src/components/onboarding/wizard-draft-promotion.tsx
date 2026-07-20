@@ -28,7 +28,7 @@ export function WizardDraftPromotion() {
   }, []);
 
   const saveMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: () => {
       const name = spec.meta.name.trim() || "Untitled Character";
       return createCharacter({
         name,
@@ -48,7 +48,7 @@ export function WizardDraftPromotion() {
     },
   });
 
-  if (!signedIn || !hydrated || !hasWizardDraft(spec)) {
+  if (!(signedIn && hydrated && hasWizardDraft(spec))) {
     return null;
   }
 

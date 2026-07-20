@@ -12,10 +12,6 @@ import {
 } from "./billing";
 import { handleEntitlementsGet } from "./entitlements";
 import {
-  handleOnboardingGet,
-  handleOnboardingSeedDemoPost,
-} from "./onboarding";
-import {
   handleGalleryDetail,
   handleGalleryLineage,
   handleGalleryList,
@@ -37,6 +33,10 @@ import {
   handleKeysList,
   handleKeysPost,
 } from "./handlers";
+import {
+  handleOnboardingGet,
+  handleOnboardingSeedDemoPost,
+} from "./onboarding";
 import { handleProviderCapabilities } from "./providers";
 import { handleCharacterSheetPost, handleSheetBatchGet } from "./sheets";
 import { handleSpecCatalog, handleSpecRender, handleThemesList } from "./spec";
