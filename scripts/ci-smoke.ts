@@ -264,6 +264,39 @@ async function main(): Promise<void> {
   }
   console.log("OK GET /api/gallery/:id/spec-diff returns changed section");
 
+  const importCard = {
+    data: {
+      description: "CI smoke import",
+      name: "CI Smoke ST Card",
+      tags: ["ci"],
+    },
+    spec: "chara_card_v3",
+    spec_version: "3.0",
+  };
+  const importResponse = await fetch(`${API_URL}/api/v1/spec/import/st-card`, {
+    body: JSON.stringify(importCard),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+  if (!importResponse.ok) {
+    const body = await importResponse.text().catch(() => "");
+    console.error(
+      `FAIL POST /api/v1/spec/import/st-card: ${importResponse.status}${body ? `\n${body}` : ""}`
+    );
+    process.exit(1);
+  }
+  const imported = (await importResponse.json()) as {
+    reviewRequired?: boolean;
+    sourceFormat?: string;
+  };
+  if (imported.sourceFormat !== "ccv3-json" || imported.reviewRequired !== true) {
+    console.error(
+      `FAIL POST /api/v1/spec/import/st-card: unexpected body ${JSON.stringify(imported)}`
+    );
+    process.exit(1);
+  }
+  console.log("OK POST /api/v1/spec/import/st-card");
+
   console.log("ci smoke passed");
 }
 

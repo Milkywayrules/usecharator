@@ -18,6 +18,7 @@ export {
   type SpecDiffValue,
 } from "./diff";
 export { createEmptySpec } from "./empty";
+export { MAX_ST_CARD_PNG_BYTES } from "./limits";
 export {
   enumForPath,
   isBoolField,
@@ -53,6 +54,21 @@ export {
   type SpecFileExport,
   specFileEnvelopeSchema,
 } from "./spec-file";
+export {
+  CHARATOR_EXTENSION_KEY,
+  composeStCardDescription,
+  encodeStCardChunks,
+  exportStCard,
+  type ImportStCardResult,
+  importStCardFromJson,
+  type LossyField,
+  ST_CARD_SPEC,
+  ST_CARD_SPEC_VERSION,
+  ST_CARD_V2_SPEC,
+  ST_CARD_V2_SPEC_VERSION,
+  type StCardExportResult,
+  type StCardSourceFormat,
+} from "./st-card";
 export {
   getTheme,
   listThemes,

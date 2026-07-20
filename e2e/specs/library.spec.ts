@@ -60,7 +60,7 @@ test.describe("library", () => {
     await page.getByRole("button", { name: "Delete" }).click();
     await expect(page.getByText("No characters yet.")).toBeVisible();
 
-    const fileInput = page.locator('input[type="file"][accept*="json"]');
+    const fileInput = page.getByTestId("spec-file-input");
     await fileInput.setInputFiles(downloadPath);
     await expect(
       page.getByText("Character imported — continue in the wizard")
