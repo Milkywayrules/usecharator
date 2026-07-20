@@ -85,7 +85,7 @@ test.describe("plan and usage settings", () => {
     await expect(page.getByText("12 / 100")).toBeVisible();
     await expect(page.getByRole("link", { name: "View pricing" })).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Upgrade — coming soon" })
+      page.getByRole("button", { name: "Upgrade to Plus" })
     ).toBeVisible();
   });
 });

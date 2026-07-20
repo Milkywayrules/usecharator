@@ -14,7 +14,7 @@ import {
   Trash2Icon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { SignInButton } from "@/components/auth/sign-in-button";
 import { PlanUsageSettingsSection } from "@/components/settings/plan-usage-settings-section";
@@ -235,7 +235,9 @@ export default function SettingsPage() {
 
       {signedIn ? (
         <>
-          <PlanUsageSettingsSection />
+          <Suspense fallback={null}>
+            <PlanUsageSettingsSection />
+          </Suspense>
           <WorkspacesSettingsSection />
 
           <Card>

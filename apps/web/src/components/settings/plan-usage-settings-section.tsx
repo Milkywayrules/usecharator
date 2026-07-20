@@ -7,8 +7,11 @@ import {
   type TierId,
   type TierLimitValue,
 } from "@charator/shared";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useEffect } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +22,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { getEntitlements } from "@/lib/api-client";
+import {
+  createBillingCheckout,
+  createBillingPortal,
+  getBillingSubscription,
+  getEntitlements,
+} from "@/lib/api-client";
 
 const USAGE_ROWS: {
   label: string;
@@ -62,13 +70,50 @@ function usagePercent(current: number, limit: TierLimitValue): number | null {
 }
 
 export function PlanUsageSettingsSection() {
+  const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
+
   const entitlementsQuery = useQuery({
     queryFn: getEntitlements,
     queryKey: ["entitlements"],
   });
 
+  const subscriptionQuery = useQuery({
+    queryFn: getBillingSubscription,
+    queryKey: ["billing-subscription"],
+  });
+
+  const checkoutMutation = useMutation({
+    mutationFn: createBillingCheckout,
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+    onSuccess: ({ url }) => {
+      window.location.assign(url);
+    },
+  });
+
+  const portalMutation = useMutation({
+    mutationFn: createBillingPortal,
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+    onSuccess: ({ url }) => {
+      window.location.assign(url);
+    },
+  });
+
+  useEffect(() => {
+    if (searchParams.get("billing") === "success") {
+      toast.success("Plan updated");
+      queryClient.invalidateQueries({ queryKey: ["entitlements"] });
+      queryClient.invalidateQueries({ queryKey: ["billing-subscription"] });
+    }
+  }, [queryClient, searchParams]);
+
   const { data } = entitlementsQuery;
   const tier = data?.tier ?? "free";
+  const subscription = subscriptionQuery.data?.subscription;
 
   return (
     <Card id="plan">
@@ -78,11 +123,17 @@ export function PlanUsageSettingsSection() {
           <Badge variant="secondary">
             {TIER_DISPLAY_NAMES[tier as TierId]}
           </Badge>
+          {subscription ? (
+            <Badge variant="outline">{subscription.status}</Badge>
+          ) : null}
         </div>
         <CardDescription>
           Workspace limits follow the workspace owner&apos;s tier. Generation
           costs stay on your provider (BYOK) — tiers only expand platform
           capacity.
+          {subscription?.cancelAtPeriodEnd
+            ? " Cancellation scheduled (mock applies immediately)."
+            : null}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -125,9 +176,23 @@ export function PlanUsageSettingsSection() {
           <Button asChild type="button" variant="outline">
             <Link href="/pricing">View pricing</Link>
           </Button>
-          <Button disabled type="button">
-            Upgrade — coming soon
-          </Button>
+          {subscription && subscription.status === "active" ? (
+            <Button
+              disabled={portalMutation.isPending}
+              onClick={() => portalMutation.mutate()}
+              type="button"
+            >
+              Manage subscription
+            </Button>
+          ) : (
+            <Button
+              disabled={checkoutMutation.isPending || tier === "studio"}
+              onClick={() => checkoutMutation.mutate({ tier: "plus" })}
+              type="button"
+            >
+              Upgrade to Plus
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

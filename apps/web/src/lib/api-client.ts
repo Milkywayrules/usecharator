@@ -478,6 +478,81 @@ export async function getEntitlements(): Promise<EntitlementsResponse> {
   return entitlementsResponseSchema.parse(json);
 }
 
+export async function createBillingCheckout(body: {
+  tier: string;
+}): Promise<{ url: string }> {
+  const response = await fetch(`${resolveBaseUrl()}/api/billing/checkout`, {
+    body: JSON.stringify(body),
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+  const json = await readJsonOrThrow(response);
+  return { url: String((json as { url: string }).url) };
+}
+
+export async function createBillingPortal(): Promise<{ url: string }> {
+  const response = await fetch(`${resolveBaseUrl()}/api/billing/portal`, {
+    credentials: "include",
+    method: "POST",
+  });
+  const json = await readJsonOrThrow(response);
+  return { url: String((json as { url: string }).url) };
+}
+
+export async function getBillingSubscription(): Promise<{
+  subscription: {
+    cancelAtPeriodEnd: boolean;
+    currentPeriodEnd: string;
+    id: string;
+    status: string;
+    tier: string;
+  } | null;
+  tier: string;
+}> {
+  const response = await fetch(`${resolveBaseUrl()}/api/billing/subscription`, {
+    credentials: "include",
+  });
+  const json = await readJsonOrThrow(response);
+  return json as {
+    subscription: {
+      cancelAtPeriodEnd: boolean;
+      currentPeriodEnd: string;
+      id: string;
+      status: string;
+      tier: string;
+    } | null;
+    tier: string;
+  };
+}
+
+export async function completeMockBillingCheckout(body: {
+  sessionId: string;
+}): Promise<void> {
+  const response = await fetch(
+    `${resolveBaseUrl()}/api/billing/mock/complete`,
+    {
+      body: JSON.stringify(body),
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    }
+  );
+  await readJsonOrThrow(response);
+}
+
+export async function cancelBillingSubscription(body?: {
+  atPeriodEnd?: boolean;
+}): Promise<void> {
+  const response = await fetch(`${resolveBaseUrl()}/api/billing/cancel`, {
+    body: JSON.stringify(body ?? { atPeriodEnd: true }),
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+  await readJsonOrThrow(response);
+}
+
 export async function deleteGeneration(id: string): Promise<void> {
   const response = await fetch(`${resolveBaseUrl()}/api/generations/${id}`, {
     credentials: "include",
