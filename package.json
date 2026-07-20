@@ -13,6 +13,8 @@
     "lint:fix": "biome check --write .",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
+    "contract:test": "turbo run test --filter=@charator/contract-tests",
+    "contract:verify": "PACT_PROVIDER_VERIFY=1 bun run --filter=@charator/contract-tests test:provider",
     "ci:smoke": "bun scripts/ci-smoke.ts",
     "prod:boot-check": "bun scripts/prod-boot-check.ts",
     "e2e": "playwright test --config e2e/playwright.config.ts"

@@ -177,5 +177,11 @@ jobs:
           CI: "true"
         run: bun scripts/ci-smoke.ts
 
+      - name: Run Pact provider verification
+        env:
+          API_URL: http://127.0.0.1:3001
+          PACT_PROVIDER_VERIFY: "1"
+        run: bun run contract:verify
+
       - name: Prod boot check (rehearsal env)
         run: bun scripts/prod-boot-check.ts --env docs/env.prod-rehearsal.example

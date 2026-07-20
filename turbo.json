@@ -12,6 +12,10 @@
     },
     "lint": {},
     "typecheck": {},
-    "test": {}
+    "test": {},
+    "contract:verify": {
+      "cache": false,
+      "env": ["API_URL", "PACT_PROVIDER_VERIFY"]
+    }
   }
 }
