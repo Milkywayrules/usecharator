@@ -21,10 +21,14 @@ export const galleryListQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(48).optional(),
   offset: z.coerce.number().int().min(0).optional(),
   q: z.string().optional(),
+  sort: z.enum(["recent", "most_remixed"]).optional(),
   theme: z.string().optional(),
 });
 
 export type GalleryListQuery = z.infer<typeof galleryListQuerySchema>;
+
+export const gallerySortSchema = z.enum(["recent", "most_remixed"]);
+export type GallerySort = z.infer<typeof gallerySortSchema>;
 
 export const galleryOwnerSchema = z.object({
   displayName: z.string(),
@@ -77,6 +81,73 @@ export const galleryDetailResponseSchema = z.object({
 });
 
 export type GalleryDetailResponse = z.infer<typeof galleryDetailResponseSchema>;
+
+export const galleryParentUnavailableSchema = z.object({
+  unavailable: z.literal(true),
+});
+
+export type GalleryParentUnavailable = z.infer<
+  typeof galleryParentUnavailableSchema
+>;
+
+export const galleryLineageParentSchema = z.union([
+  galleryListItemSchema,
+  galleryParentUnavailableSchema,
+]);
+
+export type GalleryLineageParent = z.infer<typeof galleryLineageParentSchema>;
+
+export const galleryLineageChildrenSchema = z.object({
+  items: z.array(galleryListItemSchema),
+  page: z.number().int().positive(),
+  total: z.number().int().nonnegative(),
+});
+
+export type GalleryLineageChildren = z.infer<
+  typeof galleryLineageChildrenSchema
+>;
+
+export const galleryLineageResponseSchema = z.object({
+  ancestors: z.array(galleryListItemSchema),
+  children: galleryLineageChildrenSchema,
+  depthCapped: z.boolean(),
+  parent: galleryLineageParentSchema.nullable(),
+});
+
+export type GalleryLineageResponse = z.infer<
+  typeof galleryLineageResponseSchema
+>;
+
+export const gallerySpecDiffCharacterSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+});
+
+export type GallerySpecDiffCharacter = z.infer<
+  typeof gallerySpecDiffCharacterSchema
+>;
+
+export const gallerySpecDiffChangeSchema = z.object({
+  from: z.union([z.string(), z.boolean(), z.array(z.string()), z.null()]),
+  path: z.string(),
+  to: z.union([z.string(), z.boolean(), z.array(z.string()), z.null()]),
+});
+
+export const gallerySpecDiffSectionSchema = z.object({
+  changes: z.array(gallerySpecDiffChangeSchema),
+  sectionKey: z.string(),
+  title: z.string(),
+});
+
+export const gallerySpecDiffResponseSchema = z.object({
+  character: gallerySpecDiffCharacterSchema,
+  other: gallerySpecDiffCharacterSchema,
+  sections: z.array(gallerySpecDiffSectionSchema),
+});
+
+export type GallerySpecDiffResponse = z.infer<
+  typeof gallerySpecDiffResponseSchema
+>;
 
 const REMIX_NAME_PREFIX = "Remix of ";
 const MAX_CHARACTER_NAME_LENGTH = 120;
