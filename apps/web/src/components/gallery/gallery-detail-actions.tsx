@@ -3,7 +3,6 @@
 import type { GalleryDetailResponse } from "@charator/shared";
 import { parseCharacterSpec } from "@charator/spec";
 import { ShuffleIcon } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -79,22 +78,6 @@ export function GalleryDetailActions({ detail }: GalleryDetailActionsProps) {
             }
           />
         </label>
-      ) : null}
-      {detail.remixedFrom ? (
-        <p className="text-muted-foreground text-sm">
-          Remixed from{" "}
-          <Link
-            className="text-foreground underline-offset-4 hover:underline"
-            href={`/gallery/${detail.remixedFrom.id}`}
-          >
-            {detail.remixedFrom.name}
-          </Link>
-        </p>
-      ) : null}
-      {detail.remixCount > 0 ? (
-        <p className="text-muted-foreground text-sm">
-          {detail.remixCount} remix{detail.remixCount === 1 ? "" : "es"}
-        </p>
       ) : null}
     </div>
   );

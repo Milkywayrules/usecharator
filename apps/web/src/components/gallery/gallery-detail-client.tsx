@@ -1,61 +1,65 @@
+"use client";
+
+import type {
+  GalleryDetailResponse,
+  GalleryLineageResponse,
+} from "@charator/shared";
 import { getTheme, parseCharacterSpec } from "@charator/spec";
 import { ImageIcon } from "lucide-react";
-import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { useEffect, useState } from "react";
 import { GalleryDetailActions } from "@/components/gallery/gallery-detail-actions";
-import { GalleryDetailClient } from "@/components/gallery/gallery-detail-client";
 import { GalleryLineageSection } from "@/components/gallery/gallery-lineage-section";
 import { GalleryReportButton } from "@/components/gallery/gallery-report-button";
 import { CharacterSummary, SpecViewer } from "@/components/gallery/spec-viewer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { fetchGalleryDetail, fetchGalleryLineage } from "@/lib/server-api";
+import { getGalleryCharacter, getGalleryLineage } from "@/lib/api-client";
 import { normalizeThemeId } from "@/lib/theme-id";
 
-interface GalleryDetailPageProps {
-  params: Promise<{ id: string }>;
-}
+export function GalleryDetailClient({ id }: { id: string }) {
+  const [detail, setDetail] = useState<GalleryDetailResponse | null>(null);
+  const [lineage, setLineage] = useState<GalleryLineageResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
 
-export async function generateMetadata({
-  params,
-}: GalleryDetailPageProps): Promise<Metadata> {
-  const { id } = await params;
-  const result = await fetchGalleryDetail(id);
-  if (!result.degraded && result.id) {
-    const themeId = normalizeThemeId(result.themeId);
-    const themeLabel = themeId ? getTheme(themeId).label : "Custom";
-    return {
-      description: `Public character by ${result.owner.displayName}. Theme: ${themeLabel}.`,
-      openGraph: {
-        description: `Public character by ${result.owner.displayName}. Theme: ${themeLabel}.`,
-        title: `${result.name} · Gallery`,
-      },
-      title: result.name,
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setFailed(false);
+
+    Promise.all([getGalleryCharacter(id), getGalleryLineage(id)])
+      .then(([nextDetail, nextLineage]) => {
+        if (!cancelled) {
+          setDetail(nextDetail);
+          setLineage(nextLineage);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setFailed(true);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
     };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-16 text-center text-muted-foreground sm:px-6">
+        Loading character…
+      </div>
+    );
   }
 
-  return { title: "Gallery" };
-}
-
-export default async function GalleryDetailPage({
-  params,
-}: GalleryDetailPageProps) {
-  const { id } = await params;
-
-  if (process.env.E2E === "1") {
-    return <GalleryDetailClient id={id} />;
-  }
-
-  const [result, lineageResult] = await Promise.all([
-    fetchGalleryDetail(id),
-    fetchGalleryLineage(id),
-  ]);
-
-  if (result.degraded) {
-    if (result.notFound) {
-      notFound();
-    }
+  if (failed || !detail) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6">
         <h1 className="font-display font-semibold text-2xl">
@@ -72,12 +76,8 @@ export default async function GalleryDetailPage({
     );
   }
 
-  if (!result.id) {
-    notFound();
-  }
-
-  const spec = parseCharacterSpec(result.spec);
-  const themeId = normalizeThemeId(result.themeId);
+  const spec = parseCharacterSpec(detail.spec);
+  const themeId = normalizeThemeId(detail.themeId);
   const themeLabel = themeId ? getTheme(themeId).label : "No theme";
 
   return (
@@ -90,10 +90,10 @@ export default async function GalleryDetailPage({
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="secondary">{themeLabel}</Badge>
-              {result.visibility === "private" && result.isOwner ? (
+              {detail.visibility === "private" && detail.isOwner ? (
                 <Badge variant="outline">Private (owner view)</Badge>
               ) : null}
-              {result.hiddenByModeration ? (
+              {detail.hiddenByModeration ? (
                 <Badge
                   className="border-destructive/40 text-destructive"
                   variant="outline"
@@ -103,18 +103,18 @@ export default async function GalleryDetailPage({
               ) : null}
             </div>
             <h1 className="font-display font-semibold text-3xl tracking-tight">
-              {result.name || "Untitled"}
+              {detail.name || "Untitled"}
             </h1>
             <p className="text-muted-foreground">
-              by {result.owner.displayName} · updated{" "}
-              {new Date(result.updatedAt).toLocaleDateString()}
+              by {detail.owner.displayName} · updated{" "}
+              {new Date(detail.updatedAt).toLocaleDateString()}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <GalleryDetailActions detail={result} />
+            <GalleryDetailActions detail={detail} />
             <GalleryReportButton
-              characterId={result.id}
-              isOwner={result.isOwner}
+              characterId={detail.id}
+              isOwner={detail.isOwner}
             />
           </div>
         </div>
@@ -122,9 +122,9 @@ export default async function GalleryDetailPage({
 
       <section className="space-y-4">
         <h2 className="font-display font-semibold text-xl">Renders</h2>
-        {result.renders.length > 0 ? (
+        {detail.renders.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {result.renders.map((url) => (
+            {detail.renders.map((url) => (
               <a
                 className="group overflow-hidden rounded-xl border bg-muted/30"
                 href={url}
@@ -150,18 +150,9 @@ export default async function GalleryDetailPage({
       </section>
 
       <GalleryLineageSection
-        characterId={result.id}
-        initialLineage={
-          lineageResult.degraded
-            ? null
-            : {
-                ancestors: lineageResult.ancestors,
-                children: lineageResult.children,
-                depthCapped: lineageResult.depthCapped,
-                parent: lineageResult.parent,
-              }
-        }
-        parentId={result.remixedFrom?.id ?? null}
+        characterId={detail.id}
+        initialLineage={lineage}
+        parentId={detail.remixedFrom?.id ?? null}
       />
 
       <section className="space-y-4">

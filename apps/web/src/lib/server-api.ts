@@ -1,7 +1,10 @@
 import {
   type GalleryDetailResponse,
+  type GalleryLineageResponse,
   type GalleryListResponse,
+  type GallerySort,
   galleryDetailResponseSchema,
+  galleryLineageResponseSchema,
   galleryListResponseSchema,
 } from "@charator/shared";
 
@@ -23,6 +26,7 @@ function galleryListUrl(params?: {
   limit?: number;
   offset?: number;
   q?: string | null;
+  sort?: GallerySort | null;
   theme?: string | null;
 }): string {
   const url = new URL("/api/gallery", resolveServerApiBaseUrl());
@@ -37,6 +41,9 @@ function galleryListUrl(params?: {
   }
   if (params?.q) {
     url.searchParams.set("q", params.q);
+  }
+  if (params?.sort && params.sort !== "recent") {
+    url.searchParams.set("sort", params.sort);
   }
   return url.toString();
 }
@@ -53,6 +60,7 @@ export async function fetchGalleryList(params?: {
   limit?: number;
   offset?: number;
   q?: string | null;
+  sort?: GallerySort | null;
   theme?: string | null;
 }): Promise<GalleryListFetchResult> {
   try {
@@ -93,5 +101,37 @@ export async function fetchGalleryDetail(
     return { ...parsed.data, degraded: false };
   } catch {
     return { degraded: true, detail: null };
+  }
+}
+
+export type GalleryLineageFetchResult =
+  | (GalleryLineageResponse & { degraded: false })
+  | { degraded: true; lineage: null };
+
+export async function fetchGalleryLineage(
+  id: string,
+  page = 1
+): Promise<GalleryLineageFetchResult> {
+  try {
+    const url = new URL(
+      `/api/gallery/${id}/lineage`,
+      resolveServerApiBaseUrl()
+    );
+    url.searchParams.set("page", String(page));
+    const response = await fetch(url.toString(), {
+      next: { revalidate: 30 },
+    });
+    if (!response.ok) {
+      return { degraded: true, lineage: null };
+    }
+    const parsed = galleryLineageResponseSchema.safeParse(
+      await response.json()
+    );
+    if (!parsed.success) {
+      return { degraded: true, lineage: null };
+    }
+    return { ...parsed.data, degraded: false };
+  } catch {
+    return { degraded: true, lineage: null };
   }
 }
