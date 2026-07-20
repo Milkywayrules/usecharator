@@ -3,7 +3,9 @@ import { createApiTokenRequestSchema } from "@charator/shared";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, requireSessionUser } from "../auth";
 import { generateApiTokenSecret } from "../lib/api-token";
+import { assertApiTokenCreationAllowed } from "../lib/entitlements";
 import { HttpError } from "../lib/errors";
+import { requireWorkspaceContext } from "./workspaces";
 
 function json(data: unknown, status = 200): Response {
   return Response.json(data, { status });
@@ -13,12 +15,28 @@ async function readJson<T>(request: Request): Promise<T> {
   return (await request.json()) as T;
 }
 
+function assertSessionOnlyAuth(authMethod: "bearer" | "session"): void {
+  if (authMethod === "bearer") {
+    throw new HttpError(403, {
+      code: "forbidden",
+      message: "token management requires a session",
+    });
+  }
+}
+
 export async function handleTokensList(request: Request): Promise<Response> {
-  const user = await requireSessionUser(request);
+  await requireSessionUser(request);
+  const context = await requireWorkspaceContext(request);
+  assertSessionOnlyAuth(context.user.authMethod);
   const rows = await db
     .select()
     .from(apiTokens)
-    .where(eq(apiTokens.userId, user.id))
+    .where(
+      and(
+        eq(apiTokens.userId, context.user.id),
+        eq(apiTokens.workspaceId, context.workspaceId)
+      )
+    )
     .orderBy(desc(apiTokens.createdAt));
 
   return json(
@@ -34,7 +52,9 @@ export async function handleTokensList(request: Request): Promise<Response> {
 }
 
 export async function handleTokensPost(request: Request): Promise<Response> {
-  const user = await requireSessionUser(request);
+  await requireSessionUser(request);
+  const context = await requireWorkspaceContext(request);
+  assertSessionOnlyAuth(context.user.authMethod);
   const parsed = createApiTokenRequestSchema.safeParse(await readJson(request));
   if (!parsed.success) {
     throw new HttpError(400, {
@@ -43,6 +63,8 @@ export async function handleTokensPost(request: Request): Promise<Response> {
     });
   }
 
+  await assertApiTokenCreationAllowed(db, context.workspaceId);
+
   const secret = generateApiTokenSecret();
   const [row] = await db
     .insert(apiTokens)
@@ -50,7 +72,8 @@ export async function handleTokensPost(request: Request): Promise<Response> {
       name: parsed.data.name,
       prefix: secret.prefix,
       tokenHash: secret.tokenHash,
-      userId: user.id,
+      userId: context.user.id,
+      workspaceId: context.workspaceId,
     })
     .returning();
 
@@ -77,14 +100,17 @@ export async function handleTokensDelete(
   request: Request,
   tokenId: string
 ): Promise<Response> {
-  const user = await requireSessionUser(request);
+  await requireSessionUser(request);
+  const context = await requireWorkspaceContext(request);
+  assertSessionOnlyAuth(context.user.authMethod);
   const [row] = await db
     .update(apiTokens)
     .set({ revokedAt: new Date() })
     .where(
       and(
         eq(apiTokens.id, tokenId),
-        eq(apiTokens.userId, user.id),
+        eq(apiTokens.userId, context.user.id),
+        eq(apiTokens.workspaceId, context.workspaceId),
         isNull(apiTokens.revokedAt)
       )
     )

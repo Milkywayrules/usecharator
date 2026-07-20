@@ -16,7 +16,7 @@ import {
   type ThemeId,
 } from "@charator/spec";
 import { and, asc, eq } from "drizzle-orm";
-import { db, requireAuthUser } from "../auth";
+import { db } from "../auth";
 import {
   defaultModelFor,
   resolveApiKey,
@@ -28,7 +28,9 @@ import {
   findActiveSheetBatch,
   seedSheetJobCredentials,
 } from "../jobs/sheet-batch";
+import { assertSheetBatchCreationAllowed } from "../lib/entitlements";
 import { HttpError } from "../lib/errors";
+import { requireWorkspaceContext } from "./workspaces";
 
 function json(data: unknown, status = 200): Response {
   return Response.json(data, { status });
@@ -65,7 +67,7 @@ export async function handleCharacterSheetPost(
   request: Request,
   characterId: string
 ): Promise<Response> {
-  const user = await requireAuthUser(request);
+  const context = await requireWorkspaceContext(request);
   const parsed = createSheetRequestSchema.safeParse(await readJson(request));
   if (!parsed.success) {
     throw new HttpError(400, {
@@ -86,7 +88,11 @@ export async function handleCharacterSheetPost(
     .select()
     .from(characters)
     .where(
-      and(eq(characters.id, characterId), eq(characters.ownerUserId, user.id))
+      and(
+        eq(characters.id, characterId),
+        eq(characters.ownerUserId, context.user.id),
+        eq(characters.workspaceId, context.workspaceId)
+      )
     )
     .limit(1);
 
@@ -96,6 +102,8 @@ export async function handleCharacterSheetPost(
       message: "character not found",
     });
   }
+
+  await assertSheetBatchCreationAllowed(db, context.workspaceId);
 
   const active = await findActiveSheetBatch(
     db,
@@ -119,7 +127,7 @@ export async function handleCharacterSheetPost(
       prompt: "sheet-batch",
       provider: parsed.data.provider,
     } satisfies CreateGenerationRequest,
-    user.id
+    context.user.id
   ).catch(() => null);
   if (!credentials) {
     throw new HttpError(400, {
@@ -152,7 +160,8 @@ export async function handleCharacterSheetPost(
       provider: parsed.data.provider,
       status: "running",
       totalCount: estimatedCalls,
-      userId: user.id,
+      userId: context.user.id,
+      workspaceId: context.workspaceId,
     })
     .returning()
     .catch(() => null);
@@ -180,7 +189,8 @@ export async function handleCharacterSheetPost(
           sheetVariant: variant.variantId,
           specSnapshot: variant.spec,
           status: "queued",
-          userId: user.id,
+          userId: context.user.id,
+          workspaceId: context.workspaceId,
         })
         .returning();
 
@@ -205,14 +215,14 @@ export async function handleCharacterSheetPost(
           modelId: model,
           provider: parsed.data.provider,
           useAnchor: true,
-          userId: user.id,
+          userId: context.user.id,
         })
       )
     );
   }
 
-  seedSheetJobCredentials(jobIds, credentials, user.id);
-  await dispatchQueuedSheetJobsForUser(db, user.id);
+  seedSheetJobCredentials(jobIds, credentials, context.user.id);
+  await dispatchQueuedSheetJobsForUser(db, context.user.id);
 
   return json(
     {
@@ -228,7 +238,7 @@ export async function handleSheetBatchGet(
   request: Request,
   batchId: string
 ): Promise<Response> {
-  const user = await requireAuthUser(request);
+  const context = await requireWorkspaceContext(request);
 
   const [batch] = await db
     .select()
@@ -236,7 +246,11 @@ export async function handleSheetBatchGet(
     .where(eq(sheetBatches.id, batchId))
     .limit(1);
 
-  if (!batch || batch.userId !== user.id) {
+  if (
+    !batch ||
+    batch.userId !== context.user.id ||
+    batch.workspaceId !== context.workspaceId
+  ) {
     throw new HttpError(404, {
       code: "not_found",
       message: "sheet batch not found",

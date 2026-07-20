@@ -15,15 +15,17 @@ export class SlidingWindowRateLimiter {
 
   consume(
     key: string,
-    nowMs = Date.now()
+    nowMs = Date.now(),
+    limitOverride?: number
   ): { allowed: boolean; retryAfterMs: number } {
+    const effectiveLimit = limitOverride ?? this.limit;
     const entry = this.store.get(key);
     if (!entry || nowMs - entry.windowStartMs >= this.windowMs) {
       this.store.set(key, { count: 1, windowStartMs: nowMs });
       return { allowed: true, retryAfterMs: 0 };
     }
 
-    if (entry.count >= this.limit) {
+    if (entry.count >= effectiveLimit) {
       const retryAfterMs = this.windowMs - (nowMs - entry.windowStartMs);
       return { allowed: false, retryAfterMs };
     }

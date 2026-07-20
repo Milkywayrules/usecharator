@@ -4,26 +4,72 @@ import {
   evaluateRerollEligibility,
   type RerollGenerationRequest,
 } from "@charator/shared";
-import type { AuthUser } from "../auth";
+import { type AuthUser, db } from "../auth";
+import { config } from "../config";
 import {
   defaultModelFor,
   processGenerationJob,
   rememberJobCredentials,
   resolveApiKey,
 } from "../jobs/processor";
+import {
+  assertStoredGenerationCreationAllowed,
+  authenticatedRateLimitForTier,
+  getUserTier,
+} from "../lib/entitlements";
 import { HttpError } from "../lib/errors";
 import {
   clientIpFromHeaders,
-  type SlidingWindowRateLimiter,
+  SlidingWindowRateLimiter,
 } from "../lib/rate-limit";
 
+const anonymousLimiter = new SlidingWindowRateLimiter(
+  config.RATE_LIMIT_ANONYMOUS_PER_HOUR,
+  60 * 60 * 1000
+);
+const authenticatedLimiter = new SlidingWindowRateLimiter(
+  config.RATE_LIMIT_AUTHENTICATED_PER_HOUR,
+  60 * 60 * 1000
+);
+
+async function consumeAuthenticatedRerollRateLimit(
+  authUser: AuthUser | null,
+  request: Request
+): Promise<void> {
+  const ip = clientIpFromHeaders(request.headers);
+  if (!authUser) {
+    const limit = anonymousLimiter.consume(`ip:${ip}`);
+    if (!limit.allowed) {
+      throw new HttpError(429, {
+        code: "rate_limited",
+        message: "too many generation requests",
+      });
+    }
+    return;
+  }
+
+  const tier = await getUserTier(db, authUser.id);
+  const hourlyLimit = authenticatedRateLimitForTier(tier);
+  const limit = authenticatedLimiter.consume(
+    `user:${authUser.id}`,
+    Date.now(),
+    hourlyLimit
+  );
+  if (!limit.allowed) {
+    throw new HttpError(429, {
+      code: "rate_limited",
+      message: "too many generation requests",
+    });
+  }
+}
+
 export async function createRerollJob(
-  db: Db,
+  database: Db,
   source: typeof generationJobs.$inferSelect,
   body: RerollGenerationRequest,
   authUser: AuthUser | null,
-  limiter: SlidingWindowRateLimiter,
-  request: Request
+  request: Request,
+  workspaceId: string | null
 ): Promise<{ jobId: string }> {
   const providerKeyId = body.providerKeyId ?? source.providerKeyId ?? undefined;
   const hasInlineApiKey = Boolean(body.apiKey);
@@ -44,14 +90,10 @@ export async function createRerollJob(
     });
   }
 
-  const ip = clientIpFromHeaders(request.headers);
-  const limitKey = authUser ? `user:${authUser.id}` : `ip:${ip}`;
-  const limit = limiter.consume(limitKey);
-  if (!limit.allowed) {
-    throw new HttpError(429, {
-      code: "rate_limited",
-      message: "too many generation requests",
-    });
+  await consumeAuthenticatedRerollRateLimit(authUser, request);
+
+  if (workspaceId) {
+    await assertStoredGenerationCreationAllowed(database, workspaceId);
   }
 
   if (providerKeyId && !authUser) {
@@ -62,7 +104,7 @@ export async function createRerollJob(
   }
 
   const credentials = await resolveApiKey(
-    db,
+    database,
     {
       ...(body.apiKey ? { apiKey: body.apiKey } : {}),
       ...(providerKeyId ? { providerKeyId } : {}),
@@ -78,7 +120,7 @@ export async function createRerollJob(
     });
   }
 
-  const [job] = await db
+  const [job] = await database
     .insert(generationJobs)
     .values({
       aspectRatio: source.aspectRatio,
@@ -93,6 +135,7 @@ export async function createRerollJob(
       specSnapshot: source.specSnapshot,
       status: "queued",
       userId: authUser ? authUser.id : null,
+      workspaceId,
     })
     .returning();
 
@@ -104,7 +147,7 @@ export async function createRerollJob(
   }
 
   rememberJobCredentials(job.id, credentials, authUser ? authUser.id : null);
-  processGenerationJob(db, job.id, credentials).catch((error) =>
+  processGenerationJob(database, job.id, credentials).catch((error) =>
     console.error(error)
   );
 

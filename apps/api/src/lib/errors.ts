@@ -1,10 +1,10 @@
-import type { ApiError } from "@charator/shared";
+import type { ApiError, TierLimitError } from "@charator/shared";
 
 export class HttpError extends Error {
   readonly status: number;
-  readonly body: ApiError;
+  readonly body: ApiError | TierLimitError;
 
-  constructor(status: number, body: ApiError) {
+  constructor(status: number, body: ApiError | TierLimitError) {
     super(body.message);
     this.name = "HttpError";
     this.status = status;

@@ -9,7 +9,7 @@ import {
   updateCharacterRequestSchema,
 } from "@charator/shared";
 import { and, desc, eq } from "drizzle-orm";
-import { db, requireAuthUser, resolveAuthUser } from "../auth";
+import { type AuthUser, db, requireAuthUser, resolveAuthUser } from "../auth";
 import { config } from "../config";
 import {
   completeJobFromUrls,
@@ -25,6 +25,12 @@ import {
 } from "../jobs/processor";
 import { toCharacterResponse } from "../lib/character-response";
 import { decryptSecret, encryptSecret, maskApiKey } from "../lib/crypto";
+import {
+  assertStoredGenerationCreationAllowed,
+  assertWorkspaceCharacterCreationAllowed,
+  authenticatedRateLimitForTier,
+  getUserTier,
+} from "../lib/entitlements";
 import { HttpError } from "../lib/errors";
 import {
   assertReferenceCharacterOwnership,
@@ -38,6 +44,7 @@ import {
 import { ReferenceResolutionError } from "../lib/reference-generation";
 import { getProviderAdapter } from "../providers/registry";
 import { createRerollJob } from "./reroll";
+import { requireWorkspaceContext, resolveWorkspaceContext } from "./workspaces";
 
 const anonymousLimiter = new SlidingWindowRateLimiter(
   config.RATE_LIMIT_ANONYMOUS_PER_HOUR,
@@ -54,6 +61,44 @@ function json(data: unknown, status = 200): Response {
 
 async function readJson<T>(request: Request): Promise<T> {
   return (await request.json()) as T;
+}
+
+async function consumeGenerationRateLimit(
+  authUser: AuthUser | null,
+  request: Request
+): Promise<void> {
+  const ip = clientIpFromHeaders(request.headers);
+  if (!authUser) {
+    const limit = anonymousLimiter.consume(`ip:${ip}`);
+    if (!limit.allowed) {
+      throw new HttpError(429, {
+        code: "rate_limited",
+        message: "too many generation requests",
+      });
+    }
+    return;
+  }
+
+  const tier = await getUserTier(db, authUser.id);
+  const hourlyLimit = authenticatedRateLimitForTier(tier);
+  const limit = authenticatedLimiter.consume(
+    `user:${authUser.id}`,
+    Date.now(),
+    hourlyLimit
+  );
+  if (!limit.allowed) {
+    throw new HttpError(429, {
+      code: "rate_limited",
+      message: "too many generation requests",
+    });
+  }
+}
+
+async function resolveAuthenticatedWorkspaceId(
+  request: Request
+): Promise<string | null> {
+  const context = await resolveWorkspaceContext(request);
+  return context ? context.workspaceId : null;
 }
 
 async function attachJobReferencesOrThrow(
@@ -90,15 +135,13 @@ export async function handleGenerationsPost(
     });
   }
 
-  const ip = clientIpFromHeaders(request.headers);
-  const limiter = authUser ? authenticatedLimiter : anonymousLimiter;
-  const limitKey = authUser ? `user:${authUser.id}` : `ip:${ip}`;
-  const limit = limiter.consume(limitKey);
-  if (!limit.allowed) {
-    throw new HttpError(429, {
-      code: "rate_limited",
-      message: "too many generation requests",
-    });
+  await consumeGenerationRateLimit(authUser, request);
+
+  const workspaceId = authUser
+    ? await resolveAuthenticatedWorkspaceId(request)
+    : null;
+  if (workspaceId) {
+    await assertStoredGenerationCreationAllowed(db, workspaceId);
   }
 
   if (parsed.data.providerKeyId && !authUser) {
@@ -141,6 +184,7 @@ export async function handleGenerationsPost(
       specSnapshot: parsed.data.specSnapshot ?? null,
       status: "queued",
       userId: authUser ? authUser.id : null,
+      workspaceId,
     })
     .returning();
 
@@ -227,14 +271,16 @@ export async function handleGenerationReroll(
     throw new HttpError(404, { code: "not_found", message: "job not found" });
   }
 
-  const limiter = authUser ? authenticatedLimiter : anonymousLimiter;
+  const workspaceId = authUser
+    ? await resolveAuthenticatedWorkspaceId(request)
+    : null;
   const result = await createRerollJob(
     db,
     source,
     parsed.data,
     authUser,
-    limiter,
-    request
+    request,
+    workspaceId
   );
 
   return json(result, 202);
@@ -312,11 +358,16 @@ export async function handleCharacterGenerations(
 export async function handleCharactersList(
   request: Request
 ): Promise<Response> {
-  const user = await requireAuthUser(request);
+  const context = await requireWorkspaceContext(request);
   const rows = await db
     .select()
     .from(characters)
-    .where(eq(characters.ownerUserId, user.id));
+    .where(
+      and(
+        eq(characters.ownerUserId, context.user.id),
+        eq(characters.workspaceId, context.workspaceId)
+      )
+    );
 
   return json(rows.map((row) => toCharacterResponse(row)));
 }
@@ -324,7 +375,8 @@ export async function handleCharactersList(
 export async function handleCharactersPost(
   request: Request
 ): Promise<Response> {
-  const user = await requireAuthUser(request);
+  const context = await requireWorkspaceContext(request);
+  await assertWorkspaceCharacterCreationAllowed(db, context.workspaceId);
   const parsed = createCharacterRequestSchema.safeParse(
     await readJson(request)
   );
@@ -339,10 +391,11 @@ export async function handleCharactersPost(
     .insert(characters)
     .values({
       name: parsed.data.name,
-      ownerUserId: user.id,
+      ownerUserId: context.user.id,
       spec: parsed.data.spec,
       themeId: parsed.data.themeId ?? null,
       visibility: parsed.data.visibility,
+      workspaceId: context.workspaceId,
     })
     .returning();
 
@@ -438,7 +491,8 @@ export async function handleCharactersRemix(
   request: Request,
   characterId: string
 ): Promise<Response> {
-  const userSession = await requireAuthUser(request);
+  const context = await requireWorkspaceContext(request);
+  await assertWorkspaceCharacterCreationAllowed(db, context.workspaceId);
 
   const [source] = await db
     .select()
@@ -457,7 +511,7 @@ export async function handleCharactersRemix(
     !canRemixCharacter({
       moderationStatus: source.moderationStatus,
       ownerUserId: source.ownerUserId,
-      viewerUserId: userSession.id,
+      viewerUserId: context.user.id,
       visibility: source.visibility,
     })
   ) {
@@ -471,11 +525,12 @@ export async function handleCharactersRemix(
     .insert(characters)
     .values({
       name: deriveRemixName(source.name),
-      ownerUserId: userSession.id,
+      ownerUserId: context.user.id,
       remixedFromCharacterId: source.id,
       spec: source.spec,
       themeId: source.themeId,
       visibility: "private",
+      workspaceId: context.workspaceId,
     })
     .returning();
 
@@ -490,11 +545,16 @@ export async function handleCharactersRemix(
 }
 
 export async function handleKeysList(request: Request): Promise<Response> {
-  const user = await requireAuthUser(request);
+  const context = await requireWorkspaceContext(request);
   const rows = await db
     .select()
     .from(providerKeys)
-    .where(eq(providerKeys.userId, user.id));
+    .where(
+      and(
+        eq(providerKeys.userId, context.user.id),
+        eq(providerKeys.workspaceId, context.workspaceId)
+      )
+    );
 
   return json(
     rows.map((row) => ({
@@ -511,7 +571,7 @@ export async function handleKeysList(request: Request): Promise<Response> {
 }
 
 export async function handleKeysPost(request: Request): Promise<Response> {
-  const user = await requireAuthUser(request);
+  const context = await requireWorkspaceContext(request);
   const parsed = createProviderKeyRequestSchema.safeParse(
     await readJson(request)
   );
@@ -552,7 +612,8 @@ export async function handleKeysPost(request: Request): Promise<Response> {
       encryptedKey,
       label: parsed.data.label,
       provider: parsed.data.provider,
-      userId: user.id,
+      userId: context.user.id,
+      workspaceId: context.workspaceId,
     })
     .returning()
     .catch(() => null);

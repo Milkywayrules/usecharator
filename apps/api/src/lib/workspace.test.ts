@@ -20,11 +20,34 @@ describe("workspace naming helpers", () => {
   });
 });
 
-describe("workspace delete guard seam", () => {
-  test("assertWorkspaceCreationAllowed is a no-op entitlement seam", async () => {
+describe("assertWorkspaceCreationAllowed", () => {
+  test("rejects when owned workspace count meets free tier cap", async () => {
+    const { HttpError } = await import("./errors");
     const { assertWorkspaceCreationAllowed } = await import("./workspace");
+
+    let selectCalls = 0;
+    const mockDb = {
+      select: () => {
+        selectCalls += 1;
+        if (selectCalls === 1) {
+          return {
+            from: () => ({
+              where: async () => [{ count: 1 }],
+            }),
+          };
+        }
+        return {
+          from: () => ({
+            where: () => ({
+              limit: async () => [{ tier: "free" }],
+            }),
+          }),
+        };
+      },
+    } as never;
+
     await expect(
-      Promise.resolve(assertWorkspaceCreationAllowed({} as never, "user-1"))
-    ).resolves.toBeUndefined();
+      assertWorkspaceCreationAllowed(mockDb, "user-1")
+    ).rejects.toThrow(HttpError);
   });
 });

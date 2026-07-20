@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { tierLimit } from "@charator/shared";
+import { authenticatedRateLimitForTier } from "./entitlements";
 import { clientIpFromHeaders, SlidingWindowRateLimiter } from "./rate-limit";
 
 describe("rate limiter", () => {
@@ -23,5 +25,26 @@ describe("clientIpFromHeaders", () => {
       "x-forwarded-for": "203.0.113.10, 10.0.0.1",
     });
     expect(clientIpFromHeaders(headers)).toBe("10.0.0.1");
+  });
+});
+
+describe("authenticatedRateLimitForTier", () => {
+  test("maps each tier to authenticatedGenerationsPerHour", () => {
+    expect(authenticatedRateLimitForTier("free")).toBe(
+      tierLimit("free", "authenticatedGenerationsPerHour")
+    );
+    expect(authenticatedRateLimitForTier("plus")).toBe(
+      tierLimit("plus", "authenticatedGenerationsPerHour")
+    );
+    expect(authenticatedRateLimitForTier("pro")).toBe(
+      tierLimit("pro", "authenticatedGenerationsPerHour")
+    );
+    expect(authenticatedRateLimitForTier("studio")).toBe(
+      tierLimit("studio", "authenticatedGenerationsPerHour")
+    );
+  });
+
+  test("uses 600 fallback when tier limit is null", () => {
+    expect(authenticatedRateLimitForTier("studio")).toBe(600);
   });
 });

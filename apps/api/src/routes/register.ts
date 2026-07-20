@@ -3,11 +3,13 @@ import {
   handleCharacterAnchorDelete,
   handleCharacterAnchorPost,
 } from "./anchor";
+import { handleEntitlementsGet } from "./entitlements";
 import {
   handleGalleryDetail,
   handleGalleryList,
   handleGalleryReport,
 } from "./gallery";
+import { handleGenerationDelete } from "./generation-delete";
 import {
   handleCharacterGenerations,
   handleCharactersDelete,
@@ -30,6 +32,13 @@ import {
   handleTokensList,
   handleTokensPost,
 } from "./tokens";
+import {
+  handleWorkspacesActivate,
+  handleWorkspacesDelete,
+  handleWorkspacesList,
+  handleWorkspacesPatch,
+  handleWorkspacesPost,
+} from "./workspaces";
 
 type HttpMethod = "delete" | "get" | "patch" | "post";
 
@@ -61,6 +70,45 @@ export const SHARED_PROGRAMMATIC_ROUTES: RouteMount[] = [
       handleGenerationReroll(request, params.id ?? ""),
     method: "post",
     path: "/generations/:id/reroll",
+  },
+  {
+    handler: (request, params) =>
+      handleGenerationDelete(request, params.id ?? ""),
+    method: "delete",
+    path: "/generations/:id",
+  },
+  {
+    handler: (request) => handleEntitlementsGet(request),
+    method: "get",
+    path: "/me/entitlements",
+  },
+  {
+    handler: (request) => handleWorkspacesList(request),
+    method: "get",
+    path: "/workspaces",
+  },
+  {
+    handler: (request) => handleWorkspacesPost(request),
+    method: "post",
+    path: "/workspaces",
+  },
+  {
+    handler: (request, params) =>
+      handleWorkspacesPatch(request, params.id ?? ""),
+    method: "patch",
+    path: "/workspaces/:id",
+  },
+  {
+    handler: (request, params) =>
+      handleWorkspacesDelete(request, params.id ?? ""),
+    method: "delete",
+    path: "/workspaces/:id",
+  },
+  {
+    handler: (request, params) =>
+      handleWorkspacesActivate(request, params.id ?? ""),
+    method: "post",
+    path: "/workspaces/:id/activate",
   },
   {
     handler: (request) => handleCharactersList(request),
@@ -265,7 +313,10 @@ function openApiDetailForRoute(
 ): Record<string, unknown> {
   const fullPath = `/api${prefix}${route.path}`;
   const sessionOnly =
-    route.path.startsWith("/tokens") || route.path.includes("/tokens/");
+    route.path.startsWith("/tokens") ||
+    route.path.includes("/tokens/") ||
+    route.path.startsWith("/workspaces") ||
+    route.path.startsWith("/me/");
   const optionalAuth = route.path.startsWith("/gallery");
   let authDescription =
     "Bearer token (`Authorization: Bearer ct_live_...`) or session cookie.";
@@ -302,6 +353,12 @@ function routeTag(path: string): string {
   }
   if (path.startsWith("/tokens")) {
     return "tokens";
+  }
+  if (path.startsWith("/me/")) {
+    return "me";
+  }
+  if (path.startsWith("/workspaces")) {
+    return "workspaces";
   }
   if (path.startsWith("/themes")) {
     return "spec";

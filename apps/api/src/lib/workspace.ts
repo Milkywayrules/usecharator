@@ -8,6 +8,7 @@ import {
   session as sessionTable,
 } from "@charator/db";
 import { and, asc, eq, sql } from "drizzle-orm";
+import { assertEntitlementForOwner } from "./entitlements";
 
 export function personalWorkspaceName(userName: string): string {
   const trimmed = userName.trim();
@@ -138,7 +139,15 @@ export async function workspaceHasBlockingResources(
   return (tokenCount?.count ?? 0) > 0;
 }
 
-/** Epic 7.2: replace with plan-backed workspace count entitlement. */
-export function assertWorkspaceCreationAllowed(_db: Db, _userId: string): void {
-  // entitlement seam for epic 7.2
+/** Enforces workspace count against the user's pricing tier. */
+export async function assertWorkspaceCreationAllowed(
+  db: Db,
+  userId: string
+): Promise<void> {
+  const current = await countOwnedWorkspaces(db, userId);
+  await assertEntitlementForOwner(db, {
+    current,
+    limitKey: "workspaces",
+    ownerUserId: userId,
+  });
 }
