@@ -67,6 +67,9 @@ services:
       PRESIGNED_URL_TTL_SECONDS: ${PRESIGNED_URL_TTL_SECONDS:-900}
       RATE_LIMIT_ANONYMOUS_PER_HOUR: ${RATE_LIMIT_ANONYMOUS_PER_HOUR:-10}
       RATE_LIMIT_AUTHENTICATED_PER_HOUR: ${RATE_LIMIT_AUTHENTICATED_PER_HOUR:-60}
+      PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET}
+      MOCK_BILLING_ENABLED: "false"
+      WEB_APP_URL: ${WEB_APP_URL:-https://charator.dioilham.com}
     depends_on:
       postgres:
         condition: service_healthy

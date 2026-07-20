@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+/** Dev-only default; must not be used when `NODE_ENV` is production. */
+export const DEV_PAYMENT_WEBHOOK_SECRET = "dev-payment-webhook-secret";
+
 const base64KeySchema = z
   .string()
   .min(1)
@@ -26,7 +29,7 @@ const envSchema = z.object({
     .enum(["development", "production", "test"])
     .default("development"),
   PAYMENT_PROVIDER: z.string().default("mock"),
-  PAYMENT_WEBHOOK_SECRET: z.string().default("dev-payment-webhook-secret"),
+  PAYMENT_WEBHOOK_SECRET: z.string().default(DEV_PAYMENT_WEBHOOK_SECRET),
   PORT: z.coerce.number().default(3001),
   PRESIGNED_URL_TTL_SECONDS: z.coerce.number().default(900),
   R2_ACCESS_KEY_ID: z.string().optional(),
@@ -45,7 +48,30 @@ const envSchema = z.object({
 
 export type AppConfig = z.infer<typeof envSchema>;
 
-export const config: AppConfig = envSchema.parse(process.env);
+function assertProductionSecrets(cfg: AppConfig): void {
+  if (cfg.NODE_ENV !== "production") {
+    return;
+  }
+
+  if (
+    !cfg.PAYMENT_WEBHOOK_SECRET ||
+    cfg.PAYMENT_WEBHOOK_SECRET === DEV_PAYMENT_WEBHOOK_SECRET
+  ) {
+    throw new Error(
+      "PAYMENT_WEBHOOK_SECRET must be set to a strong non-default value when NODE_ENV is production"
+    );
+  }
+}
+
+export function parseAppConfig(
+  env: Record<string, string | undefined> = process.env
+): AppConfig {
+  const parsed = envSchema.parse(env);
+  assertProductionSecrets(parsed);
+  return parsed;
+}
+
+export const config: AppConfig = parseAppConfig();
 
 export function r2Configured(cfg: AppConfig): boolean {
   return Boolean(
