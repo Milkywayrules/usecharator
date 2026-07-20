@@ -14,7 +14,8 @@
       "!knowledge-base-of-king-the-user",
       "!e2e",
       "!test-results",
-      "!playwright-report"
+      "!playwright-report",
+      "!packages/contract-tests/pacts"
     ]
   }
 }
